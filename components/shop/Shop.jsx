@@ -646,22 +646,25 @@ export default function Shop({ role, uid }) {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
                 {visibleProducts.map((product) => {
                   const inCart = cart[product.id] || 0;
                   const outOfStock = (product.stock || 0) <= 0;
                   const lowStock = !outOfStock && product.stock <= LOW_STOCK_THRESHOLD;
                   return (
-                    <article key={product.id} className="group flex flex-col overflow-hidden rounded-2xl border border-border-subtle/70 bg-white transition hover:-translate-y-0.5 hover:shadow-lg">
+                    <article
+                      key={product.id}
+                      className="group flex flex-col overflow-hidden rounded-xl border border-border-subtle/60 bg-white shadow-sm ring-1 ring-transparent transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-border-subtle hover:shadow-md focus-within:ring-primary/40"
+                    >
                       <div className={`relative aspect-square w-full overflow-hidden bg-page ${outOfStock ? "grayscale" : ""}`}>
                         {product.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition duration-300 ease-out group-hover:scale-105" />
+                          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" />
                         ) : (
-                          <div className="grid h-full w-full place-items-center text-subtle"><ShoppingBag className="h-8 w-8" aria-hidden="true" /></div>
+                          <div className="grid h-full w-full place-items-center text-subtle"><ShoppingBag className="h-7 w-7" aria-hidden="true" /></div>
                         )}
                         {product.active === false && (
-                          <span className="absolute left-2 top-2 rounded-md bg-slate-900/75 px-2 py-1 text-[10px] font-bold uppercase text-white">Unlisted</span>
+                          <span className="absolute left-1.5 top-1.5 rounded-md bg-slate-900/75 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Unlisted</span>
                         )}
                         {/* Exactly one stock indicator ever shows on the
                             card face — the overlay/badge here when stock is
@@ -669,44 +672,44 @@ export default function Shop({ role, uid }) {
                             never both at once. */}
                         {outOfStock ? (
                           <div className="absolute inset-0 grid place-items-center bg-slate-950/40">
-                            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black uppercase tracking-wider text-primary shadow-sm">Sold out</span>
+                            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-primary shadow-sm">Sold out</span>
                           </div>
                         ) : lowStock ? (
-                          <span className="absolute right-2 top-2 rounded-md bg-warning px-2 py-1 text-[10px] font-bold uppercase text-white shadow-sm">Only {product.stock} left</span>
+                          <span className="absolute right-1.5 top-1.5 rounded-md bg-warning px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">Only {product.stock} left</span>
                         ) : null}
                       </div>
-                      <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+                      <div className="flex flex-1 flex-col p-2.5 sm:p-3">
                         {product.categoryId && categoryMap.get(product.categoryId) && (
-                          <span className="mb-1 text-[10px] font-bold uppercase tracking-wider text-subtle">{categoryMap.get(product.categoryId).name}</span>
+                          <span className="mb-0.5 truncate text-[9px] font-bold uppercase tracking-wider text-subtle">{categoryMap.get(product.categoryId).name}</span>
                         )}
-                        <b className="line-clamp-1 text-sm text-ink sm:text-base">{product.name}</b>
-                        <p className="mt-1 line-clamp-2 text-xs text-muted">{product.description || " "}</p>
-                        <div className="mt-2 flex items-baseline justify-between gap-2">
-                          <span className="text-lg font-black text-ink sm:text-xl">{money(product.price)}</span>
-                          {!outOfStock && !lowStock && <span className="text-[11px] font-semibold text-subtle">{product.stock} in stock</span>}
+                        <b className="line-clamp-1 text-[13px] leading-tight text-ink sm:text-sm">{product.name}</b>
+                        <p className="mt-0.5 line-clamp-1 text-[11px] leading-tight text-muted">{product.description || " "}</p>
+                        <div className="mt-1.5 flex items-baseline justify-between gap-2">
+                          <span className="tabular-nums text-sm font-black text-ink sm:text-base">{money(product.price)}</span>
+                          {!outOfStock && !lowStock && <span className="truncate text-[10px] font-semibold text-subtle">{product.stock} in stock</span>}
                         </div>
                         {canManage ? (
-                          <div className="mt-3 flex items-center justify-between gap-1 border-t border-border-subtle pt-3">
-                            <button type="button" onClick={() => openEdit(product)} title="Edit" className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold text-muted hover:bg-page hover:text-ink"><Pencil className="h-3.5 w-3.5" aria-hidden="true" />Edit</button>
-                            <button type="button" onClick={() => toggleActive(product)} title={product.active === false ? "List" : "Unlist"} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold text-muted hover:bg-page hover:text-info">
+                          <div className="mt-2.5 flex items-center justify-between gap-0.5 border-t border-border-subtle pt-2.5">
+                            <button type="button" onClick={() => openEdit(product)} title="Edit" aria-label="Edit product" className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-[10px] font-bold text-muted transition-colors hover:bg-page hover:text-ink"><Pencil className="h-3.5 w-3.5" aria-hidden="true" /><span className="hidden sm:inline">Edit</span></button>
+                            <button type="button" onClick={() => toggleActive(product)} title={product.active === false ? "List" : "Unlist"} aria-label={product.active === false ? "List product" : "Unlist product"} className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-[10px] font-bold text-muted transition-colors hover:bg-page hover:text-info">
                               {product.active === false ? <Eye className="h-3.5 w-3.5" aria-hidden="true" /> : <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />}
-                              {product.active === false ? "List" : "Unlist"}
+                              <span className="hidden sm:inline">{product.active === false ? "List" : "Unlist"}</span>
                             </button>
-                            <button type="button" onClick={() => setConfirmDelete(product)} title="Delete" className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold text-muted hover:bg-active hover:text-primary"><Trash2 className="h-3.5 w-3.5" aria-hidden="true" />Delete</button>
+                            <button type="button" onClick={() => setConfirmDelete(product)} title="Delete" aria-label="Delete product" className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-[10px] font-bold text-muted transition-colors hover:bg-active hover:text-primary"><Trash2 className="h-3.5 w-3.5" aria-hidden="true" /><span className="hidden sm:inline">Delete</span></button>
                           </div>
                         ) : (
-                          <div className="mt-3 space-y-2 border-t border-border-subtle pt-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <button type="button" disabled={inCart <= 0} onClick={() => setQuantity(product.id, inCart - 1, product.stock)} className="grid h-7 w-7 place-items-center rounded-lg border border-border-subtle text-muted disabled:opacity-40"><Minus className="h-3 w-3" /></button>
-                                <span className="w-5 text-center text-sm font-bold">{inCart}</span>
-                                <button type="button" disabled={outOfStock || inCart >= product.stock} onClick={() => setQuantity(product.id, inCart + 1, product.stock)} className="grid h-7 w-7 place-items-center rounded-lg border border-border-subtle text-muted disabled:opacity-40"><Plus className="h-3 w-3" /></button>
+                          <div className="mt-2.5 space-y-1.5 border-t border-border-subtle pt-2.5">
+                            <div className="flex items-center justify-between gap-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <button type="button" disabled={inCart <= 0} onClick={() => setQuantity(product.id, inCart - 1, product.stock)} aria-label="Decrease quantity" className="grid h-6 w-6 place-items-center rounded-md border border-border-subtle text-muted transition-colors hover:border-primary hover:text-primary disabled:opacity-40 disabled:hover:border-border-subtle disabled:hover:text-muted"><Minus className="h-3 w-3" /></button>
+                                <span className="w-4 text-center text-xs font-bold tabular-nums">{inCart}</span>
+                                <button type="button" disabled={outOfStock || inCart >= product.stock} onClick={() => setQuantity(product.id, inCart + 1, product.stock)} aria-label="Increase quantity" className="grid h-6 w-6 place-items-center rounded-md border border-border-subtle text-muted transition-colors hover:border-primary hover:text-primary disabled:opacity-40 disabled:hover:border-border-subtle disabled:hover:text-muted"><Plus className="h-3 w-3" /></button>
                               </div>
                               <button
                                 type="button"
                                 disabled={outOfStock}
                                 onClick={() => setQuantity(product.id, inCart <= 0 ? 1 : inCart, product.stock)}
-                                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40"
+                                className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-bold text-white transition-colors hover:bg-primary-hover disabled:opacity-40"
                               >
                                 {inCart > 0 ? "In cart" : "Add"}
                               </button>
@@ -721,7 +724,7 @@ export default function Shop({ role, uid }) {
                               type="button"
                               disabled={outOfStock}
                               onClick={() => setOrderingProduct(product)}
-                              className="w-full rounded-lg border border-border-subtle py-1.5 text-xs font-bold text-ink hover:border-primary hover:text-primary disabled:opacity-40"
+                              className="w-full rounded-md border border-border-subtle py-1 text-[11px] font-bold text-ink transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
                             >
                               Order Now
                             </button>
