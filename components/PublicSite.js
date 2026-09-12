@@ -1113,12 +1113,12 @@ export default function PublicSite() {
             <div className="mt-3 space-y-2 text-sm text-[#374151]">
               <p className="flex items-center gap-2">
                 <span className="text-[#E53935]">✉</span>
-                hello@nextacademy.org
+                nextacademi@gmail.com
               </p>
 
               <p className="flex items-center gap-2">
                 <span className="text-[#E53935]">📍</span>
-                Phnom Penh, Cambodia
+                Singapore
               </p>
             </div>
           </div>
@@ -1186,16 +1186,16 @@ export default function PublicSite() {
             </p>
             <div className="mt-4 grid gap-2.5 text-sm text-white/75">
               <a
-                href="mailto:hello@nextacademy.org"
+                href="mailto:nextacademi@gmail.com"
                 className="flex items-center gap-2 transition hover:text-white"
               >
-                <span className="text-white/50">✉</span> hello@nextacademy.org
+                <span className="text-white/50">✉</span> nextacademi@gmail.com
               </a>
               <a
                 href="#contact"
                 className="flex items-center gap-2 transition hover:text-white"
               >
-                <span className="text-white/50">📍</span> Phnom Penh, Cambodia
+                <span className="text-white/50">📍</span> Singapore
               </a>
             </div>
           </div>
