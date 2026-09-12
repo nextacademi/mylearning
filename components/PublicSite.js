@@ -146,7 +146,7 @@ function Brand({ light = false }) {
   return (
     <a
       href="#home"
-      className={`flex items-center gap-2 text-lg font-bold tracking-tight ${light ? "text-white" : "text-[#111827]"}`}
+      className={`flex items-center gap-2 text-base font-bold tracking-tight sm:text-lg ${light ? "text-white" : "text-[#111827]"}`}
     >
       <img
         src="/logo.jpeg"
@@ -547,12 +547,12 @@ export default function PublicSite() {
               Contact
             </a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={goToLearning}
-              className="rounded-full bg-[#E53935] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#F04438]"
+              className="whitespace-nowrap rounded-full bg-[#E53935] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#F04438] sm:px-4 sm:py-2.5 sm:text-xs"
             >
-              My Learning <span className="ml-2">↗</span>
+              My Learning <span className="ml-1 sm:ml-2">↗</span>
             </button>
             {verifiedUser ? (
               <div className="relative">
