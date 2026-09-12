@@ -16,13 +16,59 @@
 # -> Authentication -> Settings -> Authorized domains (see README/report).
 env:
   - variable: NEXT_PUBLIC_BASE_URL
-    value: "https://next-academy--mynextlerning.asia-southeast1.hosted.app"
+    value: "https://next-academy--mynextlms.asia-southeast1.hosted.app"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Explicit client config for the mynextlms project. Set explicitly
+  # (rather than relying on App Hosting's automatic Firebase web-app
+  # association) because that auto-injection was found to be wired to
+  # the wrong project (mynextlerning) for this backend.
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyAhFVTD8pRXpAzMB3rplxAJ3tXgXqqyNJQ"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "mynextlms.firebaseapp.com"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "mynextlms"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "mynextlms.firebasestorage.app"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "398381285119"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:398381285119:web:7510010a0d92c80bbf96ca"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: "G-3LJ9K5ZGY0"
     availability:
       - BUILD
       - RUNTIME
 
   - variable: FIREBASE_ADMIN_PROJECT_ID
-    value: "mynextlerning"
+    value: "mynextlms"
     availability:
       - RUNTIME
 
