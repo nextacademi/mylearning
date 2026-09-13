@@ -46,7 +46,7 @@ export function NotificationList({ items, onItemClick, emptyMessage = "No notifi
             key={item.id}
             type="button"
             onClick={() => onItemClick?.(item)}
-            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-page ${unread ? "bg-active/40" : "bg-white"}`}
+            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-page ${unread ? "bg-active/40" : "bg-card"}`}
           >
             <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${meta.bg}`}>
               <Icon className={`h-4 w-4 ${meta.color}`} aria-hidden="true" />
@@ -109,7 +109,7 @@ export default function NotificationBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-12 z-30 w-80 overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-2xl">
+        <div className="absolute right-0 top-12 z-30 w-80 overflow-hidden rounded-2xl border border-border-subtle bg-card shadow-2xl">
           <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
             <b className="text-sm text-ink">Notifications</b>
             {unreadCount > 0 && (

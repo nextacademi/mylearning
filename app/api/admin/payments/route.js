@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
+import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { listPaymentsForEnrollment, recordPayment } from "../../../../lib/server/payment-core";
 
 export const runtime = "nodejs";
@@ -16,7 +17,7 @@ async function access(request) {
   if (!token) return { denied: NextResponse.json({ message: "Administrator access is required." }, { status: 401 }) };
   const db = getAdminDb();
   const decoded = await getAdminAuth().verifyIdToken(token);
-  const profile = await db.collection("users").doc(decoded.uid).get();
+  const profile = await getCachedUserSnapshot(db, decoded.uid);
   const data = profile.data() || {};
   if (!profile.exists || data.active === false || !managers.has(data.role)) {
     return { denied: NextResponse.json({ message: "Administrator access is required." }, { status: 403 }) };

@@ -9,7 +9,7 @@ import { EmptyChartState } from "./ChartCard";
 // everywhere on this page; it only ever reads totals.due, never totals.income.
 export function OutstandingDueCard({ totals, loading, onNavigate }) {
   return (
-    <div className="rounded-xl border border-border-subtle bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-border-subtle bg-card p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-warning-soft text-warning">
@@ -69,7 +69,7 @@ export function RevenueVsExpenses({ totals, expensesCount, loading }) {
     : [];
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-border-subtle bg-card p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-success-soft text-success">
           <Scale className="h-4 w-4" aria-hidden="true" />
@@ -112,7 +112,7 @@ export function RevenueVsExpenses({ totals, expensesCount, loading }) {
 // since those states are never written anywhere in this data model.
 export function EnrollmentBreakdown({ activeCount, withdrawnCount, loading, error, onRetry }) {
   return (
-    <div className="rounded-xl border border-border-subtle bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-border-subtle bg-card p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-info-soft text-info">
           <UserCheck className="h-4 w-4" aria-hidden="true" />

@@ -108,7 +108,7 @@ function RowMenu({ item, onDeactivate, onReactivate }) {
         <MoreVertical className="h-4 w-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-8 z-20 w-40 rounded-xl border border-border-subtle bg-white p-1 shadow-2xl">
+        <div className="absolute right-0 top-8 z-20 w-40 rounded-xl border border-border-subtle bg-card p-1 shadow-2xl">
           {status === "Active" ? (
             <button
               type="button"
@@ -140,7 +140,7 @@ export function EmptyState({ tab, onAdd }) {
     Rejected: "No rejected registrations.",
   };
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border-subtle bg-white py-14 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border-subtle bg-card py-14 text-center">
       <span className="grid h-12 w-12 place-items-center rounded-full bg-page text-subtle">
         <UserRound className="h-6 w-6" aria-hidden="true" />
       </span>

@@ -42,7 +42,7 @@ function formatEventTime(time) {
 export default function EventsAndActivity({ events, eventsLoading, eventsError, onRetryEvents, activities, activitiesLoading, activitiesError, onRetryActivities }) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <div className="rounded-xl border border-border-subtle bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-border-subtle bg-card p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-purple-soft text-purple">
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
@@ -60,7 +60,7 @@ export default function EventsAndActivity({ events, eventsLoading, eventsError, 
           <div className="space-y-2">
             {events.map((event) => (
               <div key={event.id} className="flex items-start gap-3 rounded-xl bg-page p-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-purple">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-card text-purple">
                   <CalendarDays className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -82,7 +82,7 @@ export default function EventsAndActivity({ events, eventsLoading, eventsError, 
         )}
       </div>
 
-      <div className="rounded-xl border border-border-subtle bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-border-subtle bg-card p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-active text-primary">
             <Activity className="h-4 w-4" aria-hidden="true" />
@@ -103,7 +103,7 @@ export default function EventsAndActivity({ events, eventsLoading, eventsError, 
               const Icon = meta.icon;
               return (
                 <div key={item.id} className="flex items-start gap-3 rounded-xl bg-page p-3">
-                  <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white ${meta.color}`}>
+                  <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-card ${meta.color}`}>
                     <Icon className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1">

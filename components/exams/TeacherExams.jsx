@@ -3,21 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { ClipboardList, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { subscribeTeacherCourses } from "../../lib/teacher-data";
+import { subscribeCourses } from "../../lib/room-booking-data";
 import {
-  createQuiz, deleteQuiz, loadQuizAnswerKey, setQuizStatus, subscribeQuizAttemptsForTeacher, subscribeTeacherQuizzes, updateQuiz,
+  createQuiz, deleteQuiz, loadQuizAnswerKey, setQuizStatus, subscribeAllQuizzes,
+  subscribeQuizAttemptsForQuiz, subscribeQuizAttemptsForTeacher, subscribeTeacherQuizzes, updateQuiz,
 } from "../../lib/exam-data";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
 
 const LABEL = "grid gap-1 text-xs font-bold text-muted";
-const FIELD = "rounded-xl border border-border-subtle bg-white px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
+const FIELD = "rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
 const blankQuestion = () => ({ text: "", options: ["", ""], correctOptionIndex: 0 });
 const blankForm = () => ({ courseId: "", title: "", description: "", timeLimitMinutes: "", maxAttempts: "1", questions: [blankQuestion()] });
 
 function Dialog({ title, children, onClose, wide }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className={`max-h-[92vh] w-full overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ${wide ? "max-w-3xl" : "max-w-lg"}`}>
+      <div className={`max-h-[92vh] w-full overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl ${wide ? "max-w-3xl" : "max-w-lg"}`}>
         <div className="mb-5 flex items-center justify-between gap-4">
           <h2 className="text-lg font-bold text-ink">{title}</h2>
           <button type="button" onClick={onClose} className="text-xl text-muted" aria-label="Close">×</button>
@@ -157,9 +159,12 @@ function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
   );
 }
 
-function ResultsPanel({ quiz, teacherId, onClose }) {
+function ResultsPanel({ quiz, teacherId, isManager, onClose }) {
   const [attempts, setAttempts] = useState([]);
-  useEffect(() => subscribeQuizAttemptsForTeacher(teacherId, quiz.id, setAttempts, () => {}), [teacherId, quiz.id]);
+  useEffect(() => {
+    if (isManager) return subscribeQuizAttemptsForQuiz(quiz.id, setAttempts, () => {});
+    return subscribeQuizAttemptsForTeacher(teacherId, quiz.id, setAttempts, () => {});
+  }, [teacherId, quiz.id, isManager]);
   return (
     <Dialog title={`Results — ${quiz.title}`} onClose={onClose} wide>
       {!attempts.length ? (
@@ -187,7 +192,7 @@ function ResultsPanel({ quiz, teacherId, onClose }) {
   );
 }
 
-export default function TeacherExams({ teacherId }) {
+export default function TeacherExams({ teacherId, isManager = false }) {
   const [courses, setCourses] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
   const [creating, setCreating] = useState(false);
@@ -198,8 +203,14 @@ export default function TeacherExams({ teacherId }) {
   const toast = useToast();
   const confirm = useConfirm();
 
-  useEffect(() => subscribeTeacherCourses(teacherId, setCourses, () => {}), [teacherId]);
-  useEffect(() => subscribeTeacherQuizzes(teacherId, setQuizzes, () => {}), [teacherId]);
+  useEffect(() => {
+    if (isManager) return subscribeCourses(setCourses, () => {});
+    return subscribeTeacherCourses(teacherId, setCourses, () => {});
+  }, [teacherId, isManager]);
+  useEffect(() => {
+    if (isManager) return subscribeAllQuizzes(setQuizzes, () => {});
+    return subscribeTeacherQuizzes(teacherId, setQuizzes, () => {});
+  }, [teacherId, isManager]);
 
   const courseMap = useMemo(() => new Map(courses.map((c) => [c.id, c.title])), [courses]);
 
@@ -212,6 +223,7 @@ export default function TeacherExams({ teacherId }) {
     const key = await loadQuizAnswerKey(quiz.id);
     setEditing({
       id: quiz.id,
+      ownerTeacherId: quiz.teacherId,
       courseId: quiz.courseId,
       title: quiz.title,
       description: quiz.description || "",
@@ -230,7 +242,7 @@ export default function TeacherExams({ teacherId }) {
     setError("");
     try {
       const payload = { ...form, questions: form.questions.map((q) => ({ ...q, correctOptionIndex: Number(q.correctOptionIndex) })) };
-      if (editing) await updateQuiz(editing.id, payload);
+      if (editing) await updateQuiz(editing.id, editing.ownerTeacherId || teacherId, payload);
       else await createQuiz(teacherId, payload);
       close();
       toast.success(editing ? "Exam updated." : "Exam created as a draft.");
@@ -271,7 +283,11 @@ export default function TeacherExams({ teacherId }) {
           <div className="rounded-2xl bg-active p-3"><ClipboardList className="h-7 w-7 text-primary" aria-hidden="true" /></div>
           <div>
             <h2 className="text-2xl font-black sm:text-3xl">Exams &amp; Quizzes</h2>
-            <p className="mt-1 text-sm text-muted">Create exams for your courses — students take them online, graded automatically.</p>
+            <p className="mt-1 text-sm text-muted">
+              {isManager
+                ? "Oversee every exam across the academy — students take them online, graded automatically."
+                : "Create exams for your courses — students take them online, graded automatically."}
+            </p>
           </div>
         </div>
         <button type="button" onClick={openCreate} disabled={!courses.length} className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white disabled:opacity-50">
@@ -279,19 +295,19 @@ export default function TeacherExams({ teacherId }) {
         </button>
       </section>
 
-      {!courses.length && (
+      {!isManager && !courses.length && (
         <p className="rounded-xl bg-warning-soft px-4 py-3 text-sm font-semibold text-warning">You have no assigned courses yet — an exam must belong to one of your courses.</p>
       )}
 
       {!quizzes.length ? (
-        <div className="rounded-3xl border border-dashed border-border-subtle bg-white py-16 text-center">
+        <div className="rounded-3xl border border-dashed border-border-subtle bg-card py-16 text-center">
           <p className="font-bold text-ink">No exams yet.</p>
           <p className="mt-1 text-sm text-muted">Create your first exam to start testing students on a course.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {quizzes.map((quiz) => (
-            <article key={quiz.id} className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-white p-4 shadow-sm">
+            <article key={quiz.id} className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-card p-4 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <b className="block truncate text-ink">{quiz.title}</b>
@@ -326,7 +342,7 @@ export default function TeacherExams({ teacherId }) {
           <QuizForm initial={editing} courses={courses} saving={saving} error={error} onCancel={close} onSubmit={submit} />
         </Dialog>
       )}
-      {viewingResults && <ResultsPanel quiz={viewingResults} teacherId={teacherId} onClose={() => setViewingResults(null)} />}
+      {viewingResults && <ResultsPanel quiz={viewingResults} teacherId={teacherId} isManager={isManager} onClose={() => setViewingResults(null)} />}
     </div>
   );
 }

@@ -133,7 +133,7 @@ function Modal({ title, children, onClose, wide }) {
       aria-modal="true"
     >
       <div
-        className={`max-h-[92vh] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-6 ${wide ? "max-w-2xl" : "max-w-lg"}`}
+        className={`max-h-[92vh] w-full overflow-y-auto rounded-3xl bg-card p-5 shadow-2xl sm:p-6 ${wide ? "max-w-2xl" : "max-w-lg"}`}
       >
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 className="text-lg font-bold text-ink">{title}</h2>
@@ -154,7 +154,7 @@ function Modal({ title, children, onClose, wide }) {
 
 const LABEL = "grid gap-1 text-xs font-bold text-muted";
 const FIELD =
-  "rounded-xl border border-border-subtle bg-white px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
+  "rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
 
 const BLANK_ROOM = {
   name: "",
@@ -352,7 +352,7 @@ function RoomsManager({ rooms, bookings, onNotice }) {
   }
 
   return (
-    <section className="space-y-4 rounded-3xl border border-border-subtle bg-white p-4 shadow-sm md:p-5">
+    <section className="space-y-4 rounded-3xl border border-border-subtle bg-card p-4 shadow-sm md:p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="font-bold text-ink">Rooms</h3>
@@ -1026,8 +1026,7 @@ function CalendarGrid({
   bookings,
   roomFilter,
   resolveRoomName,
-  onSelectDay,
-  onSelectBooking,
+  onCellClick,
   rooms = [],
   density = "compact",
 }) {
@@ -1134,7 +1133,7 @@ function CalendarGrid({
   return (
     <div className="w-full overflow-x-auto rounded-xl border border-border-subtle">
       <div
-        className={`min-w-[1500px] bg-white ${cellText}`}
+        className={`min-w-[1500px] bg-card ${cellText}`}
         style={{
           display: "grid",
           gridTemplateColumns: `160px 80px 100px repeat(${daysInMonth}, 1fr)`,
@@ -1172,7 +1171,7 @@ function CalendarGrid({
               <React.Fragment key={`${roomId}-${slot}`}>
                 {slotIndex === 0 && (
                   <div
-                    className="sticky left-0 z-30 flex items-center justify-center border-b border-r border-slate-300 bg-white font-black text-red-600"
+                    className="sticky left-0 z-30 flex items-center justify-center border-b border-r border-slate-300 bg-card font-black text-red-600"
                     style={{ gridRow: "span 3" }}
                   >
                     {getRoomName(room)}
@@ -1180,7 +1179,7 @@ function CalendarGrid({
                 )}
                 {slotIndex === 0 && (
                   <div
-                    className="sticky left-[160px] z-30 flex items-center justify-center border-b border-r border-slate-300 bg-white font-bold text-purple-700"
+                    className="sticky left-[160px] z-30 flex items-center justify-center border-b border-r border-slate-300 bg-card font-bold text-purple-700"
                     style={{ gridRow: "span 3" }}
                   >
                     {getRoomSize(room)}
@@ -1198,13 +1197,22 @@ function CalendarGrid({
                     className={`relative ${rowMinH} border-b border-r border-slate-200 p-0.5 ${
                       cell.type === "empty" && isWeekend(cell.day)
                         ? "bg-yellow-50/50"
-                        : "bg-white"
+                        : "bg-card"
                     }`}
                   >
                     {cell.type === "booking" ? (
                       <button
                         type="button"
-                        onClick={() => onSelectBooking?.(cell.booking)}
+                        onClick={(event) =>
+                          onCellClick?.({
+                            date: makeDateKey(cell.day),
+                            roomId,
+                            slot,
+                            booking: cell.booking,
+                            x: event.clientX,
+                            y: event.clientY,
+                          })
+                        }
                         style={{
                           backgroundColor: cell.booking.barColor || "#0f2b5c",
                         }}
@@ -1225,8 +1233,17 @@ function CalendarGrid({
                       <button
                         type="button"
                         className="absolute inset-0 h-full w-full hover:bg-slate-100"
-                        onClick={() => onSelectDay?.(makeDateKey(cell.day))}
-                        aria-label={`Select ${makeDateKey(cell.day)}`}
+                        onClick={(event) =>
+                          onCellClick?.({
+                            date: makeDateKey(cell.day),
+                            roomId,
+                            slot,
+                            booking: null,
+                            x: event.clientX,
+                            y: event.clientY,
+                          })
+                        }
+                        aria-label={`Select ${makeDateKey(cell.day)}, ${getRoomName(room)}, ${slot}`}
                       />
                     )}
                   </div>
@@ -1278,7 +1295,7 @@ function LedgerGrid({
               key={day}
               className={`border-b border-border-subtle last:border-0 ${day === today ? "bg-active/40" : ""}`}
             >
-              <td className="sticky left-0 z-10 whitespace-nowrap bg-white p-3 align-top text-xs font-bold text-ink">
+              <td className="sticky left-0 z-10 whitespace-nowrap bg-card p-3 align-top text-xs font-bold text-ink">
                 {prettyDate(day, { weekday: "short", day: "numeric" })}
               </td>
               {columns.map((room) => {
@@ -1346,7 +1363,7 @@ function AgendaList({
 
   if (!filtered.length)
     return (
-      <p className="rounded-2xl border border-dashed border-border-subtle bg-white py-12 text-center text-sm text-muted">
+      <p className="rounded-2xl border border-dashed border-border-subtle bg-card py-12 text-center text-sm text-muted">
         {emptyLabel}
       </p>
     );
@@ -1377,7 +1394,7 @@ function AgendaList({
                   key={booking.id}
                   type="button"
                   onClick={() => onSelectBooking(booking)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-border-subtle bg-white p-3 text-left shadow-sm hover:border-primary"
+                  className="flex w-full items-center gap-3 rounded-2xl border border-border-subtle bg-card p-3 text-left shadow-sm hover:border-primary"
                 >
                   <span
                     className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[10px] font-black ${roomStyle(booking.roomId).chip}`}
@@ -1402,72 +1419,102 @@ function AgendaList({
   );
 }
 
-function DayPanel({
-  day,
-  byRoomDate,
-  columns,
-  canManage,
-  onSelectBooking,
-  onBook,
-  onClose,
-}) {
+// Anchored popup that opens right next to whichever Calendar Matrix cell was
+// clicked, instead of a separate "day panel" rendered below the whole grid.
+// Positioned with fixed coordinates from the click event, then nudged back
+// on-screen (via a ref + layout effect, since its height isn't known until
+// it renders — a plain booking summary is a different height than the
+// "+ Add booking" empty state). Closes on the X button, an outside
+// pointerdown, or Escape — all three wired here so every call site gets
+// them for free.
+function CellPopover({ cell, room, canManage, onSelectBooking, onBook, onClose }) {
+  const ref = useRef(null);
+  const [style, setStyle] = useState({ top: cell.y, left: cell.x, visibility: "hidden" });
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const { innerWidth, innerHeight } = window;
+    const rect = node.getBoundingClientRect();
+    const margin = 12;
+    let left = cell.x + margin;
+    let top = cell.y + margin;
+    if (left + rect.width + margin > innerWidth) left = cell.x - rect.width - margin;
+    if (left < margin) left = Math.min(margin, innerWidth - rect.width - margin);
+    if (top + rect.height + margin > innerHeight) top = cell.y - rect.height - margin;
+    if (top < margin) top = Math.min(margin, innerHeight - rect.height - margin);
+    setStyle({ top: Math.max(margin, top), left: Math.max(margin, left), visibility: "visible" });
+  }, [cell.x, cell.y]);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (ref.current && !ref.current.contains(event.target)) onClose();
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
   return (
-    <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-ink">
-          {prettyDate(day, {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg p-1 text-muted hover:bg-page"
-        >
+    <div
+      ref={ref}
+      style={{ position: "fixed", top: style.top, left: style.left, visibility: style.visibility }}
+      className="z-50 w-72 rounded-2xl border border-border-subtle bg-card p-4 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-ink">
+            {prettyDate(cell.date, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          </p>
+          <p className="mt-0.5 truncate text-xs font-semibold text-muted">
+            {room?.name || "Room"}
+            {cell.slot && (
+              <span className={`ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase ${SLOT_ROW_CLASS[cell.slot]}`}>
+                {cell.slot}
+              </span>
+            )}
+          </p>
+        </div>
+        <button type="button" onClick={onClose} className="shrink-0 rounded-lg p-1 text-muted hover:bg-page" aria-label="Close">
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {columns.map((room) => {
-          const slot = (byRoomDate.get(`${room.id}|${day}`) || [])
-            .slice()
-            .sort((a, b) => a.startTime.localeCompare(b.startTime));
-          return (
-            <div
-              key={room.id}
-              className="rounded-2xl border border-border-subtle p-3"
-            >
-              <p className="mb-2 font-bold text-ink">{room.name}</p>
-              {slot.length ? (
-                <div className="space-y-1.5">
-                  {slot.map((booking) => (
-                    <button
-                      key={booking.id}
-                      type="button"
-                      onClick={() => onSelectBooking(booking)}
-                      className="block w-full rounded-lg bg-page p-2 text-left text-xs font-semibold"
-                    >
-                      {booking.courseTitle} ({timeRange(booking)})
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onBook({ roomId: room.id, date: day })}
-                  className="w-full rounded-lg border border-dashed border-border-subtle p-2 text-xs font-semibold text-success hover:border-primary"
-                >
-                  + Add booking
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </section>
+
+      {cell.booking ? (
+        <button
+          type="button"
+          onClick={() => onSelectBooking(cell.booking)}
+          className="block w-full rounded-xl border border-border-subtle bg-page p-3 text-left"
+        >
+          <b className="block truncate text-sm text-ink">{cell.booking.courseTitle || "Booking"}</b>
+          <span className="mt-1 block text-xs text-muted">{timeRange(cell.booking)}</span>
+          {cell.booking.teacherName && (
+            <span className="mt-0.5 block truncate text-xs text-muted">{cell.booking.teacherName}</span>
+          )}
+          <span className="mt-2 block text-[11px] font-bold text-primary">View details →</span>
+        </button>
+      ) : (
+        <p className="rounded-xl bg-page p-3 text-xs text-muted">No booking yet for this slot.</p>
+      )}
+
+      {canManage && (
+        <button
+          type="button"
+          onClick={() => onBook({ roomId: cell.roomId, date: cell.date, slot: cell.slot })}
+          className="mt-3 w-full rounded-xl border border-dashed border-border-subtle p-2.5 text-xs font-semibold text-success hover:border-primary"
+        >
+          + Add booking
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -1496,7 +1543,7 @@ export default function RoomBooking({ role }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [density, setDensity] = useState("compact");
   const [view, setView] = useState("calendar");
-  const [selectedDay, setSelectedDay] = useState(null);
+  const [cellPopup, setCellPopup] = useState(null);
   const [detail, setDetail] = useState(null);
   const [formState, setFormState] = useState(null);
   const [notice, setNotice] = useState("");
@@ -1644,13 +1691,27 @@ export default function RoomBooking({ role }) {
       (current) =>
         new Date(current.getFullYear(), current.getMonth() + delta, 1),
     );
-    setSelectedDay(null);
+    setCellPopup(null);
   }
 
   function goToday() {
     const d = new Date();
     setCursor(new Date(d.getFullYear(), d.getMonth(), 1));
-    setSelectedDay(ymd(d));
+  }
+
+  // The popup's "+ Add booking" reuses the exact same creation flow as the
+  // top "Book Room" button (openCreate -> the Modal + BookingForm already
+  // wired below) — just pre-filled with whichever room/date/slot was
+  // clicked, instead of a separate booking form living inside the popup.
+  function bookFromPopup({ roomId, date, slot }) {
+    setCellPopup(null);
+    const times = slot ? SLOT_TIMES[slot] : null;
+    openCreate({
+      roomId,
+      date,
+      ...(times ? { startTime: times.startTime, endTime: times.endTime } : {}),
+      ...(slot ? { slotStatus: SLOT_STATUS_DEFAULT[slot] || "" } : {}),
+    });
   }
 
   function openCreate(prefill = {}) {
@@ -1696,7 +1757,7 @@ export default function RoomBooking({ role }) {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-4 rounded-3xl border border-[#f3aaaa] bg-white p-6 text-ink shadow-xl md:flex-row md:items-center md:justify-between">
+      <section className="flex flex-col gap-4 rounded-3xl border border-[#f3aaaa] bg-card p-6 text-ink shadow-xl md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="flex items-center gap-2 text-2xl font-black">
             <DoorOpen className="h-7 w-7 text-primary" /> Room Booking
@@ -1704,7 +1765,7 @@ export default function RoomBooking({ role }) {
           <p className="mt-1 text-sm text-muted">Real-Time Schedule Matrix</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 rounded-full border border-border-subtle bg-white px-3 py-1.5 text-[11px] font-bold">
+          <span className="flex items-center gap-1.5 rounded-full border border-border-subtle bg-card px-3 py-1.5 text-[11px] font-bold">
             {online ? (
               <span className="text-success flex items-center gap-1">
                 <Wifi className="h-3.5 w-3.5" /> Live Sync
@@ -1718,9 +1779,7 @@ export default function RoomBooking({ role }) {
           {canManage && (
             <button
               type="button"
-              onClick={() =>
-                openCreate(selectedDay ? { date: selectedDay } : {})
-              }
+              onClick={() => openCreate({})}
               className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white"
             >
               <Plus className="h-4 w-4" /> Book Room
@@ -1736,7 +1795,7 @@ export default function RoomBooking({ role }) {
           { label: "Bookings This Month", value: stats.bookingCount, icon: GraduationCap, tone: "bg-success-soft text-success" },
           { label: "Occupancy", value: `${stats.occupancy}%`, icon: CalendarDays, tone: "bg-active text-primary" },
         ].map((card) => (
-          <div key={card.label} className="flex items-center justify-between rounded-xl border border-border-subtle bg-white p-3 shadow-sm">
+          <div key={card.label} className="flex items-center justify-between rounded-xl border border-border-subtle bg-card p-3 shadow-sm">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{card.label}</p>
               <p className="text-lg font-black text-ink sm:text-xl">{card.value}</p>
@@ -1748,7 +1807,7 @@ export default function RoomBooking({ role }) {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-subtle bg-white p-2.5 text-xs shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-subtle bg-card p-2.5 text-xs shadow-sm">
         <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           <span className="text-[10px] font-bold uppercase tracking-wider text-subtle">Slots:</span>
           <span className="flex items-center gap-1 font-semibold"><span className="h-2.5 w-2.5 rounded-sm bg-purple-800" />Morning</span>
@@ -1798,7 +1857,7 @@ export default function RoomBooking({ role }) {
       {tab === "rooms" && canManage ? (
         <RoomsManager rooms={rooms} bookings={bookings} onNotice={setNotice} />
       ) : (
-        <section className="space-y-4 rounded-3xl border border-border-subtle bg-white p-4 shadow-sm">
+        <section className="space-y-4 rounded-3xl border border-border-subtle bg-card p-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <button
@@ -1848,14 +1907,14 @@ export default function RoomBooking({ role }) {
                   <button
                     type="button"
                     onClick={() => setDensity("compact")}
-                    className={`rounded px-2 py-1 font-semibold ${density === "compact" ? "bg-white text-ink shadow-sm" : "text-muted"}`}
+                    className={`rounded px-2 py-1 font-semibold ${density === "compact" ? "bg-card text-ink shadow-sm" : "text-muted"}`}
                   >
                     Fit
                   </button>
                   <button
                     type="button"
                     onClick={() => setDensity("normal")}
-                    className={`rounded px-2 py-1 font-semibold ${density === "normal" ? "bg-white text-ink shadow-sm" : "text-muted"}`}
+                    className={`rounded px-2 py-1 font-semibold ${density === "normal" ? "bg-card text-ink shadow-sm" : "text-muted"}`}
                   >
                     Standard
                   </button>
@@ -1897,8 +1956,7 @@ export default function RoomBooking({ role }) {
                   bookings={monthOverlapBookings}
                   roomFilter={roomFilter}
                   resolveRoomName={resolveRoomName}
-                  onSelectDay={setSelectedDay}
-                  onSelectBooking={setDetail}
+                  onCellClick={setCellPopup}
                   rooms={activeRoomList}
                   density={density}
                 />
@@ -1927,15 +1985,17 @@ export default function RoomBooking({ role }) {
         </section>
       )}
 
-      {selectedDay && (
-        <DayPanel
-          day={selectedDay}
-          byRoomDate={byRoomDate}
-          columns={columns}
+      {cellPopup && (
+        <CellPopover
+          cell={cellPopup}
+          room={roomById.get(cellPopup.roomId)}
           canManage={canManage}
-          onSelectBooking={setDetail}
-          onBook={openCreate}
-          onClose={() => setSelectedDay(null)}
+          onSelectBooking={(booking) => {
+            setCellPopup(null);
+            setDetail(booking);
+          }}
+          onBook={bookFromPopup}
+          onClose={() => setCellPopup(null)}
         />
       )}
 

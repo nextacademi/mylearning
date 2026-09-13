@@ -22,7 +22,7 @@ export default function AiAssistantWidget() {
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {open && (
-        <div className="flex h-[75vh] max-h-[650px] w-[calc(100vw-2rem)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-2xl transition-all duration-200 ease-out sm:h-[600px]">
+        <div className="flex h-[75vh] max-h-[650px] w-[calc(100vw-2rem)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-border-subtle bg-card shadow-2xl transition-all duration-200 ease-out sm:h-[600px]">
           <div className="flex items-center justify-between gap-2 bg-linear-to-br from-primary to-primary-hover px-4 py-3 text-white">
             <div className="flex items-center gap-2">
               <span className="grid h-7 w-7 place-items-center rounded-full bg-white/20">

@@ -51,7 +51,7 @@ function useOnlineStatus() {
 
 function StatCard({ label, value, sub, icon: Icon, loading, accent = "text-ink" }) {
   return (
-    <article className="rounded-2xl border border-border-subtle/70 bg-white p-4 shadow-sm sm:p-5">
+    <article className="rounded-2xl border border-border-subtle/70 bg-card p-4 shadow-sm sm:p-5">
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>
         {Icon && <Icon className="h-4 w-4 text-subtle" aria-hidden="true" />}
@@ -94,7 +94,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
           <h2 className="text-2xl font-extrabold md:text-3xl">Welcome, {name}</h2>
           <p className="mt-2 max-w-xl text-xs leading-relaxed text-muted">{greeting}</p>
         </div>
-        <div className="flex items-center gap-2 self-start rounded-full border border-border-subtle bg-white px-3 py-1.5 text-[11px] font-bold shadow-sm">
+        <div className="flex items-center gap-2 self-start rounded-full border border-border-subtle bg-card px-3 py-1.5 text-[11px] font-bold shadow-sm">
           {online ? (
             <>
               <Wifi className="h-3.5 w-3.5 text-success" aria-hidden="true" />
@@ -229,7 +229,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
 
       {/* Course status summary + quick actions */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.4fr]">
-        <section className="rounded-xl border border-border-subtle bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-border-subtle bg-card p-5 shadow-sm">
           <h3 className="mb-4 text-sm font-bold text-ink">Courses</h3>
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
@@ -245,7 +245,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
           </div>
         </section>
 
-        <section className="rounded-xl border border-border-subtle bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-border-subtle bg-card p-5 shadow-sm">
           <h3 className="mb-4 text-sm font-bold text-ink">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {quickActions.map((action) => (
@@ -302,7 +302,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
       </div>
 
       {/* Workspace modules */}
-      <section className="rounded-3xl border border-border-subtle/70 bg-white p-5 shadow-sm md:p-6">
+      <section className="rounded-3xl border border-border-subtle/70 bg-card p-5 shadow-sm md:p-6">
         <div className="mb-5">
           <h2 className="font-bold text-ink">Workspace</h2>
           <p className="mt-1 text-xs text-muted">Everything available for your student account.</p>
@@ -317,7 +317,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
                 activeModule === module ? "border-primary bg-active" : "border-border-subtle bg-page/50 hover:border-red-line hover:bg-active/50"
               }`}
             >
-              <span className={`grid h-11 w-11 place-items-center rounded-xl bg-white shadow-sm transition group-hover:bg-primary group-hover:text-white ${activeModule === module ? "bg-primary text-white" : "text-muted"}`}>
+              <span className={`grid h-11 w-11 place-items-center rounded-xl bg-card shadow-sm transition group-hover:bg-primary group-hover:text-white ${activeModule === module ? "bg-primary text-white" : "text-muted"}`}>
                 <SidebarIcon name={module} className="h-6 w-6" />
               </span>
               <span className="text-[11px] font-bold text-muted">{module}</span>
@@ -328,7 +328,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
 
       {/* Upcoming schedule + recent activity */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-border-subtle/70 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-border-subtle/70 bg-card p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-bold text-ink">Upcoming Schedule</h2>
             <button type="button" onClick={() => onNavigate("Events")} className="flex items-center gap-1 text-xs font-bold text-primary">
@@ -362,7 +362,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
           )}
         </section>
 
-        <section className="rounded-3xl border border-border-subtle/70 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-border-subtle/70 bg-card p-6 shadow-sm">
           <h2 className="mb-4 font-bold text-ink">Recent Activity</h2>
           {d.loading ? (
             <p className="py-8 text-center text-sm text-muted">Loading activity...</p>
@@ -394,7 +394,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
 
 function HighlightCard({ title, icon: Icon, empty, loading, item, onView, renderItem }) {
   return (
-    <section className="rounded-3xl border border-border-subtle/70 bg-white p-6 shadow-sm">
+    <section className="rounded-3xl border border-border-subtle/70 bg-card p-6 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
           <Icon className="h-4 w-4 text-primary" aria-hidden="true" />

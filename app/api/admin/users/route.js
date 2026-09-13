@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
+import { getCachedUserSnapshot, invalidateUserProfileCache } from "../../../../lib/server/cached-profile";
 import { ensureUserId } from "../../../../lib/server/user-id";
 
 export const runtime = "nodejs";
@@ -42,7 +43,7 @@ async function requireManager(request) {
   const auth = getAdminAuth();
   const db = getAdminDb();
   const decoded = await auth.verifyIdToken(token);
-  const profile = await db.collection("users").doc(decoded.uid).get();
+  const profile = await getCachedUserSnapshot(db, decoded.uid);
   const actor = profile.data() || {};
   if (!profile.exists || actor.active === false || !managers.has(actor.role)) {
     return {
@@ -148,6 +149,7 @@ export async function PATCH(request) {
       }
     }
     await targetRef.update({ role, updatedAt: FieldValue.serverTimestamp() });
+    await invalidateUserProfileCache(uid);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return failure("role update", error);
@@ -199,6 +201,7 @@ export async function DELETE(request) {
       if (authError?.code !== "auth/user-not-found") throw authError;
     }
     await targetRef.delete();
+    await invalidateUserProfileCache(uid);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return failure("user deletion", error);

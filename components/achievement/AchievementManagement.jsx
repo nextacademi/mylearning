@@ -84,7 +84,7 @@ export default function AchievementManagement() {
         </div>
       </section>
 
-      <nav className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-white p-2 shadow-sm">
+      <nav className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-2 shadow-sm">
         {tabs.map((item) => (
           <button
             key={item}
@@ -212,7 +212,7 @@ function TemplatesTab({ templates, onChanged }) {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {templates.map((template) => (
-          <article key={template.id} className="overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-sm">
+          <article key={template.id} className="overflow-hidden rounded-2xl border border-border-subtle bg-card shadow-sm">
             <div className="aspect-video w-full bg-page">
               {template.backgroundUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -246,7 +246,7 @@ function TemplatesTab({ templates, onChanged }) {
 
       {editing && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-          <div className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-lg space-y-4 rounded-2xl bg-card p-6 shadow-xl">
             <h4 className="text-sm font-bold text-ink">{editing === "new" ? "New Certificate Template" : "Edit Certificate Template"}</h4>
             <label className="grid gap-1 text-xs font-bold text-muted">
               Name
@@ -404,7 +404,7 @@ function VerificationTab() {
   }
 
   return (
-    <section className="max-w-lg space-y-4 rounded-2xl border border-border-subtle bg-white p-6 shadow-sm">
+    <section className="max-w-lg space-y-4 rounded-2xl border border-border-subtle bg-card p-6 shadow-sm">
       <h3 className="text-sm font-bold text-ink">Verify a Certificate</h3>
       <div className="flex gap-2">
         <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Enter Certificate ID" className="flex-1 rounded-xl border border-border-subtle px-3 py-2 text-sm" />

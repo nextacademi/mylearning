@@ -77,7 +77,7 @@ export default function QrAttendanceScanner() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_.8fr]">
-        <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
           <div className="mb-4 flex items-center gap-2">
             <QrCode className="h-5 w-5 text-primary" aria-hidden="true" />
             <b className="text-sm text-ink">Camera Scanner</b>
@@ -110,7 +110,7 @@ export default function QrAttendanceScanner() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
           <b className="mb-3 block text-sm text-ink">Result</b>
           {busy ? (
             <p className="text-sm text-muted">Checking you in...</p>

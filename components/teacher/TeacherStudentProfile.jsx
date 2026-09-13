@@ -18,14 +18,14 @@ import IdCardPrint from "./IdCardPrint";
 
 function Empty({ children }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border-subtle bg-white p-8 text-center text-sm text-muted">
+    <div className="rounded-2xl border border-dashed border-border-subtle bg-card p-8 text-center text-sm text-muted">
       {children}
     </div>
   );
 }
 function Panel({ title, children }) {
   return (
-    <section className="mt-5 rounded-3xl border border-border-subtle bg-white p-5 shadow-sm">
+    <section className="mt-5 rounded-3xl border border-border-subtle bg-card p-5 shadow-sm">
       <h2 className="mb-4 font-bold text-ink">{title}</h2>
       {children}
     </section>
@@ -127,7 +127,7 @@ export default function TeacherStudentProfile() {
                 </div>
                 <button
                   onClick={() => setShowIdCard((current) => !current)}
-                  className="rounded-xl border border-border-subtle bg-white px-4 py-2 text-xs font-bold text-primary"
+                  className="rounded-xl border border-border-subtle bg-card px-4 py-2 text-xs font-bold text-primary"
                 >
                   {showIdCard ? "Hide ID card" : "Print ID card"}
                 </button>
@@ -146,15 +146,15 @@ export default function TeacherStudentProfile() {
               )}
 
               <section className="mt-5 grid gap-4 md:grid-cols-3">
-                <article className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+                <article className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-subtle">Enrollments</span>
                   <strong className="mt-2 block text-3xl">{enrollments.length}</strong>
                 </article>
-                <article className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+                <article className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-subtle">Attendance rate</span>
                   <strong className="mt-2 block text-3xl">{attendanceRate == null ? "—" : `${attendanceRate}%`}</strong>
                 </article>
-                <article className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+                <article className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-subtle">Status</span>
                   <strong className="mt-2 block text-lg">{student.active === false ? "Inactive" : "Active"}</strong>
                 </article>

@@ -78,7 +78,7 @@ export default function AdmissionsManagement() {
         <StatCard label="Unpaid Admissions" value={summary.unpaid} loading={loading} icon={CircleAlert} iconBg="bg-active" iconColor="text-primary" valueColor="text-primary" />
       </section>
 
-      <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+      <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
         {error && <p className="mb-3 rounded-xl bg-active p-3 text-xs text-primary">{error}</p>}
         <DataTable
           title="admissions"

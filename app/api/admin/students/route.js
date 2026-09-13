@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
+import { getCachedUserSnapshot, invalidateUserProfileCache } from "../../../../lib/server/cached-profile";
+import { cached, cacheDel } from "../../../../lib/redis-cache";
 import { attendancePercent } from "../../../../lib/attendance";
 import { generateUserId, ensureUserId } from "../../../../lib/server/user-id";
 
@@ -22,33 +24,49 @@ async function requireManager(request) {
   if (!token) return { denied: NextResponse.json({ message: "Administrator access is required." }, { status: 401 }) };
   const auth = getAdminAuth(); const db = getAdminDb();
   const decoded = await auth.verifyIdToken(token);
-  const profile = await db.collection("users").doc(decoded.uid).get();
+  const profile = await getCachedUserSnapshot(db, decoded.uid);
   if (!profile.exists || profile.data().active === false || !managers.has(profile.data().role)) return { denied: NextResponse.json({ message: "Administrator access is required." }, { status: 403 }) };
   return { auth, db, adminUid: decoded.uid };
 }
 
+// Both branches below are identical for every Admin/Director who loads this
+// page — a 6-collection fan-out read (or a 3-collection one for `?resource=
+// courses`) re-run on every tab load/refresh with no per-user variation.
+// Cached for 30s: short enough that a grade/attendance/enrollment change
+// elsewhere shows up within one page-refresh cycle, long enough to collapse
+// the "whole admin team has this tab open" case into one real Firestore
+// read instead of one per viewer. The unified-User-ID backfill is excluded
+// from the cached payload (kept live) since it's a rare, idempotent,
+// self-healing write path, not something worth caching around.
 export async function GET(request) {
   try {
     const access = await requireManager(request); if (access.denied) return access.denied;
     const { db } = access;
     if (new URL(request.url).searchParams.get("resource") === "courses") {
-      const [courses, classes, teachers] = await Promise.all([db.collection("courses").get(), db.collection("classes").get(), db.collection("users").where("role", "==", "Teacher").get()]);
-      const available = new Set(classes.docs.map(plain).filter((item) => !inactiveClasses.has(item.status)).map((item) => item.courseId));
-      const byId = new Map(teachers.docs.map((item) => [item.id, plain(item)]));
-      return NextResponse.json({ courses: courses.docs.map(plain).map((item) => ({ id: item.id, title: item.title || item.name || "Untitled course", enrollmentAvailable: available.has(item.id), teachers: (item.teacherIds || []).map((id) => byId.get(id)).filter(Boolean).map((teacher) => ({ id: teacher.id, name: teacher.displayName || teacher.email || "Teacher" })) })).sort((a, b) => a.title.localeCompare(b.title)) });
+      const payload = await cached("admin-students:courses", 30, async () => {
+        const [courses, classes, teachers] = await Promise.all([db.collection("courses").get(), db.collection("classes").get(), db.collection("users").where("role", "==", "Teacher").get()]);
+        const available = new Set(classes.docs.map(plain).filter((item) => !inactiveClasses.has(item.status)).map((item) => item.courseId));
+        const byId = new Map(teachers.docs.map((item) => [item.id, plain(item)]));
+        return { courses: courses.docs.map(plain).map((item) => ({ id: item.id, title: item.title || item.name || "Untitled course", enrollmentAvailable: available.has(item.id), teachers: (item.teacherIds || []).map((id) => byId.get(id)).filter(Boolean).map((teacher) => ({ id: teacher.id, name: teacher.displayName || teacher.email || "Teacher" })) })).sort((a, b) => a.title.localeCompare(b.title)) };
+      });
+      return NextResponse.json(payload);
     }
-    const [students, enrollmentDocs, courseDocs, assignments, submissions, attendance] = await Promise.all([db.collection("users").where("role", "==", "Student").get(), db.collection("enrollments").get(), db.collection("courses").get(), db.collection("assignments").get(), db.collection("submissions").get(), db.collection("attendance").get()]);
-    const enrollments = enrollmentDocs.docs.map(plain), courseMap = new Map(courseDocs.docs.map((item) => [item.id, plain(item)])), assignmentRows = assignments.docs.map(plain), submissionRows = submissions.docs.map(plain), attendanceRows = attendance.docs.map(plain);
-    const rows = students.docs.map(plain).map((student) => {
-      const own = enrollments.filter((item) => item.studentId === student.id), courseIds = new Set(own.map((item) => item.courseId).filter(Boolean));
-      const totalAssignments = assignmentRows.filter((item) => courseIds.has(item.courseId));
-      const completed = new Set(submissionRows.filter((item) => item.studentId === student.id && courseIds.has(item.courseId)).map((item) => item.assignmentId).filter(Boolean));
-      const ownAttendance = attendanceRows.filter((item) => item.studentId === student.id);
-      return { ...student, userId: student.userId || null, courseNames: [...courseIds].map((id) => courseMap.get(id)?.title || "Course unavailable").join(", ") || null, progress: percent(completed.size, totalAssignments.length), attendance: attendancePercent(ownAttendance), createdAt: isoDate(student.createdAt) };
+    const rows = await cached("admin-students:list", 30, async () => {
+      const [students, enrollmentDocs, courseDocs, assignments, submissions, attendance] = await Promise.all([db.collection("users").where("role", "==", "Student").get(), db.collection("enrollments").get(), db.collection("courses").get(), db.collection("assignments").get(), db.collection("submissions").get(), db.collection("attendance").get()]);
+      const enrollments = enrollmentDocs.docs.map(plain), courseMap = new Map(courseDocs.docs.map((item) => [item.id, plain(item)])), assignmentRows = assignments.docs.map(plain), submissionRows = submissions.docs.map(plain), attendanceRows = attendance.docs.map(plain);
+      return students.docs.map(plain).map((student) => {
+        const own = enrollments.filter((item) => item.studentId === student.id), courseIds = new Set(own.map((item) => item.courseId).filter(Boolean));
+        const totalAssignments = assignmentRows.filter((item) => courseIds.has(item.courseId));
+        const completed = new Set(submissionRows.filter((item) => item.studentId === student.id && courseIds.has(item.courseId)).map((item) => item.assignmentId).filter(Boolean));
+        const ownAttendance = attendanceRows.filter((item) => item.studentId === student.id);
+        return { ...student, userId: student.userId || null, courseNames: [...courseIds].map((id) => courseMap.get(id)?.title || "Course unavailable").join(", ") || null, progress: percent(completed.size, totalAssignments.length), attendance: attendancePercent(ownAttendance), createdAt: isoDate(student.createdAt) };
+      });
     });
     // Belt-and-suspenders backfill for any Student doc still missing the
     // unified User ID (legacy accounts pre-dating this field) — same
-    // pattern as lib/server/enrollment-core.js.
+    // pattern as lib/server/enrollment-core.js. Runs against the cached
+    // rows in-memory only; doesn't invalidate the cache since it patches
+    // the same value already served.
     await Promise.all(rows.filter((row) => !row.userId).map((row) => ensureUserId(db, row.id).then((userId) => { row.userId = userId; })));
     return NextResponse.json({ students: rows });
   } catch (error) { return failure("student-list request", error); }
@@ -69,7 +87,7 @@ export async function POST(request) {
       const userId = await generateUserId(access.db, new Date()), now = FieldValue.serverTimestamp(), teacherIds = [...new Set([...(course.data().teacherIds || []), ...(selectedClass.teacherIds || [])])], batch = access.db.batch();
       batch.create(access.db.collection("users").doc(createdUser.uid), { uid: createdUser.uid, userId, email: createdUser.email || normalizedEmail, displayName: displayName.trim(), phone: phone.trim(), photoURL: "", role: "Student", active: true, status: "active", teacherIds, createdAt: now, updatedAt: now });
       batch.create(access.db.collection("enrollments").doc(`${courseId}_${createdUser.uid}`), { courseId, classId: selectedClass.id, studentId: createdUser.uid, status: "active", enrolledAt: now, completedAt: null });
-      await batch.commit(); return NextResponse.json({ uid: createdUser.uid, userId }, { status: 201 });
+      await batch.commit(); await cacheDel("admin-students:list"); return NextResponse.json({ uid: createdUser.uid, userId }, { status: 201 });
     } catch (error) { try { await access.auth.deleteUser(createdUser.uid); } catch (rollbackError) { console.error("[students-api] rollback failed", { code: rollbackError?.code || "unknown" }); } throw error; }
   } catch (error) {
     const known = { "auth/email-already-exists": "An account already exists for this email.", "auth/invalid-email": "Enter a valid email address.", "auth/invalid-password": "Use a password with at least six characters." };
@@ -102,6 +120,8 @@ export async function PATCH(request) {
       updatedAt: FieldValue.serverTimestamp(),
     });
     if (typeof displayName === "string" || typeof active === "boolean") await access.auth.updateUser(uid, { ...(typeof displayName === "string" ? { displayName: displayName.trim() } : {}), ...(typeof active === "boolean" ? { disabled: !active } : {}) });
+    await cacheDel("admin-students:list");
+    if (typeof active === "boolean" || approving || rejecting) await invalidateUserProfileCache(uid);
     if (approving) {
       // Approval is the moment a member becomes eligible for the D Card —
       // ensure their unified User ID exists right now (idempotent: never

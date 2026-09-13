@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
+import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { parseDocx } from "../../../../lib/server/word-import-core";
 
 export const runtime = "nodejs";
@@ -13,7 +14,7 @@ async function requireManager(request) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return { denied: NextResponse.json({ message: "Administrator access is required." }, { status: 401 }) };
   const decoded = await getAdminAuth().verifyIdToken(token);
-  const snapshot = await getAdminDb().collection("users").doc(decoded.uid).get();
+  const snapshot = await getCachedUserSnapshot(getAdminDb(), decoded.uid);
   const profile = snapshot.data() || {};
   if (!snapshot.exists || profile.active === false || !["Admin", "Director"].includes(profile.role)) {
     return { denied: NextResponse.json({ message: "Administrator access is required." }, { status: 403 }) };

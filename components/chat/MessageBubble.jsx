@@ -64,7 +64,7 @@ export default function MessageBubble({ item, mine, senderName, onReply, onDelet
         </div>
       )}
       <div
-        className={`max-w-[75%] px-3 py-2 text-[11px] shadow-sm transition-transform ${mine ? "rounded-2xl rounded-br-md bg-linear-to-br from-primary to-primary-hover text-white" : "rounded-2xl rounded-bl-md border border-border-subtle bg-white text-ink"}`}
+        className={`max-w-[75%] px-3 py-2 text-[11px] shadow-sm transition-transform ${mine ? "rounded-2xl rounded-br-md bg-linear-to-br from-primary to-primary-hover text-white" : "rounded-2xl rounded-bl-md border border-border-subtle bg-card text-ink"}`}
       >
         {!mine && senderName && <p className="mb-0.5 text-[10px] font-bold text-primary">{senderName}</p>}
         <ReplyPreview item={item} onJumpTo={onJumpTo} tone={mine ? "mine" : "theirs"} />

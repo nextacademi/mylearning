@@ -108,11 +108,11 @@ function PriceLine({ course }) {
 }
 
 function Dialog({ title, children, close }) {
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true"><div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"><div className="mb-5 flex justify-between"><h2 className="text-lg font-bold">{title}</h2><button type="button" onClick={close} className="text-xl text-muted" aria-label="Close">×</button></div>{children}</div></div>;
+  return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true"><div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl"><div className="mb-5 flex justify-between"><h2 className="text-lg font-bold">{title}</h2><button type="button" onClick={close} className="text-xl text-muted" aria-label="Close">×</button></div>{children}</div></div>;
 }
 function TeacherTrainingCard({ course }) {
   return (
-    <article className="flex flex-col overflow-hidden rounded-3xl border border-border-subtle bg-white shadow-sm">
+    <article className="flex flex-col overflow-hidden rounded-3xl border border-border-subtle bg-card shadow-sm">
       {course.thumbnailUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={course.thumbnailUrl} alt={course.title} className="h-36 w-full object-cover" />
@@ -182,7 +182,7 @@ function TrainingThumbnail({ course }) {
 }
 function AdminTrainingCard({ course, canManage, onEdit }) {
   return (
-    <article className="flex flex-col overflow-hidden rounded-3xl border border-border-subtle bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className="flex flex-col overflow-hidden rounded-3xl border border-border-subtle bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <TrainingThumbnail course={course} />
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex items-center justify-between gap-2">
@@ -395,25 +395,25 @@ export default function TrainingManagement({ role }) {
   }
 
   return <div className="space-y-6">
-    <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl"><div><h2 className="text-3xl font-black">Training</h2><p className="mt-2 text-sm text-muted">{isTeacher ? "Your assigned offline classroom trainings." : "Manage offline classroom trainings, teachers, batches, and enrolled students."}</p></div>{data.canManage && <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setWordOpen(true)} className="rounded-xl border border-border-subtle bg-white px-4 py-3 text-xs font-bold text-ink">Import from Word</button><button type="button" onClick={() => open(null)} className="rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white">Add Training</button></div>}</section>
+    <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl"><div><h2 className="text-3xl font-black">Training</h2><p className="mt-2 text-sm text-muted">{isTeacher ? "Your assigned offline classroom trainings." : "Manage offline classroom trainings, teachers, batches, and enrolled students."}</p></div>{data.canManage && <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setWordOpen(true)} className="rounded-xl border border-border-subtle bg-card px-4 py-3 text-xs font-bold text-ink">Import from Word</button><button type="button" onClick={() => open(null)} className="rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white">Add Training</button></div>}</section>
     {notice && <p className="rounded-xl bg-success-soft p-4 text-sm text-success">{notice}</p>}
     {error && !editing && !adding && <p className="rounded-xl bg-active p-4 text-sm text-primary">{error}</p>}
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[["Total Training", counts.total], ["Active", counts.active], ["Upcoming", counts.upcoming], ["Total Enrolled", counts.enrolled]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p><p className="mt-2 text-2xl font-extrabold">{loading ? "—" : value}</p></article>)}</section>
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[["Total Training", counts.total], ["Active", counts.active], ["Upcoming", counts.upcoming], ["Total Enrolled", counts.enrolled]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p><p className="mt-2 text-2xl font-extrabold">{loading ? "—" : value}</p></article>)}</section>
     {!isTeacher && (
       <div className="flex justify-end">
         <div className="inline-flex overflow-hidden rounded-xl border border-border-subtle">
-          <button type="button" onClick={() => setViewMode("table")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold ${viewMode === "table" ? "bg-success text-white" : "bg-white text-muted"}`}><Table2 className="h-3.5 w-3.5" /> Table</button>
-          <button type="button" onClick={() => setViewMode("cards")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold ${viewMode === "cards" ? "bg-success text-white" : "bg-white text-muted"}`}><LayoutGrid className="h-3.5 w-3.5" /> Cards</button>
+          <button type="button" onClick={() => setViewMode("table")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold ${viewMode === "table" ? "bg-success text-white" : "bg-card text-muted"}`}><Table2 className="h-3.5 w-3.5" /> Table</button>
+          <button type="button" onClick={() => setViewMode("cards")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold ${viewMode === "cards" ? "bg-success text-white" : "bg-card text-muted"}`}><LayoutGrid className="h-3.5 w-3.5" /> Cards</button>
         </div>
       </div>
     )}
 
     {!isTeacher && viewMode === "table" ? (
-      <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+      <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
         {loading ? <p className="py-10 text-center text-sm text-muted">Loading training...</p> : <TrainingTable courses={data.courses} canManage={data.canManage} onEdit={open} />}
       </section>
     ) : (
-      <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6"><div className="mb-5 flex flex-wrap gap-3"><label className="relative min-w-56 flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-subtle"/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search training, ID, or teacher" className="w-full rounded-xl border border-border-subtle bg-page py-2 pl-9 pr-3 text-sm"/></label><select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-xl border border-border-subtle px-3 py-2 text-sm">{statuses.map((item) => <option key={item}>{item}</option>)}</select>{data.canManage && <select value={teacher} onChange={(event) => setTeacher(event.target.value)} className="rounded-xl border border-border-subtle px-3 py-2 text-sm"><option value="All">All teachers</option>{data.teachers.map((item) => <option value={item.id} key={item.id}>{item.displayName || item.email || item.id}</option>)}</select>}</div>
+      <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6"><div className="mb-5 flex flex-wrap gap-3"><label className="relative min-w-56 flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-subtle"/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search training, ID, or teacher" className="w-full rounded-xl border border-border-subtle bg-page py-2 pl-9 pr-3 text-sm"/></label><select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-xl border border-border-subtle px-3 py-2 text-sm">{statuses.map((item) => <option key={item}>{item}</option>)}</select>{data.canManage && <select value={teacher} onChange={(event) => setTeacher(event.target.value)} className="rounded-xl border border-border-subtle px-3 py-2 text-sm"><option value="All">All teachers</option>{data.teachers.map((item) => <option value={item.id} key={item.id}>{item.displayName || item.email || item.id}</option>)}</select>}</div>
         {loading ? (
           <p className="py-10 text-center text-sm text-muted">{isTeacher ? "Loading assigned trainings..." : "Loading training..."}</p>
         ) : courses.length ? (

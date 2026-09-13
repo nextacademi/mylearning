@@ -11,7 +11,7 @@ export default function AccountPendingScreen({ status, onLogout }) {
 
   return (
     <div className="grid min-h-screen place-items-center bg-page p-4">
-      <div className="w-full max-w-sm rounded-3xl border border-border-subtle bg-white p-8 text-center shadow-sm">
+      <div className="w-full max-w-sm rounded-3xl border border-border-subtle bg-card p-8 text-center shadow-sm">
         <span
           className={`mx-auto grid h-14 w-14 place-items-center rounded-full ${rejected ? "bg-active text-primary" : "bg-warning-soft text-warning"}`}
         >

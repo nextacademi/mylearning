@@ -237,7 +237,7 @@ export default function ClassSessionsPanel({ course, classes, canManage, isAssig
 
       {editing && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-          <div className="w-full max-w-md space-y-3 rounded-2xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md space-y-3 rounded-2xl bg-card p-6 shadow-xl">
             <h4 className="text-sm font-bold text-ink">{editing.isNew ? "Create Class Session" : "Edit Class Session"}</h4>
             <label className="grid gap-1 text-xs font-bold text-muted">
               Class Name / Number

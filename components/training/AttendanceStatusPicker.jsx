@@ -32,7 +32,7 @@ export default function AttendanceStatusPicker({ value, onChange }) {
             className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
               selected
                 ? `${status.selectedClass} shadow-sm`
-                : "border-border-subtle bg-white text-muted hover:bg-page"
+                : "border-border-subtle bg-card text-muted hover:bg-page"
             }`}
           >
             {selected && <Check className="h-3 w-3" aria-hidden="true" />}

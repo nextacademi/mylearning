@@ -18,7 +18,7 @@ function Bubble({ role, text, onCopy }) {
         </span>
       )}
       <div className="max-w-[82%]">
-        <div className={`whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${mine ? "rounded-br-md bg-linear-to-br from-primary to-primary-hover text-white" : "rounded-bl-md border border-border-subtle bg-white text-ink"}`}>
+        <div className={`whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${mine ? "rounded-br-md bg-linear-to-br from-primary to-primary-hover text-white" : "rounded-bl-md border border-border-subtle bg-card text-ink"}`}>
           {text}
         </div>
         {!mine && onCopy && (
@@ -119,7 +119,7 @@ export default function AiAssistantPanel() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white">
+    <div className="flex h-full flex-col overflow-hidden bg-card">
       <div className="flex items-center justify-between gap-2 border-b border-border-subtle bg-page/60 px-2 py-1.5">
         <span className="text-[9px] text-subtle">{messages.length - 1} message{messages.length - 1 === 1 ? "" : "s"}</span>
         <div className="flex items-center gap-1">
@@ -140,14 +140,14 @@ export default function AiAssistantPanel() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="flex items-center gap-2 border-t border-border-subtle bg-white p-2.5">
+      <div className="flex items-center gap-2 border-t border-border-subtle bg-card p-2.5">
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask anything about your LMS..."
           disabled={busy}
-          className="flex-1 rounded-full border-none bg-page px-4 py-2.5 text-xs outline-none ring-1 ring-transparent transition focus:bg-white focus:ring-2 focus:ring-primary"
+          className="flex-1 rounded-full border-none bg-page px-4 py-2.5 text-xs outline-none ring-1 ring-transparent transition focus:bg-card focus:ring-2 focus:ring-primary"
         />
         <button
           type="button"

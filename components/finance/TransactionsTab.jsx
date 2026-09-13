@@ -81,7 +81,7 @@ export default function TransactionsTab({ payments, expenses, income = [], loadi
   ], []);
 
   return (
-    <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+    <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs font-bold text-muted">
         {typeFilters.map((item) => (
           <button key={item} type="button" onClick={() => setTypeFilter(item)} className={`rounded-full px-3 py-1.5 transition ${typeFilter === item ? "bg-success text-white" : "bg-page text-muted hover:text-ink"}`}>{item}</button>

@@ -47,7 +47,7 @@ const KIND_TONES = {
 function Modal({ title, children, onClose, wide }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className={`max-h-[92vh] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-6 ${wide ? "max-w-2xl" : "max-w-md"}`}>
+      <div className={`max-h-[92vh] w-full overflow-y-auto rounded-3xl bg-card p-5 shadow-2xl sm:p-6 ${wide ? "max-w-2xl" : "max-w-md"}`}>
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 className="text-lg font-bold text-ink">{title}</h2>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-muted hover:bg-page" aria-label="Close"><X className="h-5 w-5" /></button>
@@ -145,7 +145,7 @@ function DocumentForm({ initial, editing, data, canManagerControls, lockedCourse
   }
 
   const label = "grid gap-1 text-xs font-bold text-muted";
-  const field = "rounded-xl border border-border-subtle bg-white px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
+  const field = "rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
 
   return (
     <form onSubmit={submit} className="space-y-4">
@@ -173,7 +173,7 @@ function DocumentForm({ initial, editing, data, canManagerControls, lockedCourse
           type="file"
           accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.zip,image/*"
           onChange={(event) => setFile(event.target.files?.[0] || null)}
-          className="rounded-xl border border-border-subtle bg-white px-3 py-2 text-xs"
+          className="rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs"
         />
         {editing && !file && editing.fileName && <span className="text-[11px] text-subtle">Current: {editing.fileName}</span>}
         {file && <span className="text-[11px] text-subtle">{file.name} · {formatFileSize(file.size)}</span>}
@@ -219,7 +219,7 @@ function DocumentForm({ initial, editing, data, canManagerControls, lockedCourse
           Students <span className="text-primary">*</span>
           <input value={studentQuery} onChange={(event) => setStudentQuery(event.target.value)} placeholder="Search students by name or email" className={field} />
           {studentMatches.length > 0 && (
-            <div className="mt-1 rounded-xl border border-border-subtle bg-white p-1 shadow-sm">
+            <div className="mt-1 rounded-xl border border-border-subtle bg-card p-1 shadow-sm">
               {studentMatches.map((student) => (
                 <button
                   key={student.id}
@@ -338,7 +338,7 @@ function DocViewerModal({ doc, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-3 sm:p-6" role="dialog" aria-modal="true">
-      <div className="flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-card shadow-2xl">
         <div className="flex items-center justify-between gap-4 border-b border-border-subtle bg-page px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <FileBadge kind={kind} />
@@ -347,7 +347,7 @@ function DocViewerModal({ doc, onClose }) {
               <span className="text-[11px] text-muted">{kind} · {formatFileSize(doc.fileSize)}{doc.courseName ? ` · ${doc.courseName}` : ""}</span>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted hover:bg-white" aria-label="Close viewer"><X className="h-5 w-5" /></button>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted hover:bg-card" aria-label="Close viewer"><X className="h-5 w-5" /></button>
         </div>
 
         <div
@@ -409,7 +409,7 @@ function KindPill({ kind }) {
 
 function LearnerTable({ docs, onView }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-card shadow-sm">
       <table className="w-full text-left text-sm" style={{ minWidth: "820px" }}>
         <thead className="bg-page text-[10px] font-black uppercase tracking-wider text-muted">
           <tr>
@@ -479,7 +479,7 @@ function LearnerView({ heading, subheading, documents, loading, error, search, o
 
       <label className="relative block max-w-md">
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-subtle" aria-hidden="true" />
-        <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search documents…" className="w-full rounded-xl border border-border-subtle bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm" />
+        <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search documents…" className="w-full rounded-xl border border-border-subtle bg-card py-2.5 pl-9 pr-3 text-sm shadow-sm" />
       </label>
 
       {error && <p className="rounded-xl bg-active p-4 text-sm text-primary">{error}</p>}
@@ -487,7 +487,7 @@ function LearnerView({ heading, subheading, documents, loading, error, search, o
       {loading ? (
         <p className="py-12 text-center text-sm text-muted">Loading your documents…</p>
       ) : !documents.length ? (
-        <div className="rounded-3xl border border-dashed border-border-subtle bg-white py-16 text-center">
+        <div className="rounded-3xl border border-dashed border-border-subtle bg-card py-16 text-center">
           <FileText className="mx-auto h-8 w-8 text-subtle" aria-hidden="true" />
           <p className="mt-3 font-bold text-ink">{emptyLabel}</p>
         </div>
@@ -518,7 +518,7 @@ function LearnerView({ heading, subheading, documents, loading, error, search, o
 // ---------------------------------------------------------------------------
 function StatCard({ label, value }) {
   return (
-    <article className="rounded-2xl border border-border-subtle bg-white p-4 shadow-sm">
+    <article className="rounded-2xl border border-border-subtle bg-card p-4 shadow-sm">
       <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>
       <p className="mt-2 text-2xl font-extrabold text-ink">{value}</p>
     </article>
@@ -643,7 +643,7 @@ function ManagerView({ payload, loading, error, reload, canManagerControls, cour
         </div>
         <div className="flex flex-wrap gap-2">
           {canManagerControls && !scoped && (
-            <button type="button" onClick={openNewFolder} className="flex items-center gap-1.5 rounded-xl border border-border-subtle bg-white px-4 py-3 text-xs font-bold text-ink hover:bg-active">
+            <button type="button" onClick={openNewFolder} className="flex items-center gap-1.5 rounded-xl border border-border-subtle bg-card px-4 py-3 text-xs font-bold text-ink hover:bg-active">
               <FolderPlus className="h-4 w-4" /> New Folder
             </button>
           )}
@@ -665,16 +665,16 @@ function ManagerView({ payload, loading, error, reload, canManagerControls, cour
       {error && <p className="rounded-xl bg-active p-4 text-sm text-primary">{error}</p>}
 
       {canManagerControls && !scoped && (
-        <section className="rounded-3xl border border-border-subtle bg-white p-4 shadow-sm md:p-5">
+        <section className="rounded-3xl border border-border-subtle bg-card p-4 shadow-sm md:p-5">
           <div className="mb-3 flex items-center justify-between">
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-subtle"><Layers className="h-3.5 w-3.5" /> Folders</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setFolderFilter("all")} className={`rounded-full px-3 py-1.5 text-xs font-bold ${folderFilter === "all" ? "bg-ink text-white" : "border border-border-subtle bg-white text-muted hover:border-ink"}`}>All</button>
+            <button type="button" onClick={() => setFolderFilter("all")} className={`rounded-full px-3 py-1.5 text-xs font-bold ${folderFilter === "all" ? "bg-ink text-white" : "border border-border-subtle bg-card text-muted hover:border-ink"}`}>All</button>
             {folders.map((folder) => {
               const active = folderFilter === folder.id;
               return (
-                <span key={folder.id} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${active ? "bg-ink text-white" : "border border-border-subtle bg-white text-muted"}`}>
+                <span key={folder.id} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${active ? "bg-ink text-white" : "border border-border-subtle bg-card text-muted"}`}>
                   <button type="button" onClick={() => setFolderFilter(active ? "all" : folder.id)}>📁 {folder.name}</button>
                   {active && (
                     <>
@@ -690,7 +690,7 @@ function ManagerView({ payload, loading, error, reload, canManagerControls, cour
         </section>
       )}
 
-      <section className="space-y-4 rounded-3xl border border-border-subtle bg-white p-4 shadow-sm md:p-5">
+      <section className="space-y-4 rounded-3xl border border-border-subtle bg-card p-4 shadow-sm md:p-5">
         <div className="flex flex-wrap items-center gap-3">
           <label className="relative min-w-48 flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-subtle" aria-hidden="true" />

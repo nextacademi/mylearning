@@ -84,8 +84,8 @@ export default function LoadingScreen({ ready, onFinished }) {
       role="status"
       aria-live="polite"
     >
-      <div className="w-full max-w-sm rounded-3xl border border-border-subtle bg-white p-8 text-center shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white shadow-[0_8px_24px_rgba(255,45,45,0.18)]">
+      <div className="w-full max-w-sm rounded-3xl border border-border-subtle bg-card p-8 text-center shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-card shadow-[0_8px_24px_rgba(255,45,45,0.18)]">
           <img src="/logo.jpeg" alt="Next Academy logo" className="h-12 w-12 rounded-xl object-contain" />
         </div>
 

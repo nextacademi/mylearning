@@ -71,7 +71,7 @@ export default function SessionQrDialog({ session, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl">
+      <div className="w-full max-w-sm rounded-3xl bg-card p-6 text-center shadow-2xl">
         <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Attendance QR</p>
         <h3 className="mt-1 text-lg font-black text-ink">{session.title}</h3>
         <p className="mt-1 text-xs text-muted">{session.date}{session.startTime ? ` · ${session.startTime}–${session.endTime}` : ""}{session.location ? ` · ${session.location}` : ""}</p>

@@ -146,7 +146,7 @@ export default function WordImportModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-card shadow-2xl">
         <div className="flex items-center justify-between gap-4 border-b border-border-subtle px-5 py-4">
           <h2 className="flex items-center gap-2 text-lg font-black text-ink"><FileUp className="h-5 w-5 text-success" /> {title}</h2>
           <button type="button" onClick={close} className="rounded-lg p-1 text-muted hover:bg-page" aria-label="Close"><X className="h-5 w-5" /></button>
@@ -204,13 +204,13 @@ export default function WordImportModal({
                           rows={def.key === "syllabus" || def.key === "description" ? 4 : 3}
                           value={fieldValues[def.key] || ""}
                           onChange={(event) => setFieldValues((v) => ({ ...v, [def.key]: event.target.value }))}
-                          className="rounded-xl border border-border-subtle bg-white px-3 py-2 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-success"
+                          className="rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-success"
                         />
                       ) : (
                         <input
                           value={fieldValues[def.key] || ""}
                           onChange={(event) => setFieldValues((v) => ({ ...v, [def.key]: event.target.value }))}
-                          className="rounded-xl border border-border-subtle bg-white px-3 py-2 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-success"
+                          className="rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-success"
                         />
                       )}
                     </label>
@@ -245,7 +245,7 @@ export default function WordImportModal({
                                 <input
                                   value={row.data[col.key] || ""}
                                   onChange={(event) => setRecordCell(index, col.key, event.target.value)}
-                                  className="w-full rounded-lg border border-border-subtle bg-white px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-success"
+                                  className="w-full rounded-lg border border-border-subtle bg-card px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-success"
                                 />
                               </td>
                             ))}
@@ -260,7 +260,7 @@ export default function WordImportModal({
                                 <select
                                   value={row.action}
                                   onChange={(event) => setRecords((current) => current.map((r, i) => i === index ? { ...r, action: event.target.value } : r))}
-                                  className="mt-1 w-full rounded-lg border border-border-subtle bg-white px-1.5 py-1 text-[10px]"
+                                  className="mt-1 w-full rounded-lg border border-border-subtle bg-card px-1.5 py-1 text-[10px]"
                                 >
                                   <option value="skip">Skip</option>
                                   {dedupe?.allowUpdate !== false && <option value="update">Update existing</option>}
@@ -282,7 +282,7 @@ export default function WordImportModal({
                 </button>
                 {showSource && (
                   <div
-                    className="prose-word mt-2 max-h-64 overflow-y-auto rounded-xl border border-border-subtle bg-page p-3 text-sm text-ink [&_h1]:mb-1 [&_h1]:text-base [&_h1]:font-black [&_h2]:mt-2 [&_h2]:font-bold [&_li]:ml-4 [&_li]:list-disc [&_table]:w-full [&_td]:border [&_td]:border-border-subtle [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-border-subtle [&_th]:bg-white [&_th]:px-2 [&_th]:py-1"
+                    className="prose-word mt-2 max-h-64 overflow-y-auto rounded-xl border border-border-subtle bg-page p-3 text-sm text-ink [&_h1]:mb-1 [&_h1]:text-base [&_h1]:font-black [&_h2]:mt-2 [&_h2]:font-bold [&_li]:ml-4 [&_li]:list-disc [&_table]:w-full [&_td]:border [&_td]:border-border-subtle [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-border-subtle [&_th]:bg-card [&_th]:px-2 [&_th]:py-1"
                     dangerouslySetInnerHTML={{ __html: parsed.html }}
                   />
                 )}

@@ -212,13 +212,13 @@ export default function StudentAttendance() {
       </section>
 
       {!records.length ? (
-        <div className="rounded-3xl border border-dashed border-border-subtle bg-white p-10 text-center text-sm text-muted">
+        <div className="rounded-3xl border border-dashed border-border-subtle bg-card p-10 text-center text-sm text-muted">
           No attendance records yet. Once your teacher scans your D Card or marks attendance for a class, your statistics will appear here.
         </div>
       ) : (
         <>
           {/* Filters */}
-          <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-border-subtle bg-white p-3 shadow-sm">
+          <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-border-subtle bg-card p-3 shadow-sm">
             {trainingOptions.length > 0 && (
               <select
                 value={courseFilter}
@@ -352,7 +352,7 @@ export default function StudentAttendance() {
           </div>
 
           {/* Calendar */}
-          <section className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-sm font-bold text-ink">Attendance Calendar — {calendar.label}</h3>
               <div className="flex gap-3 text-[11px] text-muted">
@@ -387,7 +387,7 @@ export default function StudentAttendance() {
           </section>
 
           {/* Attendance history table */}
-          <section className="overflow-x-auto rounded-2xl border border-border-subtle bg-white shadow-sm">
+          <section className="overflow-x-auto rounded-2xl border border-border-subtle bg-card shadow-sm">
             <div className="p-5 pb-0">
               <h3 className="text-sm font-bold text-ink">Attendance History</h3>
             </div>
@@ -451,7 +451,7 @@ export default function StudentAttendance() {
 
 function SummaryCard({ label, value, accent }) {
   return (
-    <article className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+    <article className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
       <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>
       <p className={`mt-1 text-3xl font-extrabold ${accent}`}>{value}</p>
     </article>

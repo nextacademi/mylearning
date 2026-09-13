@@ -29,6 +29,7 @@ import AchievementManagement from "../../../components/achievement/AchievementMa
 import StudentAchievements from "../../../components/achievement/StudentAchievements";
 import StudentAttendance from "../../../components/students/StudentAttendance";
 import StudentExams from "../../../components/exams/StudentExams";
+import TeacherExams from "../../../components/exams/TeacherExams";
 import QrAttendanceScanner from "../../../components/students/QrAttendanceScanner";
 import StudentDashboardHome from "../../../components/students/StudentDashboardHome";
 import AdminQrScanner from "../../../components/attendance/AdminQrScanner";
@@ -46,7 +47,7 @@ export const roleConfig = {
       "Documents",
       "Achievements",
       "Certificates",
-      "Exam Test",
+      "Model Test",
       "My Shop",
       "ID Card",
       "Chat",
@@ -126,6 +127,7 @@ export const roleConfig = {
       "Contact Inquiries",
       "Chat",
       "Achievement",
+      "Model Test",
       "ID Card",
       "Scan QR Code",
       "Settings",
@@ -148,6 +150,7 @@ export const roleConfig = {
       "Contact Inquiries",
       "Chat",
       "Achievement",
+      "Model Test",
       "ID Card",
       "Scan QR Code",
       "Settings",
@@ -169,7 +172,7 @@ const teacherUnavailableStats = [
 
 function EmptyDataPanel({ title, message }) {
   return (
-    <div className="rounded-3xl border border-dashed border-border-subtle bg-white p-6 shadow-sm">
+    <div className="rounded-3xl border border-dashed border-border-subtle bg-card p-6 shadow-sm">
       <h2 className="font-bold text-ink">{title}</h2>
       <p className="mt-4 text-sm text-muted">{message}</p>
     </div>
@@ -204,6 +207,7 @@ function DirectorDashboard({ profile, user }) {
       name={name}
       initials={initials}
       photoURL={profile?.photoURL}
+      uid={user.uid}
       userEmail={user.email}
       headerTitle={active === "Dashboard" ? "Director Dashboard" : active}
       headerSubtitle="Organization overview"
@@ -234,18 +238,31 @@ function DirectorDashboard({ profile, user }) {
               <Shop role="Director" uid={user.uid} />
             ) : active === "Achievement" ? (
               <AchievementManagement />
+            ) : active === "Model Test" ? (
+              <TeacherExams teacherId={user.uid} isManager />
             ) : active === "Scan QR Code" ? (
               <AdminQrScanner />
             ) : active === "ID Card" ? (
-              <IdCardPrint
-                mode="self"
-                roleLabel="Director"
-                fallbackName={name}
-                fallbackEmail={user.email}
-                photoURL={profile?.photoURL}
-                active={profile?.active}
-                status={profile?.status}
-              />
+              <section className="rounded-3xl border border-border-subtle/70 bg-card p-5 shadow-sm md:p-8">
+                <div className="mb-6 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[.2em] text-primary">Digital Membership</p>
+                  <h2 className="mt-1 text-2xl font-black text-ink sm:text-3xl">Your ID Card</h2>
+                  <p className="mx-auto mt-2 max-w-md text-xs text-muted sm:text-sm">
+                    Keep this ready at events and training — first scan checks you in, second scan checks you out and credits your hours.
+                  </p>
+                </div>
+                <IdCardPrint
+                  mode="self"
+                  roleLabel="Director"
+                  fallbackName={name}
+                  fallbackEmail={user.email}
+                  photoURL={profile?.photoURL}
+                  active={profile?.active}
+                  status={profile?.status}
+                  hideBrandCaption
+                  onEditProfile={() => setActive("Settings")}
+                />
+              </section>
             ) : active === "Chat" ? (
               <ChatWorkspace currentUserId={user.uid} currentUserRole="Director" currentUserName={name} />
             ) : active === "Settings" ? (
@@ -329,6 +346,7 @@ function DashboardContent({ role, profile, user }) {
       name={name}
       initials={initials}
       photoURL={profile?.photoURL}
+      uid={user.uid}
       userEmail={user.email}
       headerTitle={active === "Dashboard" ? `${role} Dashboard` : active}
       onLogout={logout}
@@ -360,11 +378,13 @@ function DashboardContent({ role, profile, user }) {
               <Shop role={role} uid={user.uid} />
             ) : role === "Admin" && active === "Achievement" ? (
               <AchievementManagement />
+            ) : role === "Admin" && active === "Model Test" ? (
+              <TeacherExams teacherId={user.uid} isManager />
             ) : role === "Admin" && active === "Scan QR Code" ? (
               <AdminQrScanner />
             ) : (active === "Achievements" || active === "Certificates") ? (
               <StudentAchievements uid={user.uid} />
-            ) : active === "Exam Test" ? (
+            ) : active === "Model Test" ? (
               <StudentExams uid={user.uid} />
             ) : role === "Student" && active === "Attendance" ? (
               <StudentAttendance />
@@ -380,15 +400,26 @@ function DashboardContent({ role, profile, user }) {
                 onNavigate={selectModule}
               />
             ) : active === "ID Card" ? (
-              <IdCardPrint
-                mode="self"
-                roleLabel={role}
-                fallbackName={name}
-                fallbackEmail={user.email}
-                photoURL={profile?.photoURL}
-                active={profile?.active}
-                status={profile?.status}
-              />
+              <section className="rounded-3xl border border-border-subtle/70 bg-card p-5 shadow-sm md:p-8">
+                <div className="mb-6 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[.2em] text-primary">Digital Membership</p>
+                  <h2 className="mt-1 text-2xl font-black text-ink sm:text-3xl">Your ID Card</h2>
+                  <p className="mx-auto mt-2 max-w-md text-xs text-muted sm:text-sm">
+                    Keep this ready at events and training — first scan checks you in, second scan checks you out and credits your hours.
+                  </p>
+                </div>
+                <IdCardPrint
+                  mode="self"
+                  roleLabel={role}
+                  fallbackName={name}
+                  fallbackEmail={user.email}
+                  photoURL={profile?.photoURL}
+                  active={profile?.active}
+                  status={profile?.status}
+                  hideBrandCaption
+                  onEditProfile={() => selectModule("Settings")}
+                />
+              </section>
             ) : active === "Chat" ? (
               <ChatWorkspace currentUserId={user.uid} currentUserRole={role} currentUserName={name} />
             ) : active === "Settings" ? (
@@ -408,7 +439,7 @@ function DashboardContent({ role, profile, user }) {
               <div className="flex gap-3">
                 <button
                   onClick={() => selectModule(config.modules[1] || "Training")}
-                  className="rounded-xl border border-border-subtle bg-white px-4 py-3 text-xs font-bold text-primary shadow transition hover:bg-active"
+                  className="rounded-xl border border-border-subtle bg-card px-4 py-3 text-xs font-bold text-primary shadow transition hover:bg-active"
                 >
                   View programs
                 </button>
@@ -435,7 +466,7 @@ function DashboardContent({ role, profile, user }) {
                 <article
                   key={label}
                   onClick={role === "Student" && label === "Attendance" ? () => selectModule("Attendance") : undefined}
-                  className={`flex items-center justify-between rounded-2xl border border-border-subtle/70 bg-white p-5 shadow-sm ${role === "Student" && label === "Attendance" ? "cursor-pointer transition hover:border-red-line" : ""}`}
+                  className={`flex items-center justify-between rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm ${role === "Student" && label === "Attendance" ? "cursor-pointer transition hover:border-red-line" : ""}`}
                 >
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">
@@ -475,7 +506,7 @@ function DashboardContent({ role, profile, user }) {
                 )}
               </div>
             )}
-            <section className="rounded-3xl border border-border-subtle/70 bg-white p-5 shadow-sm md:p-6">
+            <section className="rounded-3xl border border-border-subtle/70 bg-card p-5 shadow-sm md:p-6">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <h2 className="font-bold text-ink">
@@ -498,7 +529,7 @@ function DashboardContent({ role, profile, user }) {
                     className={`group rounded-2xl border p-4 text-center transition ${active === module ? "border-primary bg-active" : "border-border-subtle bg-page/50 hover:border-red-line hover:bg-active/50"}`}
                   >
                     <span
-                      className={`mx-auto grid h-11 w-11 place-items-center rounded-xl bg-white text-lg shadow-sm transition group-hover:bg-primary group-hover:text-white ${active === module ? "bg-primary text-white" : "text-muted"}`}
+                      className={`mx-auto grid h-11 w-11 place-items-center rounded-xl bg-card text-lg shadow-sm transition group-hover:bg-primary group-hover:text-white ${active === module ? "bg-primary text-white" : "text-muted"}`}
                     >
                       <SidebarIcon name={module} className="h-6 w-6" />
                     </span>
@@ -522,7 +553,7 @@ function DashboardContent({ role, profile, user }) {
               </section>
             ) : (
               <section className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-3xl border border-border-subtle/70 bg-white p-6 shadow-sm">
+                <div className="rounded-3xl border border-border-subtle/70 bg-card p-6 shadow-sm">
                   <div className="flex items-center justify-between">
                     <h2 className="font-bold text-ink">
                       Upcoming schedule
@@ -555,7 +586,7 @@ function DashboardContent({ role, profile, user }) {
                     </div>
                   ))}
                 </div>
-                <div className="rounded-3xl border border-border-subtle/70 bg-white p-6 shadow-sm">
+                <div className="rounded-3xl border border-border-subtle/70 bg-card p-6 shadow-sm">
                   <h2 className="font-bold text-ink">Recent activity</h2>
                   {[
                     "Module completed",

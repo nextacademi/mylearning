@@ -118,7 +118,7 @@ export function ConfirmProvider({ children }) {
             if (event.target === event.currentTarget) cancel();
           }}
         >
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
+          <div className="w-full max-w-md rounded-2xl bg-card p-5 shadow-2xl sm:p-6">
             <div className="flex items-start gap-3">
               <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${tone.iconBg}`}>
                 <ToneIcon className={`h-5 w-5 ${tone.iconColor}`} aria-hidden="true" />

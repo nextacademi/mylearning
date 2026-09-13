@@ -43,7 +43,7 @@ function StatusBadge({ value }) {
 function Dialog({ title, children, close, wide }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className={`max-h-[88vh] w-full overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ${wide ? "max-w-2xl" : "max-w-lg"}`}>
+      <div className={`max-h-[88vh] w-full overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl ${wide ? "max-w-2xl" : "max-w-lg"}`}>
         <div className="mb-4 flex items-center justify-between gap-4">
           <h3 className="text-lg font-bold text-ink">{title}</h3>
           <button type="button" onClick={close} className="text-xl text-muted" aria-label="Close">×</button>
@@ -272,7 +272,7 @@ export default function IncomeManagementTab({ income, loading, onChanged }) {
         <StatCard label="Number of Records" value={summary.count} icon={Hash} iconBg="bg-active" iconColor="text-primary" loading={loading} />
       </section>
 
-      <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+      <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-muted">
             <span>Date range</span>

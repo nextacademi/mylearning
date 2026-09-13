@@ -20,11 +20,11 @@ import { useConfirm } from "../ui/ConfirmDialog";
 const managerModules = ["Dashboard", "Students", "Teacher", "Training", "Event", "Finance", "Documents", "My Shop", "User", "Chat", "Achievement", "ID Card", "Scan QR Code"];
 
 function Empty({ children }) {
-  return <div className="rounded-2xl border border-dashed border-border-subtle bg-white p-8 text-center text-sm text-muted">{children}</div>;
+  return <div className="rounded-2xl border border-dashed border-border-subtle bg-card p-8 text-center text-sm text-muted">{children}</div>;
 }
 function Panel({ title, children, action }) {
   return (
-    <section className="rounded-3xl border border-border-subtle bg-white p-7 shadow-sm">
+    <section className="rounded-3xl border border-border-subtle bg-card p-7 shadow-sm">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold text-ink">{title}</h2>{action}</div>
       {children}
     </section>
@@ -108,7 +108,7 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
     >
       {canManage && (
         <div className="mb-5 flex flex-wrap gap-2 rounded-2xl bg-page p-3">
-          <select value={addingId} onChange={(e) => setAddingId(e.target.value)} className="flex-1 rounded-xl border border-border-subtle bg-white px-3 py-2 text-xs">
+          <select value={addingId} onChange={(e) => setAddingId(e.target.value)} className="flex-1 rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs">
             <option value="">Manually add a participant...</option>
             {available.map((item) => <option key={item.uid} value={item.uid}>{item.displayName || item.email} ({item.role})</option>)}
           </select>
@@ -391,7 +391,7 @@ export default function EventDetailsPage() {
             </div>
           </header>
 
-          <nav className="my-5 flex gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-white p-1.5 shadow-sm">
+          <nav className="my-5 flex gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-1.5 shadow-sm">
             {tabs.map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold ${tab === item ? "bg-primary text-white" : "text-muted hover:bg-active"}`}>{item}</button>)}
           </nav>
 

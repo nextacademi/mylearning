@@ -18,7 +18,7 @@ export default function TeacherWorkload({ teachers, courses, classes, students, 
   }, [teachers, courses, classes, students]);
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-border-subtle bg-card p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-purple-soft text-purple">
           <BriefcaseBusiness className="h-4 w-4" aria-hidden="true" />

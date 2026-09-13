@@ -37,7 +37,7 @@ export default function TeacherOrganizerEvents({ teacherId }) {
       {events.map((event) => {
         const status = computeEventStatus(event);
         return (
-          <Link key={event.id} href={`/dashboard/events/${event.id}`} className="flex items-center justify-between rounded-xl border border-border-subtle bg-white p-4 hover:bg-active">
+          <Link key={event.id} href={`/dashboard/events/${event.id}`} className="flex items-center justify-between rounded-xl border border-border-subtle bg-card p-4 hover:bg-active">
             <div>
               <b className="block text-sm text-ink">{event.name}</b>
               <span className="text-xs text-muted">{event.eventDate} · {event.startTime}–{event.endTime} · {event.location || "Location not set"}</span>

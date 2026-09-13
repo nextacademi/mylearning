@@ -50,13 +50,13 @@ export default function ExportMenu({ columns, pageRows = [], filteredRows = [], 
         type="button"
         disabled={disabled || !allRows.length}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex items-center gap-1.5 rounded-xl border border-border-subtle bg-white px-3 py-2 text-xs font-bold text-ink shadow-sm hover:bg-page disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs font-bold text-ink shadow-sm hover:bg-page disabled:opacity-50"
       >
         <Download className="h-4 w-4" /> Export
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-60 rounded-2xl border border-border-subtle bg-white p-2 shadow-xl">
+        <div className="absolute right-0 z-30 mt-2 w-60 rounded-2xl border border-border-subtle bg-card p-2 shadow-xl">
           <p className="px-2 pb-1 pt-1 text-[10px] font-black uppercase tracking-wider text-subtle">Scope</p>
           <div className="mb-2 grid gap-0.5">
             {scopes.map((entry) => (

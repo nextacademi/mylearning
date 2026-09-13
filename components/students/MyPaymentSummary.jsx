@@ -44,7 +44,7 @@ function UpcomingClasses({ enrollments }) {
 
   if (!upcoming.length) return null;
   return (
-    <div className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm">
+    <div className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm">
       <h3 className="mb-3 text-sm font-bold text-ink">Upcoming Class{upcoming.length > 1 ? "es" : ""}</h3>
       <div className="space-y-2">
         {upcoming.map((session) => (
@@ -100,7 +100,7 @@ export default function MyPaymentSummary() {
   }
   if (!enrollments.length) {
     return (
-      <div className="rounded-3xl border border-dashed border-border-subtle bg-white p-8 text-center text-sm text-muted">
+      <div className="rounded-3xl border border-dashed border-border-subtle bg-card p-8 text-center text-sm text-muted">
         You are not enrolled in any offline training yet.
       </div>
     );
@@ -120,7 +120,7 @@ export default function MyPaymentSummary() {
         const myPaymentsForThis = payments.filter((item) => item.enrollmentId === enrollment.id);
 
         return (
-          <section key={enrollment.id} className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+          <section key={enrollment.id} className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="text-lg font-bold text-ink">{enrollment.courseTitle}</h3>

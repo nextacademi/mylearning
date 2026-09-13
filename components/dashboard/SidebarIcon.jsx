@@ -13,7 +13,7 @@ const icons = {
   "ID Card": Contact, "ID Cards": Contact, "Scan QR Code": ScanQrCode,
   "QR Scanner": QrCode, Attendance: Award, Certificates: Award,
   Settings, Activities: Award, Promote: Megaphone, "AI Assistant": Sparkles,
-  "Contact Inquiries": Mail, "Exam Test": ClipboardList,
+  "Contact Inquiries": Mail, "Model Test": ClipboardList,
 };
 
 export default function SidebarIcon({ name, className = "h-5 w-5" }) {

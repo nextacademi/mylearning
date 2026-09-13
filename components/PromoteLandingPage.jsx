@@ -53,7 +53,7 @@ export default function PromoteLandingPage() {
 
   return (
     <main className="grid min-h-screen place-items-center bg-slate-100 p-4 text-slate-800">
-      <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-card p-8 shadow-sm">
         {loading ? (
           <p className="text-center text-sm text-slate-500">Loading...</p>
         ) : error ? (

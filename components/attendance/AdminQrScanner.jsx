@@ -101,7 +101,7 @@ export default function AdminQrScanner() {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_.8fr]">
-        <div className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm">
           <div className="mb-4 flex flex-wrap gap-2">
             <select value={courseId} onChange={(e) => { setCourseId(e.target.value); setClassId(""); setSessionId(""); }} className="rounded-xl border border-border-subtle bg-page px-3 py-2 text-xs">
               <option value="">Select training</option>
@@ -150,7 +150,7 @@ export default function AdminQrScanner() {
           )}
         </div>
 
-        <div className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm">
+        <div className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm">
           <h3 className="mb-3 text-sm font-bold text-ink">Result</h3>
           {busy ? (
             <p className="text-sm text-muted">Checking QR code...</p>

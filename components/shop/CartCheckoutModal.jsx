@@ -94,7 +94,7 @@ export default function CartCheckoutModal({
         role="dialog"
         aria-modal="true"
       >
-        <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+        <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-2xl">
           <div className="text-center">
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-success-soft">
               <CheckCircle2 className="h-6 w-6 text-success" />
@@ -159,7 +159,7 @@ export default function CartCheckoutModal({
     >
       <form
         onSubmit={submit}
-        className="my-4 w-full max-w-md rounded-2xl bg-white shadow-2xl"
+        className="my-4 w-full max-w-md rounded-2xl bg-card shadow-2xl"
       >
         {/* HEADER */}
         <div className="flex items-center justify-between border-b border-border-subtle px-5 py-4">
@@ -237,7 +237,7 @@ export default function CartCheckoutModal({
                 onChange={(e) => setCollectionDate(e.target.value)}
                 min={today}
                 required
-                className="w-full cursor-pointer rounded-lg border border-border-subtle bg-white py-2.5 pl-9 pr-3 text-xs font-semibold text-ink outline-none focus:border-primary focus:ring-1 focus:ring-primary/10"
+                className="w-full cursor-pointer rounded-lg border border-border-subtle bg-card py-2.5 pl-9 pr-3 text-xs font-semibold text-ink outline-none focus:border-primary focus:ring-1 focus:ring-primary/10"
               />
             </div>
           </section>
@@ -260,7 +260,7 @@ export default function CartCheckoutModal({
                   key={product.id}
                   className="flex items-center gap-2.5 rounded-lg bg-page p-2"
                 >
-                  <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-md bg-white">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-md bg-card">
                     {product.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img

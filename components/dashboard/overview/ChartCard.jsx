@@ -7,7 +7,7 @@
 // isn't enough history to calculate one honestly.
 export function ChartCard({ title, subtitle, icon: Icon, badge, children }) {
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-white p-6 shadow-sm">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-card p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">

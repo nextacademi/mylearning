@@ -17,7 +17,7 @@ const TABS = ["Active", "Inactive", "All Students", "Rejected"];
 function Dialog({ title, children, onClose, wide }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className={`max-h-[90vh] w-full overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ${wide ? "max-w-2xl" : "max-w-lg"}`}>
+      <div className={`max-h-[90vh] w-full overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl ${wide ? "max-w-2xl" : "max-w-lg"}`}>
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-bold">{title}</h2>
           <button onClick={onClose} className="text-xl text-muted" aria-label="Close">×</button>
@@ -33,11 +33,11 @@ function DirectorySkeleton() {
     <div className="animate-pulse space-y-6">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-[84px] rounded-2xl border border-border-subtle bg-white" />
+          <div key={i} className="h-[84px] rounded-2xl border border-border-subtle bg-card" />
         ))}
       </div>
-      <div className="h-10 w-72 rounded-xl bg-white" />
-      <div className="space-y-2 rounded-2xl border border-border-subtle bg-white p-4">
+      <div className="h-10 w-72 rounded-xl bg-card" />
+      <div className="space-y-2 rounded-2xl border border-border-subtle bg-card p-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="h-12 rounded-xl bg-page" />
         ))}
@@ -165,7 +165,7 @@ export default function StudentManagement({ role }) {
           <p className="mt-2 text-sm text-muted">Manage and monitor all student records.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => { setImportCourseId(""); setImportOpen(true); }} className="rounded-xl border border-border-subtle bg-white px-4 py-3 text-xs font-bold text-ink">Import from Word</button>
+          <button onClick={() => { setImportCourseId(""); setImportOpen(true); }} className="rounded-xl border border-border-subtle bg-card px-4 py-3 text-xs font-bold text-ink">Import from Word</button>
           <button onClick={() => { setError(""); setCreating(true); }} className="rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white">+ Add Student</button>
         </div>
       </section>
@@ -190,7 +190,7 @@ export default function StudentManagement({ role }) {
               <p className="mt-1 text-xs text-muted">New self-registered students waiting for approval before they can sign in.</p>
               <div className="mt-4 space-y-2">
                 {pending.map((student) => (
-                  <div key={student.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3">
+                  <div key={student.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card p-3">
                     <div>
                       <b className="block text-sm text-ink">{student.displayName || "Unnamed student"}</b>
                       <span className="text-xs text-muted">{student.email} · Registered {student.createdAt ? new Date(student.createdAt).toLocaleDateString() : "--"}</span>
@@ -217,7 +217,7 @@ export default function StudentManagement({ role }) {
                     className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition ${tab === item ? "bg-primary text-white" : "bg-page text-muted hover:bg-active hover:text-primary"}`}
                   >
                     {item}
-                    <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${tab === item ? "bg-white/20" : "bg-white text-subtle"}`}>{count}</span>
+                    <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${tab === item ? "bg-white/20" : "bg-card text-subtle"}`}>{count}</span>
                   </button>
                 );
               })}
@@ -225,7 +225,7 @@ export default function StudentManagement({ role }) {
             {courses.length > 0 && (
               <label className="flex items-center gap-2 text-xs font-bold text-muted">
                 <GraduationCap className="h-4 w-4" aria-hidden="true" />
-                <select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)} className="rounded-xl border border-border-subtle bg-white px-3 py-2 text-xs font-bold text-ink shadow-sm">
+                <select value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs font-bold text-ink shadow-sm">
                   <option value="all">All courses</option>
                   {courses.map((c) => <option key={c.id} value={c.title}>{c.title}</option>)}
                 </select>
@@ -278,7 +278,7 @@ export default function StudentManagement({ role }) {
         preamble={
           <label className="grid gap-1 text-xs font-bold text-muted">
             Enrol all imported students in <span className="text-primary">*</span>
-            <select value={importCourseId} onChange={(e) => setImportCourseId(e.target.value)} className="rounded-xl border border-border-subtle bg-white px-3 py-2 text-sm font-normal text-ink">
+            <select value={importCourseId} onChange={(e) => setImportCourseId(e.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm font-normal text-ink">
               <option value="">Choose a course…</option>
               {courses.filter((c) => c.enrollmentAvailable !== false).map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>

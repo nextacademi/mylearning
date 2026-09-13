@@ -17,7 +17,7 @@ import { attendancePercent } from "../lib/attendance";
 
 function Empty({ children }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border-subtle bg-white p-8 text-center text-sm text-muted">
+    <div className="rounded-2xl border border-dashed border-border-subtle bg-card p-8 text-center text-sm text-muted">
       {children}
     </div>
   );
@@ -174,7 +174,7 @@ export default function TeacherCoursePage() {
                   {course.description || "No course description available."}
                 </p>
               </header>
-              <nav className="my-5 flex gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-white p-2 shadow-sm">
+              <nav className="my-5 flex gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-2 shadow-sm">
                 <a
                   href="#overview"
                   className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white"
@@ -201,7 +201,7 @@ export default function TeacherCoursePage() {
                 </a>
               </nav>
               <section id="overview" className="grid gap-4 md:grid-cols-3">
-                <article className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+                <article className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-subtle">
                     Enrolled students
                   </span>
@@ -209,7 +209,7 @@ export default function TeacherCoursePage() {
                     {enrolledStudents.length}
                   </strong>
                 </article>
-                <article className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+                <article className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-subtle">
                     Class sessions
                   </span>
@@ -217,7 +217,7 @@ export default function TeacherCoursePage() {
                     {classes.length}
                   </strong>
                 </article>
-                <article className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+                <article className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-subtle">
                     Course status
                   </span>
@@ -228,7 +228,7 @@ export default function TeacherCoursePage() {
               </section>
               <section
                 id="students"
-                className="mt-5 rounded-3xl border border-border-subtle bg-white p-5 shadow-sm"
+                className="mt-5 rounded-3xl border border-border-subtle bg-card p-5 shadow-sm"
               >
                 <h2 className="font-bold">Students enrolled in this course</h2>
                 {enrolledStudents.length ? (
@@ -262,7 +262,7 @@ export default function TeacherCoursePage() {
               </section>
               <section
                 id="sessions"
-                className="mt-5 rounded-3xl border border-border-subtle bg-white p-5 shadow-sm"
+                className="mt-5 rounded-3xl border border-border-subtle bg-card p-5 shadow-sm"
               >
                 <h2 className="font-bold">Classes / training sessions</h2>
                 {classes.length ? (
@@ -293,7 +293,7 @@ export default function TeacherCoursePage() {
               </section>
               <section
                 id="attendance"
-                className="mt-5 rounded-3xl border border-border-subtle bg-white p-5 shadow-sm"
+                className="mt-5 rounded-3xl border border-border-subtle bg-card p-5 shadow-sm"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -331,7 +331,7 @@ export default function TeacherCoursePage() {
                               [student.id]: event.target.value,
                             })
                           }
-                          className="rounded-lg border border-border-subtle bg-white px-2 py-2"
+                          className="rounded-lg border border-border-subtle bg-card px-2 py-2"
                         >
                           <option value="present">Present</option>
                           <option value="absent">Absent</option>

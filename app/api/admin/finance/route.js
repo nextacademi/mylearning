@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
+import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { buildFinanceOverview } from "../../../../lib/server/finance-core";
+import { cached } from "../../../../lib/redis-cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +13,7 @@ async function access(request) {
   if (!token) return { denied: NextResponse.json({ message: "Administrator access is required." }, { status: 401 }) };
   const db = getAdminDb();
   const decoded = await getAdminAuth().verifyIdToken(token);
-  const profile = await db.collection("users").doc(decoded.uid).get();
+  const profile = await getCachedUserSnapshot(db, decoded.uid);
   const data = profile.data() || {};
   if (!profile.exists || data.active === false || !managers.has(data.role)) {
     return { denied: NextResponse.json({ message: "Administrator access is required." }, { status: 403 }) };
@@ -30,7 +32,14 @@ export async function GET(request) {
     const url = new URL(request.url);
     const from = url.searchParams.get("from") || undefined;
     const to = url.searchParams.get("to") || undefined;
-    const overview = await buildFinanceOverview(a.db, { from, to });
+    // Same overview for every Admin/Director requesting the same date
+    // range — cached 30s, keyed by the range itself. NOT explicitly
+    // invalidated by the separate expenses/income/payments/admissions
+    // write routes this aggregates (their date-range fan-out makes precise
+    // invalidation impractical here); the 30s TTL is the deliberate
+    // staleness bound instead — acceptable for a dashboard overview, not
+    // used for anything that authorizes a transaction.
+    const overview = await cached(`admin-finance:${from || "-"}:${to || "-"}`, 30, () => buildFinanceOverview(a.db, { from, to }));
     return NextResponse.json(overview);
   } catch (error) {
     console.error("[finance-api] failed", { code: error?.code || "unknown", message: error?.message || "unknown" });

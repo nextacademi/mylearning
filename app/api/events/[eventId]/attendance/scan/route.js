@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../../../../lib/firebase-admin";
+import { getCachedUserSnapshot } from "../../../../../../lib/server/cached-profile";
 import { verifyQrToken, QrTokenError } from "../../../../../../lib/qr-token";
 
 export const runtime = "nodejs";
@@ -24,7 +25,7 @@ export async function POST(request, { params }) {
     if (!token) return fail("unauthorized", "Sign in to continue.", 401);
     const db = getAdminDb();
     const decoded = await getAdminAuth().verifyIdToken(token);
-    const profile = await db.collection("users").doc(decoded.uid).get();
+    const profile = await getCachedUserSnapshot(db, decoded.uid);
     const data = profile.data() || {};
     if (!profile.exists || data.active === false) return fail("unauthorized", "Account access is required.", 403);
 

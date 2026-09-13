@@ -29,12 +29,12 @@ export default function ConversationMenu({ isGroup, onOpen, onMarkRead, onDelete
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label="Conversation options"
-        className="rounded-full p-1 text-subtle transition hover:bg-white hover:text-primary hover:shadow-sm"
+        className="rounded-full p-1 text-subtle transition hover:bg-card hover:text-primary hover:shadow-sm"
       >
         <MoreVertical className="h-3.5 w-3.5" />
       </button>
       {open && (
-        <div className="absolute right-0 top-6 z-20 w-40 rounded-xl border border-border-subtle bg-white p-1 shadow-2xl">
+        <div className="absolute right-0 top-6 z-20 w-40 rounded-xl border border-border-subtle bg-card p-1 shadow-2xl">
           <button type="button" onClick={() => act(onOpen)} className="block w-full rounded-md px-2.5 py-1.5 text-left text-xs font-semibold text-ink hover:bg-page">Open</button>
           <button type="button" onClick={() => act(onMarkRead)} className="block w-full rounded-md px-2.5 py-1.5 text-left text-xs font-semibold text-ink hover:bg-page">Mark as Read</button>
           {isGroup ? (

@@ -137,7 +137,7 @@ export function ScheduleMatrix({
   return (
     <div
       id="gridMatrixContainer"
-      className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-md"
+      className="overflow-hidden rounded-xl border border-slate-300 bg-card shadow-md"
     >
       <div className="rb-scroll relative max-h-[72vh] overflow-auto">
         <table
@@ -145,16 +145,16 @@ export function ScheduleMatrix({
         >
           <thead>
             <tr>
-              <th className="sticky left-0 z-20 w-14 bg-white px-1 py-1.5 text-[11px]">
+              <th className="sticky left-0 z-20 w-14 bg-card px-1 py-1.5 text-[11px]">
                 Room
               </th>
-              <th className="sticky left-14 z-20 w-10 bg-white px-0.5 py-1.5 text-[11px]">
+              <th className="sticky left-14 z-20 w-10 bg-card px-0.5 py-1.5 text-[11px]">
                 Size
               </th>
-              <th className="sticky left-[96px] z-20 w-16 bg-white px-1 py-1.5 text-[11px]">
+              <th className="sticky left-[96px] z-20 w-16 bg-card px-1 py-1.5 text-[11px]">
                 Slot
               </th>
-              <th className="sticky left-[160px] z-20 w-16 border-r-2 border-slate-400 bg-white px-1 py-1.5 text-[11px]">
+              <th className="sticky left-[160px] z-20 w-16 border-r-2 border-slate-400 bg-card px-1 py-1.5 text-[11px]">
                 Status
               </th>
               <th
@@ -164,11 +164,11 @@ export function ScheduleMatrix({
                 Days of Month (1 - {daysInMonth})
               </th>
             </tr>
-            <tr className="bg-white font-bold text-slate-800">
-              <th className="sticky left-0 z-20 bg-white" />
-              <th className="sticky left-14 z-20 bg-white" />
-              <th className="sticky left-[96px] z-20 bg-white" />
-              <th className="sticky left-[160px] z-20 border-r-2 border-slate-400 bg-white" />
+            <tr className="bg-card font-bold text-slate-800">
+              <th className="sticky left-0 z-20 bg-card" />
+              <th className="sticky left-14 z-20 bg-card" />
+              <th className="sticky left-[96px] z-20 bg-card" />
+              <th className="sticky left-[160px] z-20 border-r-2 border-slate-400 bg-card" />
               {days.map((day) => (
                 <th
                   key={day}
@@ -271,14 +271,14 @@ export function ScheduleMatrix({
                     {slotIdx === 0 && (
                       <td
                         rowSpan={3}
-                        className="sticky left-0 z-10 border-r border-slate-300 bg-white text-center text-xs font-extrabold"
+                        className="sticky left-0 z-10 border-r border-slate-300 bg-card text-center text-xs font-extrabold"
                         style={{ color: roomAccent(roomIdx) }}
                       >
                         {roomLabel(room)}
                       </td>
                     )}
                     <td
-                      className="sticky left-14 z-10 border-r border-slate-300 bg-white text-[11px] font-bold"
+                      className="sticky left-14 z-10 border-r border-slate-300 bg-card text-[11px] font-bold"
                       style={{ color: sizeAccent(slot) }}
                     >
                       {room.capacity ?? "—"}
@@ -289,7 +289,7 @@ export function ScheduleMatrix({
                       {slot}
                     </td>
                     <td
-                      className={`sticky left-[160px] z-10 border-r-2 border-slate-400 bg-white px-1 py-0.5 text-[10px] ${statusClass(displayStatus)}`}
+                      className={`sticky left-[160px] z-10 border-r-2 border-slate-400 bg-card px-1 py-0.5 text-[10px] ${statusClass(displayStatus)}`}
                     >
                       {displayStatus}
                     </td>
@@ -349,7 +349,7 @@ export function MobileCards({
       {list.map((room) => (
         <div
           key={room.id}
-          className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+          className="space-y-2 rounded-xl border border-slate-200 bg-card p-3 shadow-sm"
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <div className="flex items-center gap-2">
@@ -462,7 +462,7 @@ export function MobileCards({
         </div>
       ))}
       {!list.length && (
-        <p className="rounded-xl border border-dashed border-slate-200 bg-white py-10 text-center text-sm text-slate-500">
+        <p className="rounded-xl border border-dashed border-slate-200 bg-card py-10 text-center text-sm text-slate-500">
           No rooms yet. Add a classroom to start booking.
         </p>
       )}
@@ -472,7 +472,7 @@ export function MobileCards({
 
 export function MatrixLegend() {
   return (
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-2.5 text-xs shadow-sm sm:mb-4">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-card p-2.5 text-xs shadow-sm sm:mb-4">
       <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold sm:gap-4">
         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
           Slots:

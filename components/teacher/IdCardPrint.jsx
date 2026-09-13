@@ -1,8 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { motion, MotionConfig } from "framer-motion";
 import QRCode from "qrcode";
 import { issueQrToken } from "../../lib/services/qr-service";
+
+const EASE = [0.22, 1, 0.36, 1];
+const fadeSlideUp = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
+};
+const cardScale = {
+  hidden: { opacity: 0, scale: 0.96 },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.45, ease: EASE } },
+};
+const panelReveal = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE, delay: 0.1 } },
+};
+const qrPop = {
+  hidden: { opacity: 0, scale: 0.92 },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.35, ease: EASE, delay: 0.2 } },
+};
 
 // The Digital Membership / D Card. Every value here is real: `userId`
 // comes from the authenticated subject's own Firestore doc (see
@@ -28,6 +47,15 @@ import { issueQrToken } from "../../lib/services/qr-service";
 // showing a QR that's about to stop working with nothing to replace it.
 
 const CACHE_PREFIX = "nacademy.dcard.";
+// signQrToken (lib/qr-token.js) bakes a fresh `exp: Date.now() + ttlMs` into
+// every signed payload, so calling issueQrToken on every single mount — even
+// with regenerate:false — produced a brand-new token/signature (and thus a
+// visibly different QR image) each time the card was opened. Skipping the
+// network call while a cached token is still this fresh stops that: the QR
+// image now stays pixel-identical across visits for a week, instead of
+// changing on every load, while still eventually picking up profile changes
+// (photo/name/status) without a manual regenerate button (removed above).
+const REFRESH_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
 function cacheKey(mode, studentId) {
   return `${CACHE_PREFIX}${mode === "student" ? `student.${studentId || "unknown"}` : "self"}`;
@@ -61,14 +89,6 @@ function friendlyLoadError(code) {
   return "Your ID card could not be generated. Please try again.";
 }
 
-function friendlyRegenError(code) {
-  if (code === "network")
-    return "Couldn't reach the server. Check your connection and try again.";
-  if (code === "auth")
-    return "Your session has expired. Please sign in again.";
-  return "Could not regenerate your QR code. Please try again.";
-}
-
 export default function IdCardPrint({
   mode,
   studentId,
@@ -79,6 +99,8 @@ export default function IdCardPrint({
   photoURL,
   active,
   status,
+  onEditProfile,
+  hideBrandCaption = false,
 }) {
   const [key] = useState(() => cacheKey(mode, studentId));
   const [cached] = useState(() => readCache(key));
@@ -88,8 +110,6 @@ export default function IdCardPrint({
       : { loading: true, error: "", errorCode: "", token: null, subject: null, stale: false },
   );
   const [qr, setQr] = useState({ url: "", error: false });
-  const [regenerating, setRegenerating] = useState(false);
-  const [regenNotice, setRegenNotice] = useState("");
   const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
 
   // Promise-chain style (not async/await) on purpose: every setState lives
@@ -125,10 +145,15 @@ export default function IdCardPrint({
 
   // Initial load / silent refresh: if a cached card is already on screen it
   // must never flash back to a spinner, and if there's no cache the
-  // initializer above already set loading:true.
+  // initializer above already set loading:true. Skipped entirely when the
+  // cache is still fresh (see REFRESH_AFTER_MS above) so the QR doesn't
+  // change on every visit — `cached` comes from a useState initializer, so
+  // it never changes after mount and this effect still only runs once.
   useEffect(() => {
+    const isFresh = cached && typeof cached.savedAt === "number" && Date.now() - cached.savedAt < REFRESH_AFTER_MS;
+    if (isFresh) return;
     load();
-  }, [load]);
+  }, [load, cached]);
 
   // Retry button — unlike the silent refresh, this one shows the spinner.
   function retry() {
@@ -141,7 +166,6 @@ export default function IdCardPrint({
     if (typeof window === "undefined") return undefined;
     function handleOnline() {
       setOnline(true);
-      setRegenNotice("");
       load();
     }
     function handleOffline() {
@@ -170,28 +194,6 @@ export default function IdCardPrint({
       cancelled = true;
     };
   }, [state.token]);
-
-  async function regenerate() {
-    setRegenNotice("");
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      setRegenNotice("You need an internet connection to regenerate your QR code.");
-      return;
-    }
-    setRegenerating(true);
-    try {
-      const body = mode === "student" ? { mode, studentId, regenerate: true } : { mode: "self", regenerate: true };
-      const result = await issueQrToken(body);
-      writeCache(key, { token: result.token, subject: result.subject, savedAt: Date.now() });
-      setState({ loading: false, error: "", errorCode: "", token: result.token, subject: result.subject, stale: false });
-    } catch (error) {
-      // A failed regenerate must NOT wipe the card the user is already
-      // holding up at a check-in desk — keep it on screen, explain inline.
-      console.error("[id-card] regenerate failed", { code: error?.code, message: error?.message });
-      setRegenNotice(friendlyRegenError(error?.code));
-    } finally {
-      setRegenerating(false);
-    }
-  }
 
   if (state.loading) {
     return <div className="rounded-2xl border border-dashed border-border-subtle p-8 text-center text-sm text-muted">Preparing your D Card...</div>;
@@ -228,20 +230,37 @@ export default function IdCardPrint({
   const showingOffline = state.stale || !online;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr] lg:items-start">
+    <MotionConfig reducedMotion="user">
+    <motion.div
+      className="grid gap-6 lg:grid-cols-[1fr_1.1fr] lg:items-start"
+      initial="hidden"
+      animate="show"
+      variants={fadeSlideUp}
+    >
       <style>{`@media print { .no-print { display: none !important; } body * { visibility: hidden; } #id-card, #id-card * { visibility: visible; } #id-card { position: fixed; inset: 0; margin: auto; } }`}</style>
 
       <div>
-        <div
+        <motion.div
           id="id-card"
-          className="mx-auto w-full max-w-sm rounded-3xl border border-red-line bg-white p-5 shadow-sm sm:p-6"
+          className="mx-auto w-full max-w-sm rounded-3xl border border-red-line bg-gradient-to-b from-active to-card p-5 shadow-sm sm:p-6"
+          initial="hidden"
+          animate="show"
+          variants={cardScale}
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <img src="/logo.jpeg" alt={`${organization} logo`} className="h-8 w-8 rounded-lg object-contain" />
               <div>
                 <b className="block text-xs text-ink">{organization} Member</b>
-                <small className="block text-[9px] font-bold uppercase tracking-widest text-primary">Digital Membership</small>
+                {/* Skipped whenever the caller already shows its own
+                    "Digital Membership" eyebrow above the card (the Settings
+                    modal via onEditProfile, or any page-level header that
+                    passes hideBrandCaption) — showing it twice would be
+                    redundant. Consumers with no such header (a student's
+                    card view, the QR check-in dialog) keep it. */}
+                {!onEditProfile && !hideBrandCaption && (
+                  <small className="block text-[9px] font-bold uppercase tracking-widest text-primary">Digital Membership</small>
+                )}
               </div>
             </div>
             <span
@@ -274,56 +293,64 @@ export default function IdCardPrint({
           <div className="my-4 border-t border-dashed border-border-subtle" />
 
           <p className="text-center text-[10px] font-bold uppercase tracking-widest text-subtle">Check-in QR</p>
-          <div className="mt-2 grid place-items-center rounded-2xl bg-page p-4">
+          <motion.div
+            className="mt-2 grid place-items-center rounded-2xl bg-page p-4"
+            initial="hidden"
+            animate="show"
+            variants={qrPop}
+          >
             {qr.url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={qr.url} alt="Attendance check-in QR code" className="h-44 w-44 max-w-full" />
             ) : qr.error ? (
               <span className="px-2 text-center text-xs text-primary">
-                Couldn&apos;t draw the QR image on this device. Try &ldquo;Regenerate QR&rdquo; below.
+                Couldn&apos;t draw the QR image on this device. Please try reloading the page.
               </span>
             ) : (
               <span className="text-xs text-subtle">Generating QR...</span>
             )}
-          </div>
+          </motion.div>
           <p className="mt-3 text-center text-[11px] text-muted">
             Show this code at check-in. Scan once to start, again when you leave.
           </p>
 
           <div className="mt-4 flex items-center justify-between gap-2 border-t border-border-subtle pt-3 text-[10px] text-subtle">
             <span className="truncate">{email}</span>
-            {showingOffline && (
-              <span className="shrink-0 rounded-full bg-page px-2 py-0.5 font-bold text-muted">Offline copy</span>
-            )}
+            <span className="flex shrink-0 items-center gap-2">
+              {showingOffline && (
+                <span className="rounded-full bg-page px-2 py-0.5 font-bold text-muted">Offline copy</span>
+              )}
+              {mode !== "student" && onEditProfile && (
+                <button type="button" onClick={onEditProfile} className="font-bold text-primary hover:underline">
+                  Edit profile →
+                </button>
+              )}
+            </span>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="no-print mx-auto mt-4 flex max-w-sm flex-col gap-3 sm:flex-row">
-          <button
-            onClick={() => window.print()}
-            className="min-h-11 flex-1 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white"
-          >
-            Print D Card
-          </button>
-          <button
-            onClick={regenerate}
-            disabled={regenerating}
-            className="min-h-11 flex-1 rounded-xl border border-border-subtle px-4 py-3 text-xs font-bold text-muted disabled:opacity-40"
-          >
-            {regenerating ? "Regenerating..." : "Regenerate QR"}
-          </button>
-        </div>
-        {regenNotice && (
-          <p className="no-print mx-auto mt-2 max-w-sm text-center text-[11px] font-semibold text-primary">{regenNotice}</p>
-        )}
-        {showingOffline && !regenNotice && (
+        {/* No button row under the card anywhere — matches the reference
+            design exactly in every context this component renders (Settings
+            modal, Teacher's own ID card page, Director/Admin dashboards,
+            student card views). Printing is still reachable via the
+            browser's own print (window.print()/Ctrl+P) since the #id-card
+            node and its @media print rule above are untouched; Regenerate QR
+            is removed from the UI entirely per user request — the
+            underlying capability (issueQrToken with regenerate:true) is
+            left in place server-side, just not exposed as a button. */}
+        {showingOffline && (
           <p className="no-print mx-auto mt-2 max-w-sm text-center text-[11px] text-muted">
             Showing your saved card. It will refresh automatically when you&apos;re back online.
           </p>
         )}
       </div>
 
-      <div className="no-print rounded-2xl border border-border-subtle bg-white p-6 shadow-sm">
+      <motion.div
+        className="no-print rounded-2xl border border-border-subtle bg-card p-6 shadow-sm"
+        initial="hidden"
+        animate="show"
+        variants={panelReveal}
+      >
         <b className="text-sm text-ink">How to use</b>
         <ul className="mt-3 space-y-2 text-xs leading-5 text-muted">
           <li>Open this page before you reach the check-in desk.</li>
@@ -346,7 +373,19 @@ export default function IdCardPrint({
             <p className="mt-1 text-sm font-semibold text-ink">{statusLabel}</p>
           </div>
         </div>
-      </div>
-    </div>
+        {mode !== "student" && onEditProfile && (
+          <motion.button
+            type="button"
+            onClick={onEditProfile}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            className="mt-4 w-full rounded-xl border border-border-subtle px-4 py-2.5 text-xs font-bold text-ink transition-colors hover:bg-page"
+          >
+            Update photo &amp; profile in Settings
+          </motion.button>
+        )}
+      </motion.div>
+    </motion.div>
+    </MotionConfig>
   );
 }

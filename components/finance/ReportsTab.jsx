@@ -161,7 +161,7 @@ export default function ReportsTab() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+      <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <select value={reportType} onChange={(event) => setReportType(event.target.value)} className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-bold">
             {reportTypes.map((item) => <option key={item} value={item}>{item}</option>)}

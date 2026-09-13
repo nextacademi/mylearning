@@ -90,14 +90,14 @@ function TeacherPicker({ teachers, exclude = [], onPick, busy, compact }) {
           value={query}
           onChange={(event) => { setQuery(event.target.value); setPreview(null); }}
           placeholder="Search teacher by name, email or ID…"
-          className="w-full rounded-xl border border-border-subtle bg-white py-2.5 pl-9 pr-3 text-sm shadow-sm outline-none focus:ring-2 focus:ring-success"
+          className="w-full rounded-xl border border-border-subtle bg-card py-2.5 pl-9 pr-3 text-sm shadow-sm outline-none focus:ring-2 focus:ring-success"
         />
       </label>
 
       {!assignable ? (
         <p className="rounded-xl bg-page px-3 py-2 text-xs text-muted">Every active teacher is already assigned here.</p>
       ) : (
-        <div className="max-h-52 space-y-1 overflow-y-auto rounded-xl border border-border-subtle bg-white p-1">
+        <div className="max-h-52 space-y-1 overflow-y-auto rounded-xl border border-border-subtle bg-card p-1">
           {matches.length ? matches.map((teacher) => (
             <button
               key={teacher.id}
@@ -152,7 +152,7 @@ function TeacherView({ teacher, courses, classes, onClose }) {
   const tier = tierOf(teacher);
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <Avatar teacher={teacher} size="h-14 w-14" text="text-base" />
@@ -240,7 +240,7 @@ function DirectoryTab({ data, loading, onView, onNavigate }) {
 
   if (!data.teachers.length) {
     return (
-      <div className="rounded-3xl border border-dashed border-border-subtle bg-white py-16 text-center">
+      <div className="rounded-3xl border border-dashed border-border-subtle bg-card py-16 text-center">
         <Users className="mx-auto h-9 w-9 text-subtle" aria-hidden="true" />
         <p className="mt-3 text-lg font-black text-ink">No active teacher accounts exist yet</p>
         <p className="mt-1 text-sm text-muted">Create a Teacher account first, then assign them to courses or classes.</p>
@@ -298,7 +298,7 @@ function CoursesTab({ data, busy, onAssign, onRemove }) {
       <div className="space-y-4">
         <label className="grid gap-1 text-xs font-bold text-muted">
           Select course / training
-          <select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="rounded-xl border border-border-subtle bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-success">
+          <select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-success">
             <option value="">Choose a course…</option>
             {data.courses.map((item) => <option key={item.id} value={item.id}>{item.title}{item.courseCode ? ` (${item.courseCode})` : ""}</option>)}
           </select>
@@ -306,7 +306,7 @@ function CoursesTab({ data, busy, onAssign, onRemove }) {
         {!data.courses.length && <p className="rounded-xl bg-page px-3 py-2 text-xs text-muted">No courses exist yet. Create one under Training first.</p>}
 
         {course && (
-          <div className="rounded-2xl border border-border-subtle bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-border-subtle bg-card p-4 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">Course details</p>
             <b className="mt-1 block text-base text-ink">{course.title}</b>
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
@@ -323,10 +323,10 @@ function CoursesTab({ data, busy, onAssign, onRemove }) {
 
       <div className="space-y-4">
         {!course ? (
-          <p className="rounded-2xl border border-dashed border-border-subtle bg-white py-12 text-center text-sm text-muted">Choose a course to view and manage its teachers.</p>
+          <p className="rounded-2xl border border-dashed border-border-subtle bg-card py-12 text-center text-sm text-muted">Choose a course to view and manage its teachers.</p>
         ) : (
           <>
-            <div className="rounded-2xl border border-border-subtle bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-border-subtle bg-card p-4 shadow-sm">
               <p className="mb-2 text-xs font-bold uppercase tracking-wider text-subtle">Current teachers</p>
               {assigned.length ? (
                 <ul className="space-y-2">
@@ -356,7 +356,7 @@ function CoursesTab({ data, busy, onAssign, onRemove }) {
               )}
             </div>
 
-            <div className="rounded-2xl border border-border-subtle bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-border-subtle bg-card p-4 shadow-sm">
               <p className="mb-2 text-xs font-bold uppercase tracking-wider text-subtle">Assign a teacher</p>
               <TeacherPicker
                 teachers={data.teachers}
@@ -379,11 +379,11 @@ function ClassesTab({ data, busy, onAssignClass, onChangeClass, onRemove }) {
   const teacherById = useMemo(() => new Map(data.teachers.map((t) => [t.id, t])), [data.teachers]);
 
   if (!data.classes.length) {
-    return <p className="rounded-2xl border border-dashed border-border-subtle bg-white py-12 text-center text-sm text-muted">No class / batch records exist yet. They are created with each course under Training.</p>;
+    return <p className="rounded-2xl border border-dashed border-border-subtle bg-card py-12 text-center text-sm text-muted">No class / batch records exist yet. They are created with each course under Training.</p>;
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-card shadow-sm">
       <table className="w-full text-left text-sm" style={{ minWidth: "920px" }}>
         <thead className="bg-page text-[10px] font-black uppercase tracking-wider text-muted">
           <tr>
@@ -440,7 +440,7 @@ function ClassesTab({ data, busy, onAssignClass, onChangeClass, onRemove }) {
 function ClassAssignModal({ cls, data, busy, onClose, onPick }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl">
         <div className="mb-1 flex items-center justify-between gap-4">
           <h3 className="text-lg font-bold text-ink">Assign teacher</h3>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-muted hover:bg-page" aria-label="Close"><X className="h-5 w-5" /></button>
@@ -554,9 +554,9 @@ export default function TeacherAssignment({ onNavigate }) {
         <p className="mt-2 text-sm text-muted">Assign real, active Teacher accounts to your existing courses and classes. Workload updates automatically from live enrollment data.</p>
         {!loading && (
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
-            <span className="rounded-full bg-white px-3 py-1.5 text-ink shadow-sm">{data.teachers.length} active teacher{data.teachers.length === 1 ? "" : "s"}</span>
-            <span className="rounded-full bg-white px-3 py-1.5 text-ink shadow-sm">{data.courses.length} course{data.courses.length === 1 ? "" : "s"}</span>
-            <span className="rounded-full bg-white px-3 py-1.5 text-ink shadow-sm">{data.classes.length} class{data.classes.length === 1 ? "" : "es"}</span>
+            <span className="rounded-full bg-card px-3 py-1.5 text-ink shadow-sm">{data.teachers.length} active teacher{data.teachers.length === 1 ? "" : "s"}</span>
+            <span className="rounded-full bg-card px-3 py-1.5 text-ink shadow-sm">{data.courses.length} course{data.courses.length === 1 ? "" : "s"}</span>
+            <span className="rounded-full bg-card px-3 py-1.5 text-ink shadow-sm">{data.classes.length} class{data.classes.length === 1 ? "" : "es"}</span>
           </div>
         )}
       </section>

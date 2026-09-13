@@ -54,7 +54,7 @@ export default function DataTable({
             value={table.search}
             onChange={(event) => table.setSearch(event.target.value)}
             placeholder={`Search${title ? ` ${title.toLowerCase()}` : ""}…`}
-            className="w-full rounded-xl border border-border-subtle bg-white py-2 pl-9 pr-3 text-sm shadow-sm outline-none focus:ring-2 focus:ring-success"
+            className="w-full rounded-xl border border-border-subtle bg-card py-2 pl-9 pr-3 text-sm shadow-sm outline-none focus:ring-2 focus:ring-success"
           />
         </label>
 
@@ -63,7 +63,7 @@ export default function DataTable({
             key={col.key}
             value={table.filters[col.key] ?? "__all__"}
             onChange={(event) => table.setFilter(col.key, event.target.value)}
-            className="rounded-xl border border-border-subtle bg-white px-3 py-2 text-xs font-semibold text-ink shadow-sm outline-none focus:ring-2 focus:ring-success"
+            className="rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs font-semibold text-ink shadow-sm outline-none focus:ring-2 focus:ring-success"
           >
             <option value="__all__">{col.filter.placeholder || `All ${col.header || col.key}`}</option>
             {(table.filterOptions[col.key] || []).map((opt) => (
@@ -73,7 +73,7 @@ export default function DataTable({
         ))}
 
         {table.activeFilterCount > 0 && (
-          <button type="button" onClick={table.reset} className="inline-flex items-center gap-1 rounded-xl border border-border-subtle bg-white px-2.5 py-2 text-xs font-bold text-muted hover:bg-page">
+          <button type="button" onClick={table.reset} className="inline-flex items-center gap-1 rounded-xl border border-border-subtle bg-card px-2.5 py-2 text-xs font-bold text-muted hover:bg-page">
             <RotateCcw className="h-3.5 w-3.5" /> Clear
           </button>
         )}
@@ -95,7 +95,7 @@ export default function DataTable({
       {error && <p className="rounded-xl bg-active p-3 text-sm text-primary">{error}</p>}
 
       {/* ---- table ---- */}
-      <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-card shadow-sm">
         <table className="w-full text-left text-sm" style={{ minWidth: `${Math.max(640, columns.length * 130)}px` }}>
           <thead className="bg-page text-[10px] font-black uppercase tracking-wider text-muted">
             <tr>
@@ -162,15 +162,15 @@ export default function DataTable({
             <select
               value={table.pageSize}
               onChange={(event) => { table.setPageSize(Number(event.target.value)); table.setPage(1); }}
-              className="rounded-lg border border-border-subtle bg-white px-2 py-1 text-xs"
+              className="rounded-lg border border-border-subtle bg-card px-2 py-1 text-xs"
             >
               {[10, 25, 50, 100].map((size) => <option key={size} value={size}>{size} / page</option>)}
             </select>
           </div>
           <div className="flex items-center gap-1">
-            <button type="button" disabled={table.page <= 1} onClick={() => table.setPage(table.page - 1)} className="rounded-lg border border-border-subtle bg-white p-1.5 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
+            <button type="button" disabled={table.page <= 1} onClick={() => table.setPage(table.page - 1)} className="rounded-lg border border-border-subtle bg-card p-1.5 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
             <span className="px-2 font-bold text-ink">{table.page} / {table.pageCount}</span>
-            <button type="button" disabled={table.page >= table.pageCount} onClick={() => table.setPage(table.page + 1)} className="rounded-lg border border-border-subtle bg-white p-1.5 disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button>
+            <button type="button" disabled={table.page >= table.pageCount} onClick={() => table.setPage(table.page + 1)} className="rounded-lg border border-border-subtle bg-card p-1.5 disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button>
           </div>
         </div>
       )}

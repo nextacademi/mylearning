@@ -82,7 +82,7 @@ export default function ProductOrderModal({ product, profile, onClose, onViewOrd
   if (result) {
     return (
       <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-3 backdrop-blur-sm" role="dialog" aria-modal="true">
-        <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+        <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-2xl">
           <div className="text-center">
             <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-success-soft">
               <CheckCircle2 className="h-6 w-6 text-success" />
@@ -111,7 +111,7 @@ export default function ProductOrderModal({ product, profile, onClose, onViewOrd
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/50 p-3 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <form onSubmit={submit} className="my-4 w-full max-w-md rounded-2xl bg-white shadow-2xl">
+      <form onSubmit={submit} className="my-4 w-full max-w-md rounded-2xl bg-card shadow-2xl">
         <div className="flex items-center justify-between border-b border-border-subtle px-5 py-4">
           <div className="flex items-center gap-2.5">
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10">
@@ -161,7 +161,7 @@ export default function ProductOrderModal({ product, profile, onClose, onViewOrd
           <section>
             <p className="mb-2.5 text-[9px] font-black uppercase tracking-wider text-subtle">Product</p>
             <div className="flex items-center gap-2.5 rounded-lg bg-page p-2">
-              <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-md bg-white">
+              <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-md bg-card">
                 {product.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
@@ -216,7 +216,7 @@ export default function ProductOrderModal({ product, profile, onClose, onViewOrd
                 onChange={(e) => setCollectionDate(e.target.value)}
                 min={today}
                 required
-                className="w-full cursor-pointer rounded-lg border border-border-subtle bg-white py-2.5 pl-9 pr-3 text-xs font-semibold text-ink outline-none focus:border-primary focus:ring-1 focus:ring-primary/10"
+                className="w-full cursor-pointer rounded-lg border border-border-subtle bg-card py-2.5 pl-9 pr-3 text-xs font-semibold text-ink outline-none focus:border-primary focus:ring-1 focus:ring-primary/10"
               />
             </div>
           </section>

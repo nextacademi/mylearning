@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
+import { ChevronDown, ChevronUp, Circle, FileText, Link2, Pencil, PlayCircle, Trash2, Type } from "lucide-react";
+import { db } from "../../lib/firebase";
 import { useAuth } from "../../lib/auth-context";
 import AttendanceStatusPicker from "./AttendanceStatusPicker";
 import ClassSessionsPanel from "./ClassSessionsPanel";
@@ -38,6 +41,21 @@ import Spinner from "../ui/Spinner";
 import EnrollmentManager from "./EnrollmentManager";
 import DocumentsModule from "../documents/DocumentsModule";
 import DataTable, { StatusBadge as TableBadge } from "../data-table/DataTable";
+import StudentCourseLearningView from "./StudentCourseLearningView";
+import LessonContentViewer from "./LessonContentViewer";
+import {
+  createLesson,
+  createModule,
+  deleteLesson,
+  deleteModule,
+  subscribeLessons,
+  subscribeModules,
+  swapLessonOrder,
+  swapModuleOrder,
+  updateLesson,
+  updateModule,
+} from "../../lib/course-modules-data";
+import { uploadLessonContent } from "../../lib/services/lesson-content-service";
 
 // Same Admin/Director module list used by app/dashboard/[role]/page.jsx's
 // roleConfig.Director/Admin — duplicated here (a static, rarely-changing
@@ -66,7 +84,7 @@ const managerTabs = [
   "Classes",
   "Students",
   "Attendance",
-  "Modules & Lessons",
+  "Modules",
   "Materials",
   "Assign",
 ];
@@ -75,20 +93,21 @@ const teacherTabs = [
   "Students",
   "Classes",
   "Attendance",
+  "Modules",
   "Assessment",
   "Materials",
 ];
 
 function Empty({ children }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border-subtle bg-white p-8 text-center text-sm text-muted">
+    <div className="rounded-2xl border border-dashed border-border-subtle bg-card p-8 text-center text-sm text-muted">
       {children}
     </div>
   );
 }
 function Panel({ title, children, action }) {
   return (
-    <section className="rounded-3xl border border-border-subtle bg-white p-7 shadow-sm">
+    <section className="rounded-3xl border border-border-subtle bg-card p-7 shadow-sm">
       <div className="mb-5 flex items-center justify-between gap-3">
         <h2 className="font-bold text-ink">{title}</h2>
         {action}
@@ -125,12 +144,38 @@ export default function TrainingDetailsPage() {
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [studentEnrolled, setStudentEnrolled] = useState(null); // null = still checking
 
   const canManage = profile?.role === "Admin" || profile?.role === "Director";
   const isAssignedTeacher =
     profile?.role === "Teacher" && course?.teacherIds?.includes(user?.uid);
   const allowed = canManage || isAssignedTeacher;
   const tabs = canManage ? managerTabs : teacherTabs;
+
+  // A Student never gets the manager/teacher tabs above — instead, once we
+  // know they have an active (non-withdrawn) enrollment for this exact
+  // course, they see the read-only StudentCourseLearningView further down.
+  // One-time getDoc, not a subscription: enrollment status changing while
+  // this page is open is not a real scenario worth a live listener for.
+  useEffect(() => {
+    // Non-Students never read studentEnrolled (every use below is guarded
+    // by profile?.role === "Student" first), so there is nothing to do or
+    // set for them here — no need for a synchronous setState in that case.
+    if (profile?.role !== "Student" || !courseId || !user?.uid) return undefined;
+    let cancelled = false;
+    getDoc(doc(db, "enrollments", `${courseId}_${user.uid}`))
+      .then((snapshot) => {
+        if (cancelled) return;
+        const data = snapshot.data();
+        setStudentEnrolled(Boolean(snapshot.exists() && data?.status !== "withdrawn"));
+      })
+      .catch(() => {
+        if (!cancelled) setStudentEnrolled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.role, courseId, user?.uid]);
 
   useEffect(() => {
     if (!courseId) return undefined;
@@ -262,6 +307,21 @@ export default function TrainingDetailsPage() {
         <div className="mt-6">
           <Empty>Training not found</Empty>
         </div>
+      ) : !allowed && profile?.role === "Student" && studentEnrolled === null ? (
+        <Spinner label="Checking your enrollment..." className="mt-6" />
+      ) : !allowed && profile?.role === "Student" && studentEnrolled ? (
+        <div className="mt-6">
+          <header className="rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
+              {course.courseCode || course.id} · Offline Training
+            </p>
+            <h1 className="mt-2 text-3xl font-black md:text-5xl">{course.title}</h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted">{course.description || "No description available."}</p>
+          </header>
+          <div className="mt-5">
+            <StudentCourseLearningView course={course} courseId={course.id} uid={user.uid} />
+          </div>
+        </div>
       ) : !allowed ? (
         <div className="mt-6">
           <Empty>You do not have access to this training.</Empty>
@@ -280,7 +340,7 @@ export default function TrainingDetailsPage() {
             </p>
           </header>
 
-          <nav className="my-5 flex gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-white p-1.5 shadow-sm">
+          <nav className="my-5 flex gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-1.5 shadow-sm">
             {tabs.map((item) => (
               <button
                 key={item}
@@ -466,11 +526,7 @@ export default function TrainingDetailsPage() {
               classId={course.primaryClassId}
             />
           )}
-          {tab === "Modules & Lessons" && (
-            <Panel title="Modules & Lessons">
-              <Empty>Content authoring is coming in a later update.</Empty>
-            </Panel>
-          )}
+          {tab === "Modules" && <ModulesTab courseId={course.id} canEdit={canManage || isAssignedTeacher} />}
           {tab === "Materials" && (
             <DocumentsModule
               role={profile?.role || "Teacher"}
@@ -1184,5 +1240,463 @@ function AssignTab({ course }) {
       </button>
       {message && <p className="mt-3 text-xs text-muted">{message}</p>}
     </Panel>
+  );
+}
+
+// -----------------------------------------------------------------------
+// Modules tab — module + lesson authoring for Admin/Director/assigned
+// Teacher (canEdit), read via lib/course-modules-data.js's direct Firestore
+// listeners (the existing courses/{id}/modules/{id}/lessons/{id} rules
+// already gate every read/write correctly — see the feature plan). File
+// bytes for uploaded video/pdf/document content go through
+// lib/services/lesson-content-service.js instead, never direct Storage.
+// -----------------------------------------------------------------------
+const CONTENT_TYPE_OPTIONS = [
+  { value: "video", label: "Video" },
+  { value: "pdf", label: "PDF" },
+  { value: "document", label: "Document" },
+  { value: "link", label: "External Resource" },
+  { value: "text", label: "Text / Notes" },
+  { value: "quiz", label: "Quiz / Exam (coming soon)" },
+];
+const CONTENT_ICON = { video: PlayCircle, pdf: FileText, document: FileText, link: Link2, text: Type, quiz: Circle };
+
+function ModulesTab({ courseId, canEdit }) {
+  const [modules, setModules] = useState([]);
+  const [addingModule, setAddingModule] = useState(false);
+  const [editingModuleId, setEditingModuleId] = useState("");
+  const [moduleForm, setModuleForm] = useState({ title: "", description: "", estimatedDuration: "" });
+  const [savingModule, setSavingModule] = useState(false);
+  const [moduleError, setModuleError] = useState("");
+
+  useEffect(() => subscribeModules(courseId, setModules, () => {}), [courseId]);
+
+  function resetModuleForm() {
+    setAddingModule(false);
+    setEditingModuleId("");
+    setModuleForm({ title: "", description: "", estimatedDuration: "" });
+    setModuleError("");
+  }
+
+  function startEditModule(module) {
+    setEditingModuleId(module.id);
+    setModuleForm({
+      title: module.title || "",
+      description: module.description || "",
+      estimatedDuration: module.estimatedDuration ? String(module.estimatedDuration) : "",
+    });
+    setAddingModule(true);
+  }
+
+  async function submitModule(event) {
+    event.preventDefault();
+    if (!moduleForm.title.trim()) {
+      setModuleError("Module title is required.");
+      return;
+    }
+    setSavingModule(true);
+    setModuleError("");
+    try {
+      const payload = {
+        title: moduleForm.title.trim(),
+        description: moduleForm.description.trim(),
+        estimatedDuration: Number(moduleForm.estimatedDuration) || 0,
+      };
+      if (editingModuleId) await updateModule(courseId, editingModuleId, payload);
+      else await createModule(courseId, payload);
+      resetModuleForm();
+    } catch (error) {
+      setModuleError(error.message || "Unable to save module.");
+    } finally {
+      setSavingModule(false);
+    }
+  }
+
+  return (
+    <Panel
+      title="Modules"
+      action={
+        canEdit && (
+          <button
+            type="button"
+            onClick={() => (addingModule ? resetModuleForm() : setAddingModule(true))}
+            className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white"
+          >
+            {addingModule ? "Cancel" : "+ Add Module"}
+          </button>
+        )
+      }
+    >
+      {canEdit && addingModule && (
+        <form onSubmit={submitModule} className="mb-5 grid gap-3 rounded-2xl border border-border-subtle bg-page p-4 sm:grid-cols-2">
+          <label className="grid gap-1 text-xs font-bold text-muted sm:col-span-2">
+            Module title
+            <input
+              value={moduleForm.title}
+              onChange={(event) => setModuleForm((current) => ({ ...current, title: event.target.value }))}
+              onKeyDown={stopEnterSubmit}
+              className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+              placeholder="e.g. Modern JavaScript"
+            />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted sm:col-span-2">
+            Description
+            <textarea
+              value={moduleForm.description}
+              onChange={(event) => setModuleForm((current) => ({ ...current, description: event.target.value }))}
+              rows={2}
+              className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+            />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            Estimated duration (minutes)
+            <input
+              type="number"
+              min="0"
+              value={moduleForm.estimatedDuration}
+              onChange={(event) => setModuleForm((current) => ({ ...current, estimatedDuration: event.target.value }))}
+              onKeyDown={stopEnterSubmit}
+              className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+            />
+          </label>
+          <div className="flex items-center gap-3 sm:col-span-2">
+            <button type="submit" disabled={savingModule} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-40">
+              {savingModule ? "Saving..." : editingModuleId ? "Save changes" : "Create module"}
+            </button>
+            {moduleError && <p className="text-xs text-primary">{moduleError}</p>}
+          </div>
+        </form>
+      )}
+
+      {modules.length ? (
+        <div className="space-y-3">
+          {modules.map((module, index) => (
+            <ModuleCard
+              key={module.id}
+              courseId={courseId}
+              module={module}
+              canEdit={canEdit}
+              isFirst={index === 0}
+              isLast={index === modules.length - 1}
+              onEdit={() => startEditModule(module)}
+              onDelete={() => {
+                if (window.confirm(`Delete "${module.title}" and all its lessons? This cannot be undone.`)) deleteModule(courseId, module.id);
+              }}
+              onTogglePublish={() => updateModule(courseId, module.id, { status: module.status === "Published" ? "Draft" : "Published" })}
+              onMoveUp={() => swapModuleOrder(courseId, modules[index], modules[index - 1])}
+              onMoveDown={() => swapModuleOrder(courseId, modules[index], modules[index + 1])}
+            />
+          ))}
+        </div>
+      ) : (
+        <Empty>{canEdit ? 'No modules yet. Click "+ Add Module" to create the first one.' : "No modules published yet."}</Empty>
+      )}
+    </Panel>
+  );
+}
+
+function ModuleCard({ courseId, module, canEdit, isFirst, isLast, onEdit, onDelete, onTogglePublish, onMoveUp, onMoveDown }) {
+  const [expanded, setExpanded] = useState(false);
+  const [lessons, setLessons] = useState([]);
+  const [addingLesson, setAddingLesson] = useState(false);
+  const [editingLessonId, setEditingLessonId] = useState("");
+  const [previewLesson, setPreviewLesson] = useState(null);
+
+  useEffect(() => {
+    if (!expanded) return undefined;
+    return subscribeLessons(courseId, module.id, setLessons, () => {});
+  }, [courseId, module.id, expanded]);
+
+  return (
+    <div className="rounded-2xl border border-border-subtle">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+        <button type="button" onClick={() => setExpanded((current) => !current)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+          <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${module.status === "Published" ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`}>
+            {module.status}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-bold text-ink">{module.title}</span>
+            <span className="text-xs text-muted">{module.estimatedDuration ? `${module.estimatedDuration} min` : "No duration set"}</span>
+          </span>
+        </button>
+        {canEdit && (
+          <div className="flex shrink-0 items-center gap-1">
+            <button type="button" onClick={onMoveUp} disabled={isFirst} title="Move up" className="rounded-lg p-1.5 text-muted hover:bg-page disabled:opacity-30">
+              <ChevronUp className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button type="button" onClick={onMoveDown} disabled={isLast} title="Move down" className="rounded-lg p-1.5 text-muted hover:bg-page disabled:opacity-30">
+              <ChevronDown className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button type="button" onClick={onTogglePublish} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-page">
+              {module.status === "Published" ? "Unpublish" : "Publish"}
+            </button>
+            <button type="button" onClick={onEdit} title="Edit" className="rounded-lg p-1.5 text-muted hover:bg-page">
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button type="button" onClick={onDelete} title="Delete" className="rounded-lg p-1.5 text-muted hover:bg-page hover:text-primary">
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {expanded && (
+        <div className="border-t border-border-subtle p-4">
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                if (addingLesson) {
+                  setAddingLesson(false);
+                  setEditingLessonId("");
+                } else {
+                  setAddingLesson(true);
+                }
+              }}
+              className="mb-3 rounded-xl border border-border-subtle px-3 py-2 text-xs font-bold text-ink hover:bg-page"
+            >
+              {addingLesson ? "Cancel" : "+ Add Lesson"}
+            </button>
+          )}
+          {canEdit && addingLesson && (
+            <LessonForm
+              courseId={courseId}
+              moduleId={module.id}
+              editingLessonId={editingLessonId}
+              lessons={lessons}
+              onDone={() => {
+                setAddingLesson(false);
+                setEditingLessonId("");
+              }}
+            />
+          )}
+          {lessons.length ? (
+            <div className="space-y-2">
+              {lessons.map((lesson, index) => (
+                <LessonRow
+                  key={lesson.id}
+                  lesson={lesson}
+                  canEdit={canEdit}
+                  isFirst={index === 0}
+                  isLast={index === lessons.length - 1}
+                  onPreview={() => setPreviewLesson(lesson)}
+                  onEdit={() => {
+                    setEditingLessonId(lesson.id);
+                    setAddingLesson(true);
+                  }}
+                  onDelete={() => {
+                    if (window.confirm(`Delete "${lesson.title}"?`)) deleteLesson(courseId, module.id, lesson.id);
+                  }}
+                  onTogglePublish={() => updateLesson(courseId, module.id, lesson.id, { status: lesson.status === "Published" ? "Draft" : "Published" })}
+                  onMoveUp={() => swapLessonOrder(courseId, module.id, lessons[index], lessons[index - 1])}
+                  onMoveDown={() => swapLessonOrder(courseId, module.id, lessons[index], lessons[index + 1])}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted">No lessons yet.</p>
+          )}
+          {previewLesson && (
+            <div className="mt-4 border-t border-border-subtle pt-4">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-subtle">Preview — {previewLesson.title}</p>
+                <button type="button" onClick={() => setPreviewLesson(null)} className="text-xs font-bold text-muted hover:text-ink">
+                  Close ×
+                </button>
+              </div>
+              <LessonContentViewer courseId={courseId} moduleId={module.id} lesson={previewLesson} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LessonRow({ lesson, canEdit, isFirst, isLast, onEdit, onDelete, onTogglePublish, onMoveUp, onMoveDown, onPreview }) {
+  const Icon = CONTENT_ICON[lesson.contentType] || FileText;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-subtle px-3 py-2.5">
+      <button type="button" onClick={onPreview} className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-primary">
+        <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden="true" />
+        <span className="min-w-0 truncate text-sm font-semibold text-ink">{lesson.title}</span>
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold ${lesson.status === "Published" ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`}>
+          {lesson.status}
+        </span>
+      </button>
+      {canEdit && (
+        <div className="flex shrink-0 items-center gap-1">
+          <button type="button" onClick={onMoveUp} disabled={isFirst} className="rounded-lg p-1 text-muted hover:bg-page disabled:opacity-30">
+            <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          <button type="button" onClick={onMoveDown} disabled={isLast} className="rounded-lg p-1 text-muted hover:bg-page disabled:opacity-30">
+            <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          <button type="button" onClick={onTogglePublish} className="rounded-lg border border-border-subtle px-2 py-1 text-[10px] font-bold text-ink hover:bg-page">
+            {lesson.status === "Published" ? "Unpublish" : "Publish"}
+          </button>
+          <button type="button" onClick={onEdit} className="rounded-lg p-1 text-muted hover:bg-page">
+            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          <button type="button" onClick={onDelete} className="rounded-lg p-1 text-muted hover:bg-page hover:text-primary">
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LessonForm({ courseId, moduleId, editingLessonId, lessons, onDone }) {
+  const editing = lessons.find((item) => item.id === editingLessonId) || null;
+  const [form, setForm] = useState(() => ({
+    title: editing?.title || "",
+    description: editing?.description || "",
+    contentType: editing?.contentType || "video",
+    contentUrl: editing?.contentUrl || "",
+    textBody: editing?.textBody || "",
+    duration: editing?.duration ? String(editing.duration) : "",
+    status: editing?.status || "Draft",
+  }));
+  const [file, setFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const showUrlField = form.contentType === "video" || form.contentType === "link";
+  const showFileField =
+    form.contentType === "pdf" || form.contentType === "document" || (form.contentType === "video" && !form.contentUrl.trim());
+
+  async function submit(event) {
+    event.preventDefault();
+    if (!form.title.trim()) {
+      setError("Lesson title is required.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const payload = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        contentType: form.contentType,
+        contentUrl: showUrlField ? form.contentUrl.trim() || null : null,
+        textBody: form.contentType === "text" ? form.textBody : "",
+        duration: Number(form.duration) || 0,
+        status: form.status,
+      };
+      let lessonId = editingLessonId;
+      if (editingLessonId) await updateLesson(courseId, moduleId, editingLessonId, payload);
+      else lessonId = await createLesson(courseId, moduleId, payload);
+
+      if (file && (form.contentType === "video" || form.contentType === "pdf" || form.contentType === "document")) {
+        await uploadLessonContent(courseId, moduleId, lessonId, file);
+      }
+      onDone();
+    } catch (err) {
+      setError(err.message || "Unable to save lesson.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="mb-4 grid gap-3 rounded-2xl border border-border-subtle bg-card p-4 sm:grid-cols-2">
+      <label className="grid gap-1 text-xs font-bold text-muted sm:col-span-2">
+        Lesson title
+        <input
+          value={form.title}
+          onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+          onKeyDown={stopEnterSubmit}
+          className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+        />
+      </label>
+      <label className="grid gap-1 text-xs font-bold text-muted sm:col-span-2">
+        Description
+        <textarea
+          value={form.description}
+          onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+          rows={2}
+          className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+        />
+      </label>
+      <label className="grid gap-1 text-xs font-bold text-muted">
+        Content type
+        <select
+          value={form.contentType}
+          onChange={(event) => setForm((current) => ({ ...current, contentType: event.target.value }))}
+          className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+        >
+          {CONTENT_TYPE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1 text-xs font-bold text-muted">
+        Duration (minutes)
+        <input
+          type="number"
+          min="0"
+          value={form.duration}
+          onChange={(event) => setForm((current) => ({ ...current, duration: event.target.value }))}
+          onKeyDown={stopEnterSubmit}
+          className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+        />
+      </label>
+
+      {showUrlField && (
+        <label className="grid gap-1 text-xs font-bold text-muted sm:col-span-2">
+          {form.contentType === "video" ? "YouTube or Google Drive URL (leave blank to upload a video file instead)" : "External resource URL"}
+          <input
+            value={form.contentUrl}
+            onChange={(event) => setForm((current) => ({ ...current, contentUrl: event.target.value }))}
+            onKeyDown={stopEnterSubmit}
+            className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+            placeholder="https://"
+          />
+        </label>
+      )}
+      {form.contentType === "text" && (
+        <label className="grid gap-1 text-xs font-bold text-muted sm:col-span-2">
+          Notes
+          <textarea
+            value={form.textBody}
+            onChange={(event) => setForm((current) => ({ ...current, textBody: event.target.value }))}
+            rows={4}
+            className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+          />
+        </label>
+      )}
+      {showFileField && (
+        <label className="grid gap-1 text-xs font-bold text-muted sm:col-span-2">
+          {form.contentType === "video" ? "Or upload a video file (max 100MB)" : "Upload file (max 25MB)"}
+          <input
+            type="file"
+            accept={form.contentType === "video" ? "video/*" : ".pdf,.doc,.docx,.ppt,.pptx"}
+            onChange={(event) => setFile(event.target.files?.[0] || null)}
+            className="text-xs"
+          />
+          {editing?.fileName && !file && <span className="text-[11px] text-muted">Current file: {editing.fileName}</span>}
+        </label>
+      )}
+      <label className="grid gap-1 text-xs font-bold text-muted">
+        Status
+        <select
+          value={form.status}
+          onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
+          className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
+        >
+          <option value="Draft">Draft</option>
+          <option value="Published">Published</option>
+        </select>
+      </label>
+      <div className="flex items-center gap-3 sm:col-span-2">
+        <button type="submit" disabled={saving} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-40">
+          {saving ? "Saving..." : editingLessonId ? "Save changes" : "Create lesson"}
+        </button>
+        {error && <p className="text-xs text-primary">{error}</p>}
+      </div>
+    </form>
   );
 }

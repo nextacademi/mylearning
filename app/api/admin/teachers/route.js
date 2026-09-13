@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
+import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { generateUserId } from "../../../../lib/server/user-id";
 
 export const runtime = "nodejs";
@@ -21,7 +22,7 @@ async function requireManager(request) {
   const auth = getAdminAuth();
   const db = getAdminDb();
   const decoded = await auth.verifyIdToken(token);
-  const profile = await db.collection("users").doc(decoded.uid).get();
+  const profile = await getCachedUserSnapshot(db, decoded.uid);
   if (!profile.exists || profile.data().active === false || !managers.has(profile.data().role)) {
     return { denied: NextResponse.json({ message: "Administrator access is required." }, { status: 403 }) };
   }

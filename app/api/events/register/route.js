@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
+import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { computeEventStatus } from "../../../../lib/events-shared";
 
 export const runtime = "nodejs";
@@ -17,7 +18,7 @@ async function access(request) {
   if (!token) return { denied: NextResponse.json({ message: "Sign in to continue." }, { status: 401 }) };
   const db = getAdminDb();
   const decoded = await getAdminAuth().verifyIdToken(token);
-  const profile = await db.collection("users").doc(decoded.uid).get();
+  const profile = await getCachedUserSnapshot(db, decoded.uid);
   const data = profile.data() || {};
   if (!profile.exists || data.active === false || data.status === "pending" || data.status === "rejected") {
     return { denied: NextResponse.json({ message: "Account access is required." }, { status: 403 }) };

@@ -32,7 +32,7 @@ const SORT_OPTIONS = [
 function Dialog({ title, children, onClose }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between gap-4">
           <h2 className="text-lg font-bold text-ink">{title}</h2>
           <button onClick={onClose} className="text-xl text-muted" aria-label="Close">×</button>
@@ -551,7 +551,7 @@ export default function Shop({ role, uid }) {
           <button key={item} type="button" onClick={() => setTab(item)} className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition ${tab === item ? "bg-primary text-white" : "bg-page text-muted hover:bg-active hover:text-primary"}`}>
             {item}
             {item === "Orders" && pendingOrderCount > 0 && (
-              <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${tab === item ? "bg-white text-primary" : "bg-primary text-white"}`}>{pendingOrderCount}</span>
+              <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${tab === item ? "bg-card text-primary" : "bg-primary text-white"}`}>{pendingOrderCount}</span>
             )}
           </button>
         ))}
@@ -573,7 +573,7 @@ export default function Shop({ role, uid }) {
                 <button
                   type="button"
                   onClick={() => setCategoryFilter("all")}
-                  className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-bold transition ${categoryFilter === "all" ? "bg-ink text-white shadow-sm" : "border border-border-subtle bg-white text-muted hover:border-ink hover:text-ink"}`}
+                  className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-bold transition ${categoryFilter === "all" ? "bg-ink text-white shadow-sm" : "border border-border-subtle bg-card text-muted hover:border-ink hover:text-ink"}`}
                 >
                   All
                 </button>
@@ -582,7 +582,7 @@ export default function Shop({ role, uid }) {
                     key={category.id}
                     type="button"
                     onClick={() => setCategoryFilter(category.id)}
-                    className={`flex shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-5 text-sm font-bold transition ${categoryFilter === category.id ? "bg-ink text-white shadow-sm" : "border border-border-subtle bg-white text-muted hover:border-ink hover:text-ink"}`}
+                    className={`flex shrink-0 items-center gap-2 rounded-full py-1.5 pl-1.5 pr-5 text-sm font-bold transition ${categoryFilter === category.id ? "bg-ink text-white shadow-sm" : "border border-border-subtle bg-card text-muted hover:border-ink hover:text-ink"}`}
                   >
                     {category.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -601,13 +601,13 @@ export default function Shop({ role, uid }) {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <label className="relative min-w-56 flex-1">
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden="true" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." className="w-full rounded-xl border border-border-subtle bg-white py-2.5 pl-10 pr-3 text-sm shadow-sm" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." className="w-full rounded-xl border border-border-subtle bg-card py-2.5 pl-10 pr-3 text-sm shadow-sm" />
               </label>
               <div className="flex shrink-0 items-center gap-3">
                 <label className="flex items-center gap-2 text-xs font-bold text-muted">
                   <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
                   Sort by
-                  <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-xl border border-border-subtle bg-white px-3 py-2.5 text-xs font-bold text-ink shadow-sm">
+                  <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-xs font-bold text-ink shadow-sm">
                     {SORT_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                 </label>
@@ -615,7 +615,7 @@ export default function Shop({ role, uid }) {
                   <button
                     type="button"
                     onClick={() => setShowCartDrawer(true)}
-                    className="relative flex items-center gap-2 rounded-xl border border-border-subtle bg-white px-3.5 py-2.5 text-xs font-bold text-ink shadow-sm transition hover:border-primary hover:text-primary"
+                    className="relative flex items-center gap-2 rounded-xl border border-border-subtle bg-card px-3.5 py-2.5 text-xs font-bold text-ink shadow-sm transition hover:border-primary hover:text-primary"
                   >
                     <ShoppingCart className="h-4 w-4" aria-hidden="true" />
                     Cart
@@ -630,7 +630,7 @@ export default function Shop({ role, uid }) {
             {!productsLoaded ? (
               <Spinner label="Loading products..." />
             ) : !visibleProducts.length ? (
-              <div className="rounded-3xl border border-dashed border-border-subtle bg-white py-16 text-center">
+              <div className="rounded-3xl border border-dashed border-border-subtle bg-card py-16 text-center">
                 {search || categoryFilter !== "all" ? (
                   <>
                     <p className="font-bold text-ink">No products found</p>
@@ -654,7 +654,7 @@ export default function Shop({ role, uid }) {
                   return (
                     <article
                       key={product.id}
-                      className="group flex flex-col overflow-hidden rounded-xl border border-border-subtle/60 bg-white shadow-sm ring-1 ring-transparent transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-border-subtle hover:shadow-md focus-within:ring-primary/40"
+                      className="group flex flex-col overflow-hidden rounded-xl border border-border-subtle/60 bg-card shadow-sm ring-1 ring-transparent transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-border-subtle hover:shadow-md focus-within:ring-primary/40"
                     >
                       <div className={`relative aspect-square w-full overflow-hidden bg-page ${outOfStock ? "grayscale" : ""}`}>
                         {product.imageUrl ? (
@@ -672,7 +672,7 @@ export default function Shop({ role, uid }) {
                             never both at once. */}
                         {outOfStock ? (
                           <div className="absolute inset-0 grid place-items-center bg-slate-950/40">
-                            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-primary shadow-sm">Sold out</span>
+                            <span className="rounded-full bg-card px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-primary shadow-sm">Sold out</span>
                           </div>
                         ) : lowStock ? (
                           <span className="absolute right-1.5 top-1.5 rounded-md bg-warning px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">Only {product.stock} left</span>
@@ -741,7 +741,7 @@ export default function Shop({ role, uid }) {
       )}
 
       {tab === "Orders" && (
-        <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
           <h3 className="mb-1 font-bold text-ink">{canManage ? "All orders" : "My orders"}</h3>
           <p className="mb-4 text-xs text-muted">{canManage ? "Every order placed across the shop." : "Your own order history."}</p>
           <DataTable
@@ -772,7 +772,7 @@ export default function Shop({ role, uid }) {
       )}
 
       {tab === "Manage Products" && canManage && (
-        <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
           <h3 className="mb-4 font-bold text-ink">All products</h3>
           {!products.length ? (
             <p className="py-10 text-center text-sm text-muted">No products yet. Click &quot;Add Product&quot; to create the first one.</p>
@@ -814,7 +814,7 @@ export default function Shop({ role, uid }) {
       )}
 
       {tab === "Categories" && canManage && (
-        <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="font-bold text-ink">Categories</h3>
             <button type="button" onClick={openAddCategory} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">+ Add Category</button>
@@ -904,7 +904,7 @@ export default function Shop({ role, uid }) {
           Admin/Director Shop tab. Managers never see this — they don't buy. */}
       {showCartDrawer && !canManage && (
         <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/50" role="dialog" aria-modal="true" onClick={() => setShowCartDrawer(false)}>
-          <div className="flex h-full w-full max-w-sm flex-col bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="flex h-full w-full max-w-sm flex-col bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-border-subtle p-5">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-primary" aria-hidden="true" />

@@ -62,7 +62,7 @@ export function ToastProvider({ children }) {
             <div
               key={toast.id}
               role="status"
-              className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border border-border-subtle bg-white p-3 shadow-lg"
+              className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border border-border-subtle bg-card p-3 shadow-lg"
             >
               <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${tone.color}`} aria-hidden="true" />
               <div className="min-w-0 flex-1 text-sm">

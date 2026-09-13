@@ -19,7 +19,7 @@ export function Receipt({ payment, studentName, courseTitle, courseCode, close }
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
       <style>{`@media print { .no-print { display: none !important; } body * { visibility: hidden; } #payment-receipt, #payment-receipt * { visibility: visible; } #payment-receipt { position: fixed; inset: 0; margin: auto; } }`}</style>
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl">
         <div id="payment-receipt" className="space-y-4 rounded-2xl border border-border-subtle p-6">
           <div className="text-center">
             <p className="text-lg font-black text-ink">Next Academy</p>

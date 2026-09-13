@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import TeacherGate from "./TeacherGate";
 import { useAuth } from "../lib/auth-context";
 import {
@@ -54,7 +55,7 @@ const links = [
   "Documents",
   "Chat",
   "Achievement",
-  "Exam Test",
+  "Model Test",
   "ID Card",
   "Scan QR Code",
 ];
@@ -67,7 +68,7 @@ const paths = {
   Events: "/teacher/all-events",
   "My Shop": "/teacher/shop",
   Achievement: "/teacher/achievements",
-  "Exam Test": "/teacher/exams",
+  "Model Test": "/teacher/exams",
   Certificates: "/teacher/certificates",
   Chat: "/teacher/chat",
   Assignments: "/teacher/assignments",
@@ -98,14 +99,14 @@ const blank = {
 
 function Empty({ children }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border-subtle bg-white p-8 text-center text-sm text-muted">
+    <div className="rounded-2xl border border-dashed border-border-subtle bg-card p-8 text-center text-sm text-muted">
       {children}
     </div>
   );
 }
 function Panel({ title, children, action }) {
   return (
-    <section className="rounded-3xl border border-border-subtle/70 bg-white p-5 shadow-sm md:p-6">
+    <section className="rounded-3xl border border-border-subtle/70 bg-card p-5 shadow-sm md:p-6">
       <div className="mb-5 flex items-center justify-between gap-4">
         <h2 className="font-bold text-ink">{title}</h2>
         {action}
@@ -149,6 +150,7 @@ export function TeacherShell({ active, children, unread }) {
       name={name}
       initials={initials}
       photoURL={profile?.photoURL}
+      uid={user?.uid}
       userEmail={user?.email}
       headerTitle={active === "Dashboard" ? "Teacher Dashboard" : active}
       headerSubtitle="Classroom overview"
@@ -190,7 +192,7 @@ function DashboardView({ data }) {
         {stats.map(([label, value, note]) => (
           <article
             key={label}
-            className="rounded-2xl border border-border-subtle/70 bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"
           >
             <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">
               {label}
@@ -1134,6 +1136,7 @@ function ScanQrView({ data }) {
 }
 
 export default function TeacherWorkspacePage({ module = "Dashboard" }) {
+  const router = useRouter();
   const { user, profile, loading: authLoading } = useAuth();
   const [data, setData] = useState(blank);
   const [loading, setLoading] = useState(true);
@@ -1196,7 +1199,7 @@ export default function TeacherWorkspacePage({ module = "Dashboard" }) {
     <Shop role="Teacher" uid={user.uid} />
   ) : module === "Achievement" ? (
     <AchievementsView data={data} teacherId={user.uid} />
-  ) : module === "Exam Test" ? (
+  ) : module === "Model Test" ? (
     <TeacherExams teacherId={user.uid} />
   ) : module === "Certificates" ? (
     <CertificatesView data={data} teacherId={user.uid} />
@@ -1216,7 +1219,14 @@ export default function TeacherWorkspacePage({ module = "Dashboard" }) {
   ) : module === "Profile" ? (
     <ProfileView user={user} profile={profile} />
   ) : module === "ID Card" ? (
-    <Panel title="Your ID card">
+    <section className="rounded-3xl border border-border-subtle/70 bg-card p-5 shadow-sm md:p-8">
+      <div className="mb-6 text-center">
+        <p className="text-[10px] font-bold uppercase tracking-[.2em] text-primary">Digital Membership</p>
+        <h2 className="mt-1 text-2xl font-black text-ink sm:text-3xl">Your ID Card</h2>
+        <p className="mx-auto mt-2 max-w-md text-xs text-muted sm:text-sm">
+          Keep this ready at events and training — first scan checks you in, second scan checks you out and credits your hours.
+        </p>
+      </div>
       <IdCardPrint
         mode="self"
         roleLabel="Teacher"
@@ -1225,8 +1235,10 @@ export default function TeacherWorkspacePage({ module = "Dashboard" }) {
         photoURL={profile?.photoURL}
         active={profile?.active}
         status={profile?.status}
+        hideBrandCaption
+        onEditProfile={() => router.push(paths.Settings)}
       />
-    </Panel>
+    </section>
   ) : module === "Scan QR Code" ? (
     <ScanQrView data={data} teacherId={user.uid} />
   ) : module === "Documents" ? (

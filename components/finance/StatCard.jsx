@@ -6,7 +6,7 @@ import AnimatedNumber from "./AnimatedNumber";
 // (icon + animated number) is new; dimensions/grid/padding are untouched.
 export default function StatCard({ label, value, format, icon: Icon, iconBg, iconColor, valueColor = "text-ink", loading }) {
   return (
-    <article className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+    <article className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
       <div className="flex items-center gap-4">
         {Icon && (
           <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${iconBg}`}>

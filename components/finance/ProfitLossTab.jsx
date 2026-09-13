@@ -59,7 +59,7 @@ export default function ProfitLossTab() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+      <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap gap-2">
             {presets.map((item) => (

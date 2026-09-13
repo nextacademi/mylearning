@@ -14,7 +14,7 @@ const ROLE_TONE = { Director: "purple", Admin: "red", Teacher: "blue", Student: 
 function Dialog({ title, children, onClose }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between gap-4">
           <h2 className="text-lg font-bold text-ink">{title}</h2>
           <button onClick={onClose} className="text-xl text-muted" aria-label="Close dialog">×</button>
@@ -53,7 +53,7 @@ function RowMenu({ onDelete }) {
         <MoreVertical className="h-4 w-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-8 z-20 w-44 rounded-xl border border-border-subtle bg-white p-1 shadow-2xl">
+        <div className="absolute right-0 top-8 z-20 w-44 rounded-xl border border-border-subtle bg-card p-1 shadow-2xl">
           <button
             type="button"
             onClick={() => { setOpen(false); onDelete(); }}
@@ -159,8 +159,8 @@ export default function UserManagement({ role, currentUserId }) {
     </section>
     {notice && <p className="rounded-xl bg-success-soft px-4 py-3 text-sm text-success">{notice}</p>}
     {error && !changing && <div className="rounded-xl bg-active px-4 py-3 text-sm text-primary"><b>Unable to load users. Please try again.</b><p>{error}</p></div>}
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-white p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p><p className="mt-2 text-2xl font-extrabold text-ink">{loading ? dash : value}</p></article>)}</section>
-    <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p><p className="mt-2 text-2xl font-extrabold text-ink">{loading ? dash : value}</p></article>)}</section>
+    <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
       <div className="mb-4"><h3 className="font-bold text-ink">All Users</h3><p className="mt-1 text-xs text-muted">Search by user ID, name, email, or phone · filter by role or status · export the current view.</p></div>
       <DataTable
         title="users"
@@ -181,6 +181,6 @@ export default function UserManagement({ role, currentUserId }) {
       />
     </section>
     {viewing && <Dialog title="User details" onClose={() => setViewing(null)}><UserDetails user={viewing} /></Dialog>}
-    {changing && <Dialog title="Change user role" onClose={() => !saving && setChanging(null)}><form onSubmit={updateRole} className="space-y-5"><p className="text-sm text-muted">Change the role for <b>{changing.displayName || changing.email || changing.uid}</b>. This takes effect immediately after confirmation.</p><label className="block text-sm font-semibold text-muted">Role<select value={nextRole} onChange={(event) => setNextRole(event.target.value)} className="mt-2 w-full rounded-xl border border-border-subtle bg-white px-3 py-2.5 font-normal outline-none focus:ring-2 focus:ring-primary">{assignableRoles.filter((item) => role === "Director" || item !== "Director").map((item) => <option key={item} value={item}>{item}</option>)}</select></label>{error && <p className="rounded-xl bg-active px-3 py-2 text-sm text-primary">{error}</p>}<div className="flex justify-end gap-3"><button type="button" onClick={() => setChanging(null)} disabled={saving} className="rounded-xl px-4 py-2 text-sm font-bold text-muted">Cancel</button><button disabled={saving || !canChange(changing)} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Updating role..." : "Confirm role change"}</button></div></form></Dialog>}
+    {changing && <Dialog title="Change user role" onClose={() => !saving && setChanging(null)}><form onSubmit={updateRole} className="space-y-5"><p className="text-sm text-muted">Change the role for <b>{changing.displayName || changing.email || changing.uid}</b>. This takes effect immediately after confirmation.</p><label className="block text-sm font-semibold text-muted">Role<select value={nextRole} onChange={(event) => setNextRole(event.target.value)} className="mt-2 w-full rounded-xl border border-border-subtle bg-card px-3 py-2.5 font-normal outline-none focus:ring-2 focus:ring-primary">{assignableRoles.filter((item) => role === "Director" || item !== "Director").map((item) => <option key={item} value={item}>{item}</option>)}</select></label>{error && <p className="rounded-xl bg-active px-3 py-2 text-sm text-primary">{error}</p>}<div className="flex justify-end gap-3"><button type="button" onClick={() => setChanging(null)} disabled={saving} className="rounded-xl px-4 py-2 text-sm font-bold text-muted">Cancel</button><button disabled={saving || !canChange(changing)} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Updating role..." : "Confirm role change"}</button></div></form></Dialog>}
   </div>;
 }

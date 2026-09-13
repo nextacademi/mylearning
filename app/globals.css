@@ -9,6 +9,7 @@
      status/category badges. Scoped to dashboard surfaces only; the
      public site/auth pages keep using --background/--foreground above. */
   --dash-page: #faf9f7;
+  --dash-card: #ffffff;
   --dash-ink: #1f2328;
   --dash-muted: #667085;
   --dash-subtle: #98a2b3;
@@ -36,6 +37,7 @@
   --font-mono: var(--font-geist-mono);
 
   --color-page: var(--dash-page);
+  --color-card: var(--dash-card);
   --color-ink: var(--dash-ink);
   --color-muted: var(--dash-muted);
   --color-subtle: var(--dash-subtle);
@@ -63,19 +65,40 @@
   }
 }
 
-/* Settings-page-only dark mode — a manually-toggled, self-contained palette
-   consumed via arbitrary-value classes like bg-[var(--settings-card,#fff)]
-   inside components/settings/*. Defining new tokens here (rather than
-   overriding --dash-*) keeps this scoped to .settings-dark and guarantees
-   it can never leak into the rest of the dashboard, which has no dark mode. */
-.settings-dark {
-  --settings-page: #14161a;
-  --settings-card: #1c1e24;
-  --settings-border: #2b2e34;
-  --settings-ink: #f2f2f3;
-  --settings-muted: #a3a9b4;
-  --settings-subtle: #6f7683;
-  --settings-active: #3a1f1f;
+/* Site-wide dark mode — a manually-toggled (not OS-driven) palette applied
+   via `data-theme="dark"` on <html> (see lib/theme-context.js). Every
+   --dash-* token is redefined here, and since @theme inline above maps
+   every semantic Tailwind class (bg-page, bg-card, text-ink, text-muted,
+   border-border-subtle, bg-primary, bg-success, ...) straight to these
+   variables, any component already using those semantic classes (the large
+   majority of this app's dashboard/shop/room-booking/etc. UI) re-colors
+   automatically with no per-component changes. Components that use raw
+   Tailwind palette classes instead (bg-card, text-slate-900, bg-purple-800,
+   literal hex) bypass this system and are a separate, known follow-up.
+   Replaces the old `.settings-dark`-scoped palette this same block used to
+   be — Settings now reads/writes this same global theme like everywhere
+   else instead of keeping its own separate dark implementation. */
+:root[data-theme="dark"] {
+  --dash-page: #101114;
+  --dash-card: #1c1e24;
+  --dash-ink: #f2f2f3;
+  --dash-muted: #a3a9b4;
+  --dash-subtle: #6f7683;
+  --dash-border: #2b2e34;
+  --dash-primary: #ff4747;
+  --dash-primary-hover: #ff6161;
+  --dash-active: #3a1f1f;
+  --dash-red-line: #5c2a2a;
+  --dash-success: #34d399;
+  --dash-success-soft: #103326;
+  --dash-info: #60a5fa;
+  --dash-info-soft: #102a4c;
+  --dash-warning: #fbbf24;
+  --dash-warning-soft: #3a2a0d;
+  --dash-purple: #c084fc;
+  --dash-purple-soft: #2c1c3f;
+  --dash-teal: #2dd4bf;
+  --dash-teal-soft: #0f2e2b;
 }
 
 body {

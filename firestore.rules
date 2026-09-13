@@ -74,7 +74,15 @@ service cloud.firestore {
       match /modules/{moduleId} {
         allow read: if admin() || ownsCourse(courseId) || enrolledInCourse(courseId);
         allow write: if admin() || ownsCourse(courseId);
-        match /lessons/{lessonId} { allow read: if admin() || ownsCourse(courseId) || enrolledInCourse(courseId); allow write: if admin() || ownsCourse(courseId); }
+        match /lessons/{lessonId} {
+          allow read: if admin() || ownsCourse(courseId) || enrolledInCourse(courseId);
+          allow write: if admin() || ownsCourse(courseId);
+          match /completions/{studentUid} {
+            allow read: if admin() || ownsCourse(courseId) || (signedIn() && request.auth.uid == studentUid);
+            allow create, update: if signedIn() && request.auth.uid == studentUid && enrolledInCourse(courseId);
+            allow delete: if admin() || ownsCourse(courseId);
+          }
+        }
       }
     }
     match /assignments/{assignmentId} {
@@ -156,22 +164,34 @@ service cloud.firestore {
     match /certificates/{certificateId} { allow read: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.studentId == request.auth.uid); allow create: if admin() || (teacher() && request.resource.data.teacherId == request.auth.uid && assignedStudent(request.resource.data.studentId)); allow update, delete: if admin() || (teacher() && resource.data.teacherId == request.auth.uid && request.resource.data.teacherId == resource.data.teacherId); }
     // Quiz/Exam module. The quiz doc itself never carries correct answers
     // (those live in the answerKey subcollection below, teacher/admin-only,
-    // never student-readable) — a Student may only read a quiz that is
-    // published and for a course they're enrolled in. Only the owning
-    // Teacher (or admin()) may write a quiz or its answer key.
+    // never student-readable). Only the owning Teacher (or admin()) may
+    // write a quiz or its answer key.
     match /quizzes/{quizId} {
-      allow read: if admin() || ownsCourse(resource.data.courseId) || (resource.data.status == 'published' && enrolledInCourse(resource.data.courseId));
+      // `read` covers both get() AND list() — a list() rule can't reliably
+      // use a cross-collection get() (confirmed empirically: ownsCourse()/
+      // enrolledInCourse(), which each read() another collection, cause
+      // permission-denied on a list() query even when the check would pass
+      // for a single get()) — so read/update/delete are self-contained
+      // checks against the quiz's own (denormalized) teacherId field, same
+      // pattern as achievements/assessments/certificates above. A published
+      // quiz's questions carry no correct answers, so opening read to any
+      // signed-in user (not just enrolled students) costs nothing real —
+      // the actual enrollment check that matters (can this person submit a
+      // graded attempt?) is enforced server-side in
+      // /api/exams/[quizId]/submit, which every submission must go through
+      // anyway (see quizAttempts below). Only `create` — a single-document
+      // write, where nothing on the new doc can be trusted yet — needs the
+      // cross-collection ownsCourse() check.
+      allow read: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.status == 'published');
       allow create: if admin() || (teacher() && ownsCourse(request.resource.data.courseId) && request.resource.data.teacherId == request.auth.uid);
-      allow update, delete: if admin() || ownsCourse(resource.data.courseId);
-      // `courseId` is denormalized onto the answerKey doc itself (never a
-      // cross-document get() of the sibling quiz doc) — both docs are
-      // written in the SAME batch when a quiz is created, and a security
-      // rule's get() only ever sees state committed BEFORE the batch, so a
-      // rule here that read the parent quiz doc would always see it as
-      // not-yet-existing and reject the whole batch.
+      allow update, delete: if admin() || (teacher() && resource.data.teacherId == request.auth.uid);
+      // `teacherId` is denormalized onto the answerKey doc itself too (same
+      // reasoning as above — never a cross-document get() of the sibling
+      // quiz doc, which also wouldn't see it yet within the same batch a
+      // quiz is created in).
       match /answerKey/{keyId} {
-        allow read, delete: if admin() || ownsCourse(resource.data.courseId);
-        allow create, update: if admin() || (teacher() && ownsCourse(request.resource.data.courseId));
+        allow read, delete: if admin() || (teacher() && resource.data.teacherId == request.auth.uid);
+        allow create, update: if admin() || (teacher() && ownsCourse(request.resource.data.courseId) && request.resource.data.teacherId == request.auth.uid);
       }
     }
     // Grading must never trust the client — a student attempt is only ever
@@ -368,4 +388,15 @@ service cloud.firestore {
         && request.resource.data.date is string
         && request.resource.data.startTime is string
         && request.resource.data.endTime is string
-        && request.resource.data.startTime < requ
+        && request.resource.data.startTime < request.resource.data.endTime
+        && request.resource.data.status == 'scheduled';
+      allow update: if admin()
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.roomId is string
+        && request.resource.data.status in ['scheduled', 'cancelled']
+        && request.resource.data.startTime < request.resource.data.endTime;
+      allow delete: if admin();
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

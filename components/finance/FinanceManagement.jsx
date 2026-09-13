@@ -48,7 +48,7 @@ export default function FinanceManagement() {
         </div>
       </section>
 
-      <nav className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-white p-2 shadow-sm">
+      <nav className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-2 shadow-sm">
         {tabs.map((item) => (
           <button
             key={item}

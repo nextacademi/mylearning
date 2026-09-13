@@ -325,8 +325,8 @@ export default function ChatWorkspace({ currentUserId, currentUserRole, currentU
   const canCreateGroup = groupCreatorRoles.has(currentUserRole);
 
   return (
-    <div className="grid gap-0 overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-md lg:h-[calc(100vh-140px)] lg:grid-cols-[280px_1fr]">
-      <div className="flex flex-col border-b border-border-subtle bg-white lg:border-b-0 lg:border-r">
+    <div className="grid gap-0 overflow-hidden rounded-2xl border border-border-subtle bg-card shadow-md lg:h-[calc(100vh-140px)] lg:grid-cols-[280px_1fr]">
+      <div className="flex flex-col border-b border-border-subtle bg-card lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-2 p-3.5">
           <b className="text-sm font-extrabold text-ink">Chats</b>
           <button
@@ -345,7 +345,7 @@ export default function ChatWorkspace({ currentUserId, currentUserRole, currentU
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search Messenger"
-            className="w-full rounded-full border-none bg-page py-2 pl-8 pr-3 text-[11px] outline-none ring-1 ring-transparent transition focus:bg-white focus:ring-2 focus:ring-primary"
+            className="w-full rounded-full border-none bg-page py-2 pl-8 pr-3 text-[11px] outline-none ring-1 ring-transparent transition focus:bg-card focus:ring-2 focus:ring-primary"
           />
         </div>
         {notice && <p className="border-b border-border-subtle bg-success-soft px-3 py-1.5 text-[10px] font-semibold text-success">{notice}</p>}
@@ -417,7 +417,7 @@ export default function ChatWorkspace({ currentUserId, currentUserRole, currentU
       <div className="flex min-h-[380px] flex-col bg-page/40">
         {conversation ? (
           <>
-            <div className="flex items-center gap-2.5 border-b border-border-subtle bg-white p-3 shadow-sm">
+            <div className="flex items-center gap-2.5 border-b border-border-subtle bg-card p-3 shadow-sm">
               {display.photo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={display.photo} alt="" className="h-9 w-9 rounded-full object-cover" />
@@ -516,7 +516,7 @@ export default function ChatWorkspace({ currentUserId, currentUserRole, currentU
       )}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl">
+          <div className="w-full max-w-xs rounded-2xl bg-card p-5 shadow-2xl">
             <p className="text-sm font-bold text-ink">Delete this conversation?</p>
             <p className="mt-1 text-xs text-muted">This only removes it from your own list — the other participant keeps their copy.</p>
             <div className="mt-4 flex justify-end gap-2">

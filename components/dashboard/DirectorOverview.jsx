@@ -177,7 +177,7 @@ export default function DirectorOverview({ onNavigate }) {
             type="button"
             onClick={handleRefresh}
             disabled={loading || refreshing}
-            className="inline-flex items-center gap-2 rounded-xl border border-border-subtle bg-white px-4 py-2 text-xs font-bold text-ink shadow-sm transition hover:bg-active disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl border border-border-subtle bg-card px-4 py-2 text-xs font-bold text-ink shadow-sm transition hover:bg-active disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
             Refresh Stats

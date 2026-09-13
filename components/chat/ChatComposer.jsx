@@ -101,7 +101,7 @@ export default function ChatComposer({
       {error && <p className="px-4 py-2 text-[10px] font-semibold text-primary">{error}</p>}
       {recorder.error && <p className="px-4 py-2 text-[10px] font-semibold text-primary">{recorder.error}</p>}
 
-      <div className="flex items-center gap-1.5 bg-white p-2.5">
+      <div className="flex items-center gap-1.5 bg-card p-2.5">
         {recorder.recording ? (
           <div className="flex flex-1 items-center gap-3 rounded-full bg-page px-4 py-2.5">
             <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-primary" aria-hidden="true" />
@@ -127,7 +127,7 @@ export default function ChatComposer({
                 <Paperclip className="h-4 w-4" />
               </button>
               {menuOpen && (
-                <div className="absolute bottom-12 left-0 z-10 w-36 rounded-xl border border-border-subtle bg-white p-1.5 shadow-2xl">
+                <div className="absolute bottom-12 left-0 z-10 w-36 rounded-xl border border-border-subtle bg-card p-1.5 shadow-2xl">
                   <button
                     type="button"
                     onClick={() => {
@@ -193,7 +193,7 @@ export default function ChatComposer({
               onChange={(event) => onChangeDraft(event.target.value)}
               onKeyDown={onKeyDown}
               placeholder="Aa"
-              className="flex-1 rounded-full border-none bg-page px-4 py-2 text-xs outline-none ring-1 ring-transparent transition focus:bg-white focus:ring-2 focus:ring-primary"
+              className="flex-1 rounded-full border-none bg-page px-4 py-2 text-xs outline-none ring-1 ring-transparent transition focus:bg-card focus:ring-2 focus:ring-primary"
             />
           </>
         )}

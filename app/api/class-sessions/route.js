@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../lib/firebase-admin";
+import { getCachedUserSnapshot } from "../../../lib/server/cached-profile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ async function access(request) {
   const auth = getAdminAuth();
   const db = getAdminDb();
   const decoded = await auth.verifyIdToken(token);
-  const profile = await db.collection("users").doc(decoded.uid).get();
+  const profile = await getCachedUserSnapshot(db, decoded.uid);
   const data = profile.data() || {};
   if (!profile.exists || data.active === false || !["Teacher", "Admin", "Director"].includes(data.role)) {
     return { denied: NextResponse.json({ message: "You do not have access to class sessions." }, { status: 403 }) };

@@ -15,7 +15,7 @@ export default function TrainingPerformance({ courses, loading, error, onRetry, 
   }, [courses, filter]);
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-border-subtle bg-card p-6 shadow-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-active text-primary">

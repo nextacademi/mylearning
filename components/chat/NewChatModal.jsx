@@ -45,7 +45,7 @@ export default function NewChatModal({ onClose, onSelectUser, onCreateGroup, can
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className="flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-card shadow-2xl">
         <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
           <b className="text-sm text-ink">New Chat</b>
           <button type="button" onClick={onClose} aria-label="Close" className="text-lg text-muted">

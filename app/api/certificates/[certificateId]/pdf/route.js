@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import QRCode from "qrcode";
 import { getAdminAuth, getAdminDb } from "../../../../../lib/firebase-admin";
+import { getCachedUserSnapshot } from "../../../../../lib/server/cached-profile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ async function access(request) {
   if (!token) return { denied: NextResponse.json({ message: "Sign in to continue." }, { status: 401 }) };
   const db = getAdminDb();
   const decoded = await getAdminAuth().verifyIdToken(token);
-  const profile = await db.collection("users").doc(decoded.uid).get();
+  const profile = await getCachedUserSnapshot(db, decoded.uid);
   const data = profile.data() || {};
   if (!profile.exists || data.active === false) return { denied: NextResponse.json({ message: "Sign in to continue." }, { status: 403 }) };
   return { db, uid: decoded.uid, role: data.role };

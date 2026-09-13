@@ -43,17 +43,17 @@ export default function FinanceDashboardTab({ overview, loading }) {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <article className="rounded-2xl border border-border-subtle bg-white p-4 text-center shadow-sm">
+        <article className="rounded-2xl border border-border-subtle bg-card p-4 text-center shadow-sm">
           <PaymentStatusBadge value="Paid" />
           <p className="mt-2 text-xl font-extrabold text-ink"><AnimatedNumber value={totals.paidCount} /></p>
           <p className="text-[10px] font-bold uppercase text-subtle">Admissions</p>
         </article>
-        <article className="rounded-2xl border border-border-subtle bg-white p-4 text-center shadow-sm">
+        <article className="rounded-2xl border border-border-subtle bg-card p-4 text-center shadow-sm">
           <PaymentStatusBadge value="Partial" />
           <p className="mt-2 text-xl font-extrabold text-ink"><AnimatedNumber value={totals.partialCount} /></p>
           <p className="text-[10px] font-bold uppercase text-subtle">Admissions</p>
         </article>
-        <article className="rounded-2xl border border-border-subtle bg-white p-4 text-center shadow-sm">
+        <article className="rounded-2xl border border-border-subtle bg-card p-4 text-center shadow-sm">
           <PaymentStatusBadge value="Unpaid" />
           <p className="mt-2 text-xl font-extrabold text-ink"><AnimatedNumber value={totals.unpaidCount} /></p>
           <p className="text-[10px] font-bold uppercase text-subtle">Admissions</p>
@@ -61,7 +61,7 @@ export default function FinanceDashboardTab({ overview, loading }) {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm lg:col-span-1">
+        <div className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm lg:col-span-1">
           <h3 className="mb-3 font-bold text-ink">Recent Transactions</h3>
           {recentTransactions.length ? (
             <div className="space-y-2">
@@ -81,7 +81,7 @@ export default function FinanceDashboardTab({ overview, loading }) {
             <p className="py-6 text-center text-sm text-muted">No transactions recorded yet.</p>
           )}
         </div>
-        <div className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm lg:col-span-1">
+        <div className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm lg:col-span-1">
           <h3 className="mb-3 font-bold text-ink">Recent Payments</h3>
           {payments.length ? (
             <div className="space-y-2">
@@ -99,7 +99,7 @@ export default function FinanceDashboardTab({ overview, loading }) {
             <p className="py-6 text-center text-sm text-muted">No payments recorded yet.</p>
           )}
         </div>
-        <div className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm lg:col-span-1">
+        <div className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm lg:col-span-1">
           <h3 className="mb-3 font-bold text-ink">Recent Expenses</h3>
           {expenses.length ? (
             <div className="space-y-2">

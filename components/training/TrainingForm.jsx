@@ -52,7 +52,7 @@ function PriceField({ label, value, onChange, currency, error }) {
 }
 function Section({ title, children }) {
   return (
-    <fieldset className="grid gap-3 rounded-2xl border border-border-subtle bg-white p-4 shadow-sm md:p-5">
+    <fieldset className="grid gap-3 rounded-2xl border border-border-subtle bg-card p-4 shadow-sm md:p-5">
       <legend className="px-1 text-xs font-black uppercase tracking-wider text-primary">{title}</legend>
       <div className="grid gap-3 sm:grid-cols-2">{children}</div>
     </fieldset>

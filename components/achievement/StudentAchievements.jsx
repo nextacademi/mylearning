@@ -51,7 +51,7 @@ export default function StudentAchievements({ uid }) {
       {error && <p className="rounded-xl bg-active p-4 text-sm text-primary">{error}</p>}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+        <section className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
           <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-ink">
             <Trophy className="h-4 w-4 text-primary" aria-hidden="true" /> Awards
           </h3>
@@ -70,7 +70,7 @@ export default function StudentAchievements({ uid }) {
           )}
         </section>
 
-        <section className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+        <section className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
           <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-ink">
             <Award className="h-4 w-4 text-primary" aria-hidden="true" /> Certificates
           </h3>

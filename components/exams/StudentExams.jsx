@@ -54,7 +54,7 @@ function TakeExam({ quiz, onClose, onSubmitted }) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 p-4">
-      <div className="mx-auto max-w-2xl space-y-4 rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="mx-auto max-w-2xl space-y-4 rounded-3xl bg-card p-6 shadow-2xl">
         <div className="flex items-center justify-between gap-4 border-b border-border-subtle pb-4">
           <div>
             <h2 className="text-lg font-bold text-ink">{quiz.title}</h2>
@@ -101,7 +101,7 @@ function TakeExam({ quiz, onClose, onSubmitted }) {
 function ResultView({ quiz, result, onClose }) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 p-4">
-      <div className="mx-auto max-w-2xl space-y-4 rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="mx-auto max-w-2xl space-y-4 rounded-3xl bg-card p-6 shadow-2xl">
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-wider text-subtle">{quiz.title}</p>
           <p className="mt-1 text-4xl font-black text-ink">{result.score}/{result.maxScore}</p>
@@ -176,7 +176,7 @@ export default function StudentExams({ uid }) {
       </section>
 
       {!quizzes.length ? (
-        <div className="rounded-3xl border border-dashed border-border-subtle bg-white py-16 text-center">
+        <div className="rounded-3xl border border-dashed border-border-subtle bg-card py-16 text-center">
           <p className="font-bold text-ink">No exams available yet.</p>
           <p className="mt-1 text-sm text-muted">Your teacher hasn&apos;t published an exam for your courses yet.</p>
         </div>
@@ -187,7 +187,7 @@ export default function StudentExams({ uid }) {
             const attemptsLeft = (quiz.maxAttempts || 1) - mine.length;
             const best = mine.reduce((max, a) => (a.percentage > (max?.percentage ?? -1) ? a : max), null);
             return (
-              <article key={quiz.id} className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-white p-4 shadow-sm">
+              <article key={quiz.id} className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-card p-4 shadow-sm">
                 <div>
                   <b className="block text-ink">{quiz.title}</b>
                   <span className="text-xs text-muted">{courseTitle.get(quiz.courseId) || "Course"}</span>

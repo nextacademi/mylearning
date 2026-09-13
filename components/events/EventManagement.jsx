@@ -75,7 +75,7 @@ function EventThumbnail({ event }) {
 function EventCard({ event, onEdit, onTogglePublish, onDelete, canManage }) {
   const timeLabel = event.startTime ? `${event.startTime}${event.endTime ? `–${event.endTime}` : ""}` : null;
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border border-border-subtle bg-white shadow-sm transition hover:shadow-md">
+    <article className="flex flex-col overflow-hidden rounded-2xl border border-border-subtle bg-card shadow-sm transition hover:shadow-md">
       <EventThumbnail event={event} />
       <div className="flex flex-1 flex-col p-4">
         <h3 className="truncate text-sm font-bold text-ink" title={event.name}>{event.name}</h3>
@@ -122,10 +122,145 @@ function EventCard({ event, onEdit, onTogglePublish, onDelete, canManage }) {
   );
 }
 
+// A simplified 3-way grouping for the chronological List view, distinct
+// from the granular EVENT_TYPES (Workshop/Seminar/etc.) used everywhere
+// else — derived on the fly, not a stored field, so no schema/API change
+// was needed. "Training" maps directly to that same event type; "Internal"
+// covers the one type that's inherently staff-only (Meeting); everything
+// else reads as a general "Event".
+const LIST_CATEGORY_TONE = {
+  Event: { badge: "bg-info-soft text-info", bar: "bg-info" },
+  Training: { badge: "bg-success-soft text-success", bar: "bg-success" },
+  Internal: { badge: "bg-purple-soft text-purple", bar: "bg-purple" },
+};
+function listCategory(event) {
+  if (event.type === "Training") return "Training";
+  if (event.type === "Meeting") return "Internal";
+  return "Event";
+}
+function formatTime12(value) {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) return "";
+  const [h, m] = value.split(":").map(Number);
+  const period = h >= 12 ? "pm" : "am";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+const monthLabelFull = (key) => { const [y, m] = key.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" }); };
+
+// Chronological, month-grouped list — a deliberately different presentation
+// from the Table/Grid tabs (which both show every event flat, unsorted by
+// time-relevance) for the common "what's coming up" glance. Reuses the same
+// role-scoped, search-filtered `events` array the other tabs already get;
+// only the category/Upcoming-Past split below is local to this view.
+function EventListView({ events, onSelect }) {
+  const [category, setCategory] = useState("All");
+  const [when, setWhen] = useState("Upcoming");
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const grouped = useMemo(() => {
+    const filtered = events.filter((event) => {
+      if (!event.eventDate) return false;
+      if (category !== "All" && listCategory(event) !== category) return false;
+      return when === "Upcoming" ? event.eventDate >= todayIso : event.eventDate < todayIso;
+    });
+    filtered.sort((a, b) =>
+      when === "Upcoming"
+        ? a.eventDate.localeCompare(b.eventDate) || (a.startTime || "").localeCompare(b.startTime || "")
+        : b.eventDate.localeCompare(a.eventDate) || (b.startTime || "").localeCompare(a.startTime || ""),
+    );
+    const byMonth = new Map();
+    filtered.forEach((event) => {
+      const key = event.eventDate.slice(0, 7);
+      if (!byMonth.has(key)) byMonth.set(key, []);
+      byMonth.get(key).push(event);
+    });
+    return [...byMonth.entries()];
+  }, [events, category, when, todayIso]);
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {["All", "Event", "Training", "Internal"].map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setCategory(item)}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                category === item ? "bg-ink text-white" : `${LIST_CATEGORY_TONE[item]?.badge || "bg-page text-muted"} hover:opacity-80`
+              }`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1.5">
+          {["Upcoming", "Past"].map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setWhen(item)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                when === item ? "bg-active text-primary" : "border border-border-subtle bg-card text-muted hover:bg-page"
+              }`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {!grouped.length ? (
+        <p className="py-10 text-center text-sm text-muted">
+          No {when.toLowerCase()} events{category !== "All" ? ` in ${category}` : ""}.
+        </p>
+      ) : (
+        <div className="space-y-6">
+          {grouped.map(([monthKey, monthEvents]) => (
+            <div key={monthKey}>
+              <p className="mb-2 text-sm font-bold text-ink">{monthLabelFull(monthKey)}</p>
+              <div className="space-y-3">
+                {monthEvents.map((event) => {
+                  const cat = listCategory(event);
+                  const tone = LIST_CATEGORY_TONE[cat];
+                  const date = new Date(`${event.eventDate}T00:00:00`);
+                  return (
+                    <button
+                      key={event.id}
+                      type="button"
+                      onClick={() => onSelect(event)}
+                      className="flex w-full items-stretch gap-4 overflow-hidden rounded-2xl border border-border-subtle bg-card p-4 text-left shadow-sm transition hover:shadow-md"
+                    >
+                      <span className={`w-1 shrink-0 rounded-full ${tone.bar}`} />
+                      <span className="w-12 shrink-0 text-center">
+                        <span className="block text-xl font-bold text-ink">{date.getDate()}</span>
+                        <span className="block text-[10px] font-bold uppercase tracking-wide text-subtle">
+                          {date.toLocaleDateString(undefined, { weekday: "short" })}
+                        </span>
+                      </span>
+                      <span className="min-w-0 flex-1 self-center">
+                        <span className="block truncate text-sm font-bold text-ink">{event.name}</span>
+                        <span className="block truncate text-xs text-muted">
+                          {formatTime12(event.startTime)}{event.location ? ` · ${event.location}` : ""}
+                        </span>
+                      </span>
+                      <span className={`shrink-0 self-center rounded-full px-2.5 py-1 text-[10px] font-bold ${tone.badge}`}>{cat}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Dialog({ title, children, onClose }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between"><h2 className="text-lg font-bold text-ink">{title}</h2><button type="button" onClick={onClose} className="text-xl text-muted" aria-label="Close">×</button></div>
         {children}
       </div>
@@ -137,7 +272,7 @@ const blankForm = { name: "", type: "", description: "", eventDate: "", startTim
 
 // One shared "Event Organization" page for Director/Admin, Teacher, and
 // Student/Volunteer/Facilitator. Structure, cards, colors, and Table/List/
-// Calendar are IDENTICAL for every role (same component, same classes) —
+// Grid/Calendar are IDENTICAL for every role (same component, same classes) —
 // only which sections render, and which data source feeds them, changes:
 //
 //   Director/Admin — unchanged from before this task: loadEvents()'s
@@ -374,55 +509,21 @@ export default function EventManagement() {
 
       <section className={`grid gap-4 sm:grid-cols-2 ${statCards.length > 3 ? "xl:grid-cols-5" : "xl:grid-cols-3"}`}>
         {statCards.map(([label, value]) => (
-          <article key={label} className="rounded-2xl border border-border-subtle bg-white p-5 shadow-sm">
+          <article key={label} className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>
             <p className="mt-2 text-2xl font-extrabold text-ink">{statsLoading ? "—" : (value ?? 0)}</p>
           </article>
         ))}
       </section>
 
-      {isDirector && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ChartCard title="Events by Month" subtitle="Scheduled events across the year" icon={CalendarDays}>
-            {loading ? <EmptyChartState message="Loading..." /> : byMonth.length ? (
-              <div className="h-70 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={byMonth} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#667085" }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#667085" }} />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e7e5e4", fontSize: 12 }} />
-                    <Bar dataKey="count" name="Events" fill="#FF2D2D" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : <EmptyChartState message="No events yet" />}
-          </ChartCard>
-          <ChartCard title="Events by Type" subtitle="Breakdown across categories" icon={Users}>
-            {loading ? <EmptyChartState message="Loading..." /> : byType.length ? (
-              <div className="h-70 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={byType} dataKey="count" nameKey="type" innerRadius="50%" outerRadius="80%" paddingAngle={2}>
-                      {byType.map((entry, index) => <Cell key={entry.type} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e7e5e4", fontSize: 12 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : <EmptyChartState message="No events yet" />}
-          </ChartCard>
-        </div>
-      )}
-
       <div className="flex gap-2">
-        {["Table", "List", "Calendar"].map((item) => (
+        {["Table", "List", "Grid", "Calendar"].map((item) => (
           <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${tab === item ? "bg-primary text-white" : "bg-page text-muted hover:bg-active hover:text-primary"}`}>{item}</button>
         ))}
       </div>
 
       {tab === "Table" ? (
-        <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
           <DataTable
             title="events"
             name="events"
@@ -460,17 +561,21 @@ export default function EventManagement() {
             )}
           />
         </section>
+      ) : tab === "List" ? (
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
+          <EventListView events={events} onSelect={(event) => (canManage ? open(event) : router.push(`/dashboard/events/${event.id}`))} />
+        </section>
       ) : tab === "Calendar" ? (
-        <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
           {/* Director/Admin clicking a calendar event opens the inline
               edit dialog (fast management workflow, unchanged). Teacher/
               Student have no edit rights, so their click instead opens the
-              same read-only event detail page the Table/List "View" link
+              same read-only event detail page the Table/Grid "View" link
               and Add-Event dialog both already use. */}
           <EventCalendar events={events} onSelectEvent={(event) => (canManage ? open(event) : router.push(`/dashboard/events/${event.id}`))} />
         </section>
       ) : (
-        <section className="rounded-3xl border border-border-subtle bg-white p-5 shadow-sm md:p-6">
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
           <div className="mb-5 flex flex-wrap gap-3">
             <label className="relative min-w-56 flex-1">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-subtle" />
@@ -493,6 +598,40 @@ export default function EventManagement() {
             <p className="py-10 text-center text-sm text-muted">{search || filter !== "All" ? "No events match your search." : canManage ? "No events found. Click \"Add Event\" to create the first one." : "No events found."}</p>
           )}
         </section>
+      )}
+
+      {isDirector && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ChartCard title="Events by Month" subtitle="Scheduled events across the year" icon={CalendarDays}>
+            {loading ? <EmptyChartState message="Loading..." /> : byMonth.length ? (
+              <div className="h-70 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={byMonth} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#667085" }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#667085" }} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e7e5e4", fontSize: 12 }} />
+                    <Bar dataKey="count" name="Events" fill="#FF2D2D" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <EmptyChartState message="No events yet" />}
+          </ChartCard>
+          <ChartCard title="Events by Type" subtitle="Breakdown across categories" icon={Users}>
+            {loading ? <EmptyChartState message="Loading..." /> : byType.length ? (
+              <div className="h-70 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={byType} dataKey="count" nameKey="type" innerRadius="50%" outerRadius="80%" paddingAngle={2}>
+                      {byType.map((entry, index) => <Cell key={entry.type} fill={CHART_COLORS[index % CHART_COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e7e5e4", fontSize: 12 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <EmptyChartState message="No events yet" />}
+          </ChartCard>
+        </div>
       )}
 
       {canManage && (adding || editing) && (

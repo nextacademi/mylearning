@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import SidebarIcon, { navLabel } from "./SidebarIcon";
 import ChatButton from "./ChatButton";
 import NotificationBell from "./NotificationBell";
 import GlobalSearch from "./GlobalSearch";
+
+const EASE = [0.22, 1, 0.36, 1];
+// See components/dashboard/WorkspaceShell.jsx for why these aren't applied
+// to <aside>/<header> themselves (would fight the mobile-menu CSS transform).
+const navStagger = { hidden: {}, show: { transition: { staggerChildren: 0.035, delayChildren: 0.05 } } };
+const navItem = { hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { duration: 0.3, ease: EASE } } };
+const headerFade = { hidden: { opacity: 0, y: -8 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE } } };
 
 function Brand() {
   return (
@@ -39,6 +47,7 @@ export default function DirectorShell({
   name,
   initials,
   photoURL,
+  uid,
   userEmail,
   headerTitle,
   headerSubtitle,
@@ -56,7 +65,7 @@ export default function DirectorShell({
   return (
     <main className="min-h-screen bg-page text-ink md:flex">
       <aside
-        className={`${mobileOpen ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-40 flex h-screen w-[280px] flex-col border-r border-border-subtle bg-white shadow-2xl transition-transform duration-300 md:sticky md:top-0 md:translate-x-0 md:shadow-none`}
+        className={`${mobileOpen ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-40 flex h-screen w-[280px] flex-col border-r border-border-subtle bg-card shadow-2xl transition-transform duration-300 md:sticky md:top-0 md:translate-x-0 md:shadow-none`}
       >
         <div className="flex items-center justify-between border-b border-border-subtle p-5">
           <Brand />
@@ -68,7 +77,12 @@ export default function DirectorShell({
             ×
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto px-4 py-5">
+        <motion.nav
+          className="flex-1 overflow-y-auto px-4 py-5"
+          initial="hidden"
+          animate="show"
+          variants={navStagger}
+        >
           {modules.map((module) => {
             const isActive = active === module;
             const className = `mb-2 flex min-h-12 w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-[15px] font-semibold transition ${isActive ? "border border-red-line bg-active text-ink" : "text-muted hover:bg-page hover:text-ink"}`;
@@ -86,17 +100,21 @@ export default function DirectorShell({
               </>
             );
             const href = getHref?.(module);
-            return href ? (
-              <Link key={module} href={href} onClick={() => handleNavClick(module)} className={className}>
-                {content}
-              </Link>
-            ) : (
-              <button key={module} onClick={() => handleNavClick(module)} className={className}>
-                {content}
-              </button>
+            return (
+              <motion.div key={module} variants={navItem} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
+                {href ? (
+                  <Link href={href} onClick={() => handleNavClick(module)} className={className}>
+                    {content}
+                  </Link>
+                ) : (
+                  <button onClick={() => handleNavClick(module)} className={className}>
+                    {content}
+                  </button>
+                )}
+              </motion.div>
             );
           })}
-        </nav>
+        </motion.nav>
       </aside>
       {mobileOpen && (
         <button
@@ -106,7 +124,12 @@ export default function DirectorShell({
         />
       )}
       <section className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border-subtle bg-white px-4 shadow-sm md:px-6">
+        <motion.header
+          className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border-subtle bg-card px-4 shadow-sm md:px-6"
+          initial="hidden"
+          animate="show"
+          variants={headerFade}
+        >
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
@@ -123,11 +146,13 @@ export default function DirectorShell({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <GlobalSearch role="Director" modules={modules} onNavigate={onNavigate} />
+            <GlobalSearch role="Director" uid={uid} modules={modules} onNavigate={onNavigate} />
             <ChatButton onClick={() => onNavigate?.("Chat")} />
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => onNavigate?.("Settings")}
-              className="flex items-center gap-2 rounded-full border border-border-subtle bg-white py-1 pl-1 pr-3 hover:bg-page"
+              className="flex items-center gap-2 rounded-full border border-border-subtle bg-card py-1 pl-1 pr-3 transition-colors hover:bg-page"
               aria-label="Open settings"
               title={userEmail}
             >
@@ -142,16 +167,18 @@ export default function DirectorShell({
               <span className="hidden text-left sm:block">
                 <b className="block text-xs text-ink">{name}</b>
               </span>
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               onClick={onLogout}
-              className="rounded-full border border-border-subtle bg-white px-4 py-2 text-xs font-bold text-ink hover:bg-page"
+              className="rounded-full border border-border-subtle bg-card px-4 py-2 text-xs font-bold text-ink transition-colors hover:bg-page"
             >
               Sign out
-            </button>
+            </motion.button>
             <NotificationBell />
           </div>
-        </header>
+        </motion.header>
         <div className="px-4 py-4 md:py-6 lg:py-8">
           <div className="space-y-6">{children}</div>
         </div>

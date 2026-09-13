@@ -95,3 +95,26 @@ env:
     secret: QR_TOKEN_SECRET
     availability:
       - RUNTIME
+
+  # OPTIONAL — Redis (Upstash) caching layer, see lib/redis-cache.js.
+  # Everything that uses it (lib/server/cached-profile.js, the admin
+  # dashboard aggregation routes, /api/verify) already checks for these two
+  # vars and silently falls back to live Firestore reads when they're
+  # absent — the app behaves exactly as before Redis existed until this is
+  # actually configured. To enable it:
+  #   1. Create a free Redis database at https://console.upstash.com
+  #      (region: pick the one closest to asia-southeast1 for lowest
+  #      latency from this backend).
+  #   2. Copy its "REST URL" and "REST TOKEN" from the Upstash console.
+  #   3. Create the secrets and uncomment the two entries below:
+  #        firebase apphosting:secrets:set UPSTASH_REDIS_REST_URL --project mynextlms
+  #        firebase apphosting:secrets:set UPSTASH_REDIS_REST_TOKEN --project mynextlms
+  #      (grant this backend access when prompted), then redeploy.
+  # - variable: UPSTASH_REDIS_REST_URL
+  #   secret: UPSTASH_REDIS_REST_URL
+  #   availability:
+  #     - RUNTIME
+  # - variable: UPSTASH_REDIS_REST_TOKEN
+  #   secret: UPSTASH_REDIS_REST_TOKEN
+  #   availability:
+  #     - RUNTIME

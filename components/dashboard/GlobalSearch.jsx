@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { Search, GraduationCap, Presentation, BookOpen } from "lucide-react";
 import { db } from "../../lib/firebase";
@@ -9,24 +10,29 @@ import SidebarIcon, { navLabel } from "./SidebarIcon";
 const kindIcon = { Student: GraduationCap, Teacher: Presentation, Course: BookOpen };
 // Which sidebar module a record result should jump to — both Admin's and
 // Director's real modules arrays (roleConfig in app/dashboard/[role]/page.jsx)
-// already contain these exact names.
+// already contain these exact names; Teacher's own `links` array (see
+// TeacherWorkspacePage.js) uses "Students"/"Training" too.
 const kindModule = { Student: "Students", Teacher: "Teacher", Course: "Training" };
 
 // Real, working header search with two independent layers:
 //  1. Menu/module search — every role gets this. It only matches the
 //     role's own `modules` array (already-known, permission-free local
-//     data — typing "shop" jumps straight to that sidebar item), so it is
-//     safe and useful for every role, including Student.
-//  2. Record search (Students/Teachers/Courses), live from Firestore —
-//     Admin/Director only. Those are the only roles whose `admin()`
-//     firestore.rules condition allows an unfiltered list read across
-//     other people's user docs and all courses; a Student/Volunteer/
-//     Facilitator has no legitimate broad query here (rules only let them
-//     read their own doc, or a Teacher read their own assigned students),
-//     so that layer simply never loads for other roles rather than
-//     throwing permission-denied on every keystroke.
-export default function GlobalSearch({ role, modules = [], onNavigate }) {
-  const canSearchRecords = role === "Admin" || role === "Director";
+//     data — typing "shop" jumps straight to that sidebar item).
+//  2. Record search, live from Firestore, scoped to exactly what
+//     firestore.rules already lets each role broadly list:
+//       - Admin/Director: every Student, Teacher and course (admin()).
+//       - Teacher: only their OWN assigned students (teacherIds
+//         array-contains) and OWN courses (teacherIds array-contains) —
+//         the same scoping subscribeTeacherStudents/subscribeTeacherCourses
+//         already use elsewhere in this app.
+//       - Student/Volunteer/Facilitator: no broad query exists for them in
+//         firestore.rules, so this layer simply never loads rather than
+//         throwing permission-denied on every keystroke.
+export default function GlobalSearch({ role, uid, modules = [], onNavigate, getHref }) {
+  const router = useRouter();
+  const isManager = role === "Admin" || role === "Director";
+  const isTeacher = role === "Teacher";
+  const canSearchRecords = isManager || isTeacher;
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -34,26 +40,43 @@ export default function GlobalSearch({ role, modules = [], onNavigate }) {
   const boxRef = useRef(null);
 
   useEffect(() => {
-    if (!canSearchRecords || !db) return undefined;
-    let pending = 3;
+    // A Teacher's queries below filter by `teacherIds array-contains uid` —
+    // if uid isn't known yet (e.g. this shell renders before auth/profile
+    // finishes resolving on a hard refresh), skip entirely rather than
+    // sending Firestore a `where(..., undefined)`, which throws.
+    if (!canSearchRecords || !db || (!isManager && !uid)) return undefined;
+    const wantsTeachers = isManager; // a Teacher has no legitimate reason/rule access to list other teachers
+    let pending = wantsTeachers ? 3 : 2;
     const done = () => { pending -= 1; if (pending <= 0) setLoaded(true); };
+
+    const studentsQuery = isManager
+      ? query(collection(db, "users"), where("role", "==", "Student"))
+      : query(collection(db, "users"), where("role", "==", "Student"), where("teacherIds", "array-contains", uid));
     const unsubStudents = onSnapshot(
-      query(collection(db, "users"), where("role", "==", "Student")),
+      studentsQuery,
       (snap) => { setDirectory((c) => ({ ...c, students: snap.docs.map((d) => ({ id: d.id, ...d.data() })) })); done(); },
       done,
     );
-    const unsubTeachers = onSnapshot(
-      query(collection(db, "users"), where("role", "==", "Teacher")),
-      (snap) => { setDirectory((c) => ({ ...c, teachers: snap.docs.map((d) => ({ id: d.id, ...d.data() })) })); done(); },
-      done,
-    );
+
+    const coursesQuery = isManager
+      ? collection(db, "courses")
+      : query(collection(db, "courses"), where("teacherIds", "array-contains", uid));
     const unsubCourses = onSnapshot(
-      collection(db, "courses"),
+      coursesQuery,
       (snap) => { setDirectory((c) => ({ ...c, courses: snap.docs.map((d) => ({ id: d.id, ...d.data() })) })); done(); },
       done,
     );
-    return () => { unsubStudents(); unsubTeachers(); unsubCourses(); };
-  }, [canSearchRecords]);
+
+    const unsubTeachers = wantsTeachers
+      ? onSnapshot(
+          query(collection(db, "users"), where("role", "==", "Teacher")),
+          (snap) => { setDirectory((c) => ({ ...c, teachers: snap.docs.map((d) => ({ id: d.id, ...d.data() })) })); done(); },
+          done,
+        )
+      : () => {};
+
+    return () => { unsubStudents(); unsubCourses(); unsubTeachers(); };
+  }, [canSearchRecords, isManager, uid]);
 
   useEffect(() => {
     function onClickOutside(event) {
@@ -96,7 +119,14 @@ export default function GlobalSearch({ role, modules = [], onNavigate }) {
   function selectResult(result) {
     setTerm("");
     setOpen(false);
-    onNavigate?.(result.kind === "Menu" ? result.id : kindModule[result.kind]);
+    const moduleName = result.kind === "Menu" ? result.id : kindModule[result.kind];
+    // Two navigation models coexist in this app: Director/Admin/Student use
+    // a single-page tab switch (onNavigate = setActive, no real route), while
+    // Teacher's workspace is real Next.js routes per module (getHref(module)
+    // returns a real path) — follow whichever this shell actually uses.
+    const href = getHref?.(moduleName);
+    if (href) router.push(href);
+    else onNavigate?.(moduleName);
   }
 
   return (
@@ -106,11 +136,11 @@ export default function GlobalSearch({ role, modules = [], onNavigate }) {
         onChange={(event) => { setTerm(event.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         className="w-52 rounded-xl border border-border-subtle bg-page px-4 py-2 pl-9 text-xs outline-none focus:ring-2 focus:ring-primary lg:w-64"
-        placeholder={canSearchRecords ? "Search menu, students, teachers..." : "Search menu..."}
+        placeholder={canSearchRecords ? "Search menu, students, courses..." : "Search menu..."}
       />
       <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-subtle" aria-hidden="true" />
       {open && term.trim() && (
-        <div className="absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-border-subtle bg-white shadow-xl">
+        <div className="absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-border-subtle bg-card shadow-xl">
           {results.length ? (
             <ul className="max-h-80 overflow-y-auto py-1">
               {results.map((result) => (

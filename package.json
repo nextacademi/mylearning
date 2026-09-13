@@ -12,8 +12,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@upstash/redis": "^1.38.4",
     "firebase": "^12.18.0",
     "firebase-admin": "^14.3.0",
+    "framer-motion": "^13.2.0",
     "html5-qrcode": "^2.3.8",
     "jszip": "^3.10.2",
     "lucide-react": "^1.42.0",
