@@ -88,7 +88,7 @@ export default function HeroParticleSphere({ words, className = "" }) {
   const rotationRef = useRef(0);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [fontFamily, setFontFamily] = useState("sans-serif");
-  const [phase, setPhase] = useState("text");
+  const [phase, setPhase] = useState("sphere");
   const reducedMotion = useReducedMotion();
 
   useLayoutEffect(() => {
@@ -130,7 +130,7 @@ export default function HeroParticleSphere({ words, className = "" }) {
         tick(next);
       }, PHASE_MS[current]);
     }
-    tick("text");
+    tick("sphere");
     return () => { cancelled = true; clearTimeout(timer); };
   }, [reducedMotion]);
 
@@ -178,7 +178,7 @@ export default function HeroParticleSphere({ words, className = "" }) {
         color,
         opacity: 0.75 + rand() * 0.25,
         delayFrac: rand(),
-        iconSize: 13 + rand() * 8,
+        iconSize: 16 + rand() * 10,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

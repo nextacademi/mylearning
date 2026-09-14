@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { motion } from "framer-motion";
 import { useAuth } from "../lib/auth-context";
 import { submitContactInquiry } from "../lib/contact-inquiries-data";
@@ -23,6 +24,14 @@ import HeroParticleSphere from "./brand/HeroParticleSphere";
 // explicitly scoped to dashboard surfaces — this keeps the redesign
 // isolated to the public site with zero risk of bleeding into
 // dashboard/admin/teacher/student UI.
+// Landing-page-only typeface — a distinct, more geometric sans than the
+// app-wide Geist font in app/layout.js — applied to <main> below so it
+// never bleeds into dashboard/admin/teacher/student UI.
+const publicFont = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+});
+
 const RED = "#E53935";
 const RED_BRIGHT = "#F04438";
 const RED_DEEP = "#B91C1C";
@@ -209,14 +218,18 @@ function Brand({ light = false }) {
   );
 }
 
-function Eyebrow({ children, className = "", light = false }) {
+const EYEBROW_TONES = {
+  red: { normal: "#E53935", light: "#FCA5A5" },
+  amber: { normal: "#D97706", light: "#FBBF24" },
+};
+function Eyebrow({ children, className = "", light = false, tone = "red" }) {
+  const color = EYEBROW_TONES[tone][light ? "light" : "normal"];
   return (
     <p
-      className={`inline-flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[.2em] ${light ? "text-[#FCA5A5]" : "text-[#E53935]"} ${className}`}
+      className={`inline-flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[.2em] ${className}`}
+      style={{ color }}
     >
-      <span
-        className={`h-[2px] w-6 ${light ? "bg-[#FCA5A5]" : "bg-[#E53935]"}`}
-      />
+      <span className="h-[2px] w-6" style={{ backgroundColor: color }} />
       {children}
     </p>
   );
@@ -309,21 +322,21 @@ function HeroStatsRow({ items }) {
   return (
     <div
       ref={ref}
-      className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-white/10 pt-4 sm:grid-cols-4"
+      className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/10 pt-6 sm:grid-cols-4"
     >
       {items.map((stat, index) => (
         <div
           key={stat.label}
           className={`${index !== 0 ? "sm:border-l sm:border-white/10 sm:pl-6" : ""}`}
         >
-          <strong className="block text-3xl font-black text-white">
+          <strong className="block text-4xl font-black text-white md:text-5xl">
             <AnimatedCounter
               value={stat.value}
               suffix={stat.suffix}
               active={visible}
             />
           </strong>
-          <span className="mt-1 block text-xs font-medium text-white/50">
+          <span className="mt-1.5 block text-sm font-medium text-white/50">
             {stat.label}
           </span>
         </div>
@@ -552,7 +565,9 @@ export default function PublicSite() {
     .slice(0, 6);
 
   return (
-    <main className="overflow-x-clip bg-white text-[#111827]">
+    <main
+      className={`${publicFont.className} overflow-x-clip bg-white text-[#111827]`}
+    >
       {/* NAVBAR — landing page only, dark per the reference theme */}
       <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0D10]/95 shadow-sm backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-10">
@@ -664,14 +679,27 @@ export default function PublicSite() {
         )}
       </nav>
 
-      {/* HERO — dark, 3-line headline, real stat row, dot-cloud graphic */}
-      <section id="home" className="bg-[#0B0D10]">
+      {/* HERO — dark, 3-line headline, real stat row, dot-cloud graphic.
+            Ambient red-to-black radial glow on the right mirrors the
+            24asia.pages.dev reference's atmospheric background, behind
+            everything (-z-10) so it never competes with the particle
+            sphere or text for clicks/readability. */}
+      <section id="home" className="relative overflow-hidden bg-[#0B0D10]">
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-full max-w-3xl opacity-60"
+          style={{
+            background:
+              "radial-gradient(ellipse at 80% 50%, rgba(229,57,53,0.35), rgba(11,13,16,0) 70%)",
+          }}
+        />
         <div className="mx-auto max-w-7xl px-5  md:px-10 md:py-2">
           <div className="grid items-start gap-8 md:grid-cols-[1.15fr_1fr] md:gap-10">
             <div>
-              <Eyebrow light>Next Academy · Learning Platform</Eyebrow>
+              <Eyebrow light tone="amber" className="text-xs">
+                Next Academy · Learning Platform
+              </Eyebrow>
 
-              <h1 className="mt-3 max-w-xl text-5xl font-black leading-[1.0] tracking-[-.03em] text-white md:text-5xl lg:text-6xl">
+              <h1 className="mt-4 max-w-xl text-5xl font-black leading-[1.03] tracking-[-.03em] text-white md:text-6xl lg:text-7xl">
                 Learn today.
                 <br />
                 Grow your career.
@@ -679,22 +707,22 @@ export default function PublicSite() {
                 <span className="text-[#F04438]">Lead tomorrow.</span>
               </h1>
 
-              <p className="mt-3 max-w-md text-base leading-6 text-white/60 md:text-lg">
+              <p className="mt-4 max-w-lg text-base leading-7 text-white/60 md:text-lg">
                 Next Academy trains real students with real teachers, across
                 real courses and batches — practical skills that turn straight
                 into better jobs and stronger careers.
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-wrap gap-4">
                 <a
                   href="#training"
-                  className="rounded-full bg-white px-6 py-2.5 text-sm font-bold text-[#111827] transition hover:bg-white/90"
+                  className="rounded-xl bg-white px-8 py-3.5 text-base font-bold text-[#111827] transition hover:bg-white/90"
                 >
                   Explore programs <span className="ml-3">→</span>
                 </a>
                 <button
                   onClick={goToLearning}
-                  className="rounded-full border border-white/20 px-6 py-2.5 text-sm font-bold text-white transition hover:border-white/40"
+                  className="rounded-xl border border-white/20 px-8 py-3.5 text-base font-bold text-white transition hover:border-white/40"
                 >
                   My Learning <span className="ml-3">↗</span>
                 </button>
@@ -703,12 +731,14 @@ export default function PublicSite() {
 
             {/* Decorative only — hidden on mobile so the hero stays lean
                   and text-first on small screens; shows from md: up where
-                  there's actually room for it to breathe. */}
+                  there's actually room for it to breathe. The section-level
+                  glow above already lights this area, so this is just a
+                  tight highlight right behind the sphere itself. */}
             <div className="relative hidden justify-center md:flex md:justify-end">
-              <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[#ff2d2d]/20 blur-[100px]" />
+              <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[#ff2d2d]/15 blur-[100px]" />
               <HeroParticleSphere
                 words={BRAND_WORDS}
-                className="w-full max-w-[420px] lg:max-w-[480px]"
+                className="w-full max-w-[460px] lg:max-w-[560px]"
               />
             </div>
           </div>
