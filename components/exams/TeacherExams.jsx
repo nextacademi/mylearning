@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { CheckCircle2, Circle, ClipboardList, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { subscribeTeacherCourses } from "../../lib/teacher-data";
 import { subscribeCourses } from "../../lib/room-booking-data";
+import { subscribeModules } from "../../lib/course-modules-data";
 import {
   createQuiz, deleteQuiz, loadQuizAnswerKey, setQuizStatus, subscribeAllQuizzes,
   subscribeQuizAttemptsForQuiz, subscribeQuizAttemptsForTeacher, subscribeTeacherQuizzes, updateQuiz,
@@ -14,7 +15,7 @@ import { useConfirm } from "../ui/ConfirmDialog";
 const LABEL = "grid gap-1 text-xs font-bold text-muted";
 const FIELD = "rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
 const blankQuestion = () => ({ text: "", options: ["", ""], correctOptionIndex: 0 });
-const blankForm = () => ({ courseId: "", title: "", description: "", timeLimitMinutes: "", maxAttempts: "1", questions: [blankQuestion()] });
+const blankForm = () => ({ courseId: "", moduleId: "", title: "", description: "", timeLimitMinutes: "", maxAttempts: "1", questions: [blankQuestion()] });
 
 function Dialog({ title, children, onClose, wide }) {
   return (
@@ -64,13 +65,15 @@ function QuestionEditor({ question, index, onChange, onRemove, canRemove }) {
       <div className="space-y-2">
         {question.options.map((option, optIndex) => (
           <div key={optIndex} className="flex items-center gap-2">
-            <input
-              type="radio"
-              name={`correct-${index}`}
-              checked={question.correctOptionIndex === optIndex}
-              onChange={() => setField("correctOptionIndex", optIndex)}
+            <button
+              type="button"
+              onClick={() => setField("correctOptionIndex", optIndex)}
+              aria-pressed={question.correctOptionIndex === optIndex}
               aria-label={`Mark option ${optIndex + 1} correct`}
-            />
+              className={`shrink-0 rounded-full ${question.correctOptionIndex === optIndex ? "text-success" : "text-subtle hover:text-muted"}`}
+            >
+              {question.correctOptionIndex === optIndex ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+            </button>
             <input
               value={option}
               onChange={(e) => setOption(optIndex, e.target.value)}
@@ -98,8 +101,17 @@ function QuestionEditor({ question, index, onChange, onRemove, canRemove }) {
 
 function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
   const [form, setForm] = useState(initial);
+  const [modules, setModules] = useState([]);
+  useEffect(() => {
+    if (!form.courseId) { setModules([]); return; }
+    return subscribeModules(form.courseId, setModules, () => setModules([]));
+  }, [form.courseId]);
   function set(field) {
     return (e) => setForm((c) => ({ ...c, [field]: e.target.value }));
+  }
+  function setCourse(e) {
+    const courseId = e.target.value;
+    setForm((c) => ({ ...c, courseId, moduleId: "" }));
   }
   function setQuestion(index, next) {
     setForm((c) => ({ ...c, questions: c.questions.map((q, i) => (i === index ? next : q)) }));
@@ -115,7 +127,7 @@ function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <label className={LABEL}>
           Course
-          <select value={form.courseId} onChange={set("courseId")} required className={FIELD}>
+          <select value={form.courseId} onChange={setCourse} required className={FIELD}>
             <option value="">Select a course</option>
             {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
           </select>
@@ -123,6 +135,13 @@ function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
         <label className={LABEL}>
           Exam title
           <input value={form.title} onChange={set("title")} required maxLength={160} className={FIELD} placeholder="Midterm Quiz" />
+        </label>
+        <label className={LABEL}>
+          Module <span className="font-normal text-subtle">(optional — whole course if blank)</span>
+          <select value={form.moduleId} onChange={set("moduleId")} disabled={!form.courseId} className={FIELD}>
+            <option value="">Whole course</option>
+            {modules.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+          </select>
         </label>
       </div>
       <label className={LABEL}>
@@ -225,6 +244,7 @@ export default function TeacherExams({ teacherId, isManager = false }) {
       id: quiz.id,
       ownerTeacherId: quiz.teacherId,
       courseId: quiz.courseId,
+      moduleId: quiz.moduleId || "",
       title: quiz.title,
       description: quiz.description || "",
       timeLimitMinutes: quiz.timeLimitMinutes || "",
