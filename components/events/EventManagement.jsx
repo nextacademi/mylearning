@@ -9,6 +9,7 @@ import { CalendarDays, Eye, EyeOff, MapPin, Pencil, Search, Trash2, UserRound, U
 import { ChartCard, EmptyChartState } from "../dashboard/overview/ChartCard";
 import EventCalendar from "./EventCalendar";
 import EventForm from "./EventForm";
+import CalendarSubscribeButton from "./CalendarSubscribeButton";
 import DataTable, { StatusBadge as TableBadge } from "../data-table/DataTable";
 import { createEvent, deleteEvent, loadEvents, setEventPublished, updateEvent, uploadEventBanner } from "../../lib/services/event-service";
 import { subscribeAllEvents } from "../../lib/admin-events-data";
@@ -194,19 +195,22 @@ function EventListView({ events, onSelect }) {
             </button>
           ))}
         </div>
-        <div className="flex gap-1.5">
-          {["Upcoming", "Past"].map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setWhen(item)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
-                when === item ? "bg-active text-primary" : "border border-border-subtle bg-card text-muted hover:bg-page"
-              }`}
-            >
-              {item}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            {["Upcoming", "Past"].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setWhen(item)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                  when === item ? "bg-active text-primary" : "border border-border-subtle bg-card text-muted hover:bg-page"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <CalendarSubscribeButton />
         </div>
       </div>
 
