@@ -7,6 +7,7 @@ import FinanceDashboardTab from "./FinanceDashboardTab";
 import IncomeTab from "./IncomeTab";
 import IncomeManagementTab from "./IncomeManagementTab";
 import ExpensesTab from "./ExpensesTab";
+import AssetsTab from "./AssetsTab";
 import TransactionsTab from "./TransactionsTab";
 import ProfitLossTab from "./ProfitLossTab";
 import ReportsTab from "./ReportsTab";
@@ -15,7 +16,7 @@ import ReportsTab from "./ReportsTab";
 // this dashboard (Training, Users, etc. are also single sidebar items with
 // their own internal tabs, e.g. Training Details' Overview/Classes/...).
 // No second dashboard shell, no new sidebar items.
-const tabs = ["Dashboard", "Income", "Income / Payments", "Outstanding Due", "Expenses", "Transactions", "Profit & Loss", "Reports"];
+const tabs = ["Dashboard", "Income", "Income / Payments", "Outstanding Due", "Expenses", "Assets", "Transactions", "Profit & Loss", "Reports"];
 
 export default function FinanceManagement() {
   const [tab, setTab] = useState("Dashboard");
@@ -68,6 +69,7 @@ export default function FinanceManagement() {
       {tab === "Income / Payments" && <IncomeTab payments={overview?.payments || []} loading={loading} />}
       {tab === "Outstanding Due" && <AdmissionsManagement />}
       {tab === "Expenses" && <ExpensesTab expenses={overview?.expenses || []} loading={loading} onChanged={load} />}
+      {tab === "Assets" && <AssetsTab />}
       {tab === "Transactions" && <TransactionsTab payments={overview?.payments || []} expenses={overview?.expenses || []} income={overview?.income || []} loading={loading} />}
       {tab === "Profit & Loss" && <ProfitLossTab />}
       {tab === "Reports" && <ReportsTab />}

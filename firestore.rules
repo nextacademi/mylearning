@@ -66,6 +66,13 @@ service cloud.firestore {
     match /finance_income/{incomeId} {
       allow read, write: if admin();
     }
+    // Asset register (Finance → Assets) — what the academy owns and its
+    // value (furniture, equipment, deposits, renovation). Same
+    // admin-only, server-SDK-only pattern as expenses/finance_income
+    // above; this block only backstops direct client access attempts.
+    match /assets/{assetId} {
+      allow read, write: if admin();
+    }
     match /courses/{courseId} {
       allow read: if admin() || (teacher() && resource.data.teacherIds.hasAny([request.auth.uid])) || enrolledInCourse(courseId);
       allow create: if admin() || (teacher() && request.resource.data.teacherIds.hasOnly([request.auth.uid]));

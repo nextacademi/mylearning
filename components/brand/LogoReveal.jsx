@@ -8,7 +8,7 @@ import ParticleText from "./ParticleText";
 // returning visitors within the same tab session.
 const SESSION_KEY = "nextacademy:logoReveal:v1";
 
-const WORDS = [
+export const BRAND_WORDS = [
   { text: "NEXT", color: "#ffffff" },
   { text: "ACADEMY", color: "#ff3b3b" },
 ];
@@ -52,8 +52,8 @@ export default function LogoReveal({ force = false, onComplete }) {
       schedule(finish, 2100);
     } else {
       schedule(() => setPhase("text"), 1750);
-      schedule(() => setPhase("fade"), 4700);
-      schedule(finish, 5300);
+      schedule(() => setPhase("fade"), 5000);
+      schedule(finish, 5600);
     }
 
     function finish() {
@@ -133,13 +133,42 @@ export default function LogoReveal({ force = false, onComplete }) {
               }}
               transition={{ duration: 2.4, ease: "easeOut" }}
             >
-              <ParticleText
-                words={WORDS}
-                accentColor="#ff3b3b"
-                accentRatio={0.08}
-                seed={7}
-                className="h-[26vw] max-h-[190px] min-h-[92px] w-[94vw] max-w-[860px]"
-              />
+              <div className="relative h-[46vw] max-h-[280px] min-h-[150px] w-[80vw] max-w-[560px]">
+                {/* The particle swarm is a flourish, not the actual payoff —
+                    a few hundred small dashes approximating letterforms
+                    reads as noise at a glance, no matter how well they're
+                    laid out. It dims once the particles have mostly
+                    converged, handing off to real, always-crisp text
+                    underneath (below) so the moment that holds on screen
+                    longest is guaranteed legible. */}
+                <motion.div
+                  className="absolute inset-0"
+                  animate={reducedMotion ? {} : { opacity: [1, 1, 0.3] }}
+                  transition={{ duration: 1.8, times: [0, 0.5, 1], ease: "easeOut" }}
+                >
+                  <ParticleText
+                    words={BRAND_WORDS}
+                    accentColor="#ff3b3b"
+                    accentRatio={0.08}
+                    seed={7}
+                    stacked
+                    play={!reducedMotion}
+                    className="h-full w-full"
+                  />
+                </motion.div>
+                {!reducedMotion && (
+                  <motion.p
+                    className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center font-black leading-[1.15] tracking-[0.04em]"
+                    style={{ fontSize: "min(9vw, 56px)" }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.9, duration: 0.5, ease: "easeOut" }}
+                  >
+                    <span className="block text-white">NEXT</span>
+                    <span className="block text-[#ff3b3b]">ACADEMY</span>
+                  </motion.p>
+                )}
+              </div>
             </motion.div>
           )}
         </motion.div>
