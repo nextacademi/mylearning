@@ -527,10 +527,10 @@ export default function PublicSite() {
   }, []);
 
   const heroStats = [
-    { label: "Students Trained", value: 40, suffix: "+" },
-    { label: "Expert Teachers", value: 35, suffix: "+" },
-    { label: "Courses Offered", value: 42, suffix: "+" },
-    { label: "Total Enrollments", value: 38, suffix: "+" },
+    { label: "Students Trained", value: 450, suffix: "+" },
+    { label: "Expert Teachers", value: 420, suffix: "+" },
+    { label: "Courses Offered", value: 460, suffix: "+" },
+    { label: "Total Enrollments", value: 440, suffix: "+" },
   ];
 
   const upcomingEvents = events
@@ -662,7 +662,7 @@ export default function PublicSite() {
 
         {/* HERO — dark, 3-line headline, real stat row, dot-cloud graphic */}
         <section id="home" className="bg-[#0B0D10]">
-          <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-5 md:grid-cols-[1.15fr_1fr] md:gap-10 md:px-10 md:py-7">
+          <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-7 md:grid-cols-[1.15fr_1fr] md:gap-10 md:px-10 md:py-10">
             <div>
               <Eyebrow light>Next Academy · Learning Platform</Eyebrow>
 
@@ -716,7 +716,7 @@ export default function PublicSite() {
           id="about"
           className="mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[.8fr_1.2fr] md:items-center md:gap-10 md:px-10 md:py-8"
         >
-          <Reveal>
+          <div>
             <Eyebrow>About Next Academy</Eyebrow>
             <h2 className="mt-3 max-w-lg text-4xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-5xl">
               Building skills that create real opportunities.
@@ -726,8 +726,8 @@ export default function PublicSite() {
               make meaningful learning practical, human, and connected to the
               future people want to build.
             </p>
-          </Reveal>
-          <Reveal index={1} className="grid gap-5 md:grid-cols-[1.25fr_.75fr]">
+          </div>
+          <div className="grid gap-5 md:grid-cols-[1.25fr_.75fr]">
             <div className="group relative min-h-[340px] overflow-hidden rounded-2xl">
               <img
                 src={photos.about}
@@ -750,7 +750,7 @@ export default function PublicSite() {
                 the world around them.
               </p>
             </div>
-          </Reveal>
+          </div>
         </section>
 
         {/* TRAINING / PROGRAMS — "What We Do" */}
