@@ -786,7 +786,7 @@ export default function PublicSite() {
               </span>
             </div>
           </div>
-          <div className="flex flex-col justify-end rounded-2xl bg-[#B91C1C] p-7 text-white">
+          <div className="flex flex-col justify-end rounded-2xl bg-[#7F1D1D] p-7 text-white">
             <span className="font-mono text-[10px] uppercase tracking-widest text-white/70">
               Our vision
             </span>
