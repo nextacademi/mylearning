@@ -239,7 +239,11 @@ function Reveal({ children, index = 0, className, as = "div", ...rest }) {
       initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.12, margin: "0px 0px -40px 0px" }}
-      transition={{ duration: 0.65, delay: Math.min(index % 4, 3) * 0.07, ease: REVEAL_EASE }}
+      transition={{
+        duration: 0.65,
+        delay: Math.min(index % 4, 3) * 0.07,
+        ease: REVEAL_EASE,
+      }}
       {...rest}
     >
       {children}
@@ -283,7 +287,7 @@ function AnimatedCounter({ value, suffix = "", active, duration = 1800 }) {
       style={{ minWidth: `${String(value).length + suffix.length}ch` }}
     >
       {display}
-      {suffix}
+      <span className="text-[#F04438]">{suffix}</span>
     </span>
   );
 }
@@ -548,121 +552,122 @@ export default function PublicSite() {
     .slice(0, 6);
 
   return (
-      <main className="overflow-x-clip bg-white text-[#111827]">
-        {/* NAVBAR — landing page only, dark per the reference theme */}
-        <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0D10]/95 shadow-sm backdrop-blur-md">
-          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-10">
-            <Brand light />
-            <div
-              className={`${menuOpen ? "absolute left-0 right-0 top-16 block border-t border-white/10 bg-[#0B0D10] px-5 py-5 shadow-lg" : "hidden"} md:static md:flex md:items-center md:gap-8 md:border-0 md:bg-transparent md:p-0`}
+    <main className="overflow-x-clip bg-white text-[#111827]">
+      {/* NAVBAR — landing page only, dark per the reference theme */}
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0D10]/95 shadow-sm backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-10">
+          <Brand light />
+          <div
+            className={`${menuOpen ? "absolute left-0 right-0 top-16 block border-t border-white/10 bg-[#0B0D10] px-5 py-5 shadow-lg" : "hidden"} md:static md:flex md:items-center md:gap-8 md:border-0 md:bg-transparent md:p-0`}
+          >
+            <a
+              href="#home"
+              className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
             >
-              <a
-                href="#home"
-                className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
-              >
-                Home
-              </a>
-              <a
-                href="#training"
-                className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
-              >
-                Training
-              </a>
-              <a
-                href="#events"
-                className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
-              >
-                Events
-              </a>
-              <a
-                href="#about"
-                className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
-              >
-                About
-              </a>
-              <a
-                href="#contact"
-                className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
-              >
-                Contact
-              </a>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              {verifiedUser ? (
-                <>
-                  <button
-                    onClick={goToLearning}
-                    className="whitespace-nowrap rounded-full bg-[#E53935] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#F04438] sm:px-4 sm:py-2.5 sm:text-xs"
-                  >
-                    My Learning <span className="ml-1 sm:ml-2">↗</span>
-                  </button>
-                  <div className="relative">
-                    <button
-                      onClick={() => setProfileOpen(!profileOpen)}
-                      className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/10 text-xs font-bold text-white"
-                    >
-                      {(profile?.displayName || user.email || "NA")
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </button>
-                    {profileOpen && (
-                      <div className="absolute right-0 top-12 w-48 rounded-lg border border-[#E5E7EB] bg-white p-3 text-[#111827] shadow-xl">
-                        <p className="border-b border-[#E5E7EB] pb-2 text-xs font-semibold">
-                          {profile?.displayName || user.email}
-                        </p>
-                        <p className="py-2 text-[11px] text-[#6B7280]">
-                          {profile?.role || "Student"}
-                        </p>
-                        <button
-                          onClick={logout}
-                          className="w-full rounded-md px-2 py-2 text-left text-xs text-[#B91C1C] hover:bg-red-50"
-                        >
-                          Log out
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/login"
-                    className="hidden text-xs font-semibold text-white/70 hover:text-white sm:block"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="whitespace-nowrap rounded-full bg-[#E53935] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#F04438] sm:px-4 sm:py-2.5 sm:text-xs"
-                  >
-                    Join Us
-                  </Link>
-                </div>
-              )}
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="text-2xl text-white md:hidden"
-                aria-label="Toggle navigation"
-              >
-                ☰
-              </button>
-            </div>
+              Home
+            </a>
+            <a
+              href="#training"
+              className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
+            >
+              Training
+            </a>
+            <a
+              href="#events"
+              className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
+            >
+              Events
+            </a>
+            <a
+              href="#about"
+              className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
+            >
+              About
+            </a>
+            <a
+              href="#contact"
+              className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
+            >
+              Contact
+            </a>
           </div>
-          {menuOpen && !verifiedUser && (
-            <div className="border-t border-white/10 bg-[#0B0D10] px-5 pb-5 md:hidden">
-              <Link
-                href="/login"
-                className="block py-3 text-sm font-semibold text-white"
-              >
-                Login
-              </Link>
-            </div>
-          )}
-        </nav>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {verifiedUser ? (
+              <>
+                <button
+                  onClick={goToLearning}
+                  className="whitespace-nowrap rounded-full bg-[#E53935] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#F04438] sm:px-4 sm:py-2.5 sm:text-xs"
+                >
+                  My Learning <span className="ml-1 sm:ml-2">↗</span>
+                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setProfileOpen(!profileOpen)}
+                    className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/10 text-xs font-bold text-white"
+                  >
+                    {(profile?.displayName || user.email || "NA")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </button>
+                  {profileOpen && (
+                    <div className="absolute right-0 top-12 w-48 rounded-lg border border-[#E5E7EB] bg-white p-3 text-[#111827] shadow-xl">
+                      <p className="border-b border-[#E5E7EB] pb-2 text-xs font-semibold">
+                        {profile?.displayName || user.email}
+                      </p>
+                      <p className="py-2 text-[11px] text-[#6B7280]">
+                        {profile?.role || "Student"}
+                      </p>
+                      <button
+                        onClick={logout}
+                        className="w-full rounded-md px-2 py-2 text-left text-xs text-[#B91C1C] hover:bg-red-50"
+                      >
+                        Log out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/login"
+                  className="hidden text-xs font-semibold text-white/70 hover:text-white sm:block"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="whitespace-nowrap rounded-full bg-[#E53935] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#F04438] sm:px-4 sm:py-2.5 sm:text-xs"
+                >
+                  Join Us
+                </Link>
+              </div>
+            )}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="text-2xl text-white md:hidden"
+              aria-label="Toggle navigation"
+            >
+              ☰
+            </button>
+          </div>
+        </div>
+        {menuOpen && !verifiedUser && (
+          <div className="border-t border-white/10 bg-[#0B0D10] px-5 pb-5 md:hidden">
+            <Link
+              href="/login"
+              className="block py-3 text-sm font-semibold text-white"
+            >
+              Login
+            </Link>
+          </div>
+        )}
+      </nav>
 
-        {/* HERO — dark, 3-line headline, real stat row, dot-cloud graphic */}
-        <section id="home" className="bg-[#0B0D10]">
-          <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-7 md:grid-cols-[1.15fr_1fr] md:gap-10 md:px-10 md:py-10">
+      {/* HERO — dark, 3-line headline, real stat row, dot-cloud graphic */}
+      <section id="home" className="bg-[#0B0D10]">
+        <div className="mx-auto max-w-7xl px-5  md:px-10 md:py-2">
+          <div className="grid items-start gap-8 md:grid-cols-[1.15fr_1fr] md:gap-10">
             <div>
               <Eyebrow light>Next Academy · Learning Platform</Eyebrow>
 
@@ -694,13 +699,11 @@ export default function PublicSite() {
                   My Learning <span className="ml-3">↗</span>
                 </button>
               </div>
-
-              <HeroStatsRow items={heroStats} />
             </div>
 
-            {/* Decorative only — hidden on mobile so the hero stays lean and
-                text-first on small screens; shows from md: up where there's
-                actually room for it to breathe. */}
+            {/* Decorative only — hidden on mobile so the hero stays lean
+                  and text-first on small screens; shows from md: up where
+                  there's actually room for it to breathe. */}
             <div className="relative hidden justify-center md:flex md:justify-end">
               <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[#ff2d2d]/20 blur-[100px]" />
               <HeroParticleSphere
@@ -709,418 +712,419 @@ export default function PublicSite() {
               />
             </div>
           </div>
-        </section>
 
-        {/* ABOUT */}
-        <section
-          id="about"
-          className="mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[.8fr_1.2fr] md:items-center md:gap-10 md:px-10 md:py-8"
-        >
-          <div>
-            <Eyebrow>About Next Academy</Eyebrow>
-            <h2 className="mt-3 max-w-lg text-4xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-5xl">
-              Building skills that create real opportunities.
-            </h2>
-            <p className="mt-4 max-w-md text-base leading-7 text-[#6B7280]">
-              We bring educators, practitioners, and changemakers together to
-              make meaningful learning practical, human, and connected to the
-              future people want to build.
+          {/* Full-width stat strip below both columns — matches the
+                24asia.pages.dev reference's edge-to-edge divided row,
+                rather than being squeezed into just the text column. */}
+          <HeroStatsRow items={heroStats} />
+        </div>
+      </section>
+
+      {/* ABOUT */}
+      <section
+        id="about"
+        className="mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[.8fr_1.2fr] md:items-center md:gap-10 md:px-10 md:py-8"
+      >
+        <div>
+          <Eyebrow>About Next Academy</Eyebrow>
+          <h2 className="mt-3 max-w-lg text-4xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-5xl">
+            Building skills that create real opportunities.
+          </h2>
+          <p className="mt-4 max-w-md text-base leading-7 text-[#6B7280]">
+            We bring educators, practitioners, and changemakers together to make
+            meaningful learning practical, human, and connected to the future
+            people want to build.
+          </p>
+        </div>
+        <div className="grid gap-5 md:grid-cols-[1.25fr_.75fr]">
+          <div className="group relative min-h-[340px] overflow-hidden rounded-2xl">
+            <img
+              src={photos.about}
+              alt="Learners collaborating in a bright classroom"
+              className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+            />
+            <div className="absolute bottom-5 left-5 rounded-lg bg-white/95 px-4 py-3 text-xs shadow-sm backdrop-blur">
+              <b className="block text-[#111827]">Our mission</b>
+              <span className="text-[#6B7280]">
+                Make learning useful from day one.
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-col justify-end rounded-2xl bg-[#B91C1C] p-7 text-white">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-white/70">
+              Our vision
+            </span>
+            <p className="mt-5 text-2xl font-bold leading-tight">
+              A future where every learner can find their voice and strengthen
+              the world around them.
             </p>
           </div>
-          <div className="grid gap-5 md:grid-cols-[1.25fr_.75fr]">
-            <div className="group relative min-h-[340px] overflow-hidden rounded-2xl">
-              <img
-                src={photos.about}
-                alt="Learners collaborating in a bright classroom"
-                className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              />
-              <div className="absolute bottom-5 left-5 rounded-lg bg-white/95 px-4 py-3 text-xs shadow-sm backdrop-blur">
-                <b className="block text-[#111827]">Our mission</b>
-                <span className="text-[#6B7280]">
-                  Make learning useful from day one.
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-col justify-end rounded-2xl bg-[#B91C1C] p-7 text-white">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-white/70">
-                Our vision
-              </span>
-              <p className="mt-5 text-2xl font-bold leading-tight">
-                A future where every learner can find their voice and strengthen
-                the world around them.
-              </p>
-            </div>
+        </div>
+      </section>
+
+      {/* TRAINING / PROGRAMS — "What We Do" */}
+      <section id="training" className="border-y border-[#E5E7EB] bg-[#FAFAF7]">
+        <div className="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-8">
+          <Eyebrow>What we do</Eyebrow>
+          <h2 className="mt-2 text-3xl font-black tracking-[-.03em] text-[#111827] md:text-4xl">
+            Programs built around real needs.
+          </h2>
+
+          <div className="mt-4 grid gap-5 md:grid-cols-2">
+            {programs.map((program, index) => (
+              <Reveal
+                as="article"
+                index={index}
+                className="group overflow-hidden rounded-2xl border border-[#E5E7EB] border-t-4 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                style={{ borderTopColor: program.accent }}
+                key={program.title}
+              >
+                <div className="h-52 overflow-hidden md:h-56">
+                  <img
+                    src={program.src}
+                    alt={program.title}
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  />
+                </div>
+                <div className="p-4">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#E53935]">
+                    {program.category}
+                  </p>
+                  <h3 className="mt-1.5 text-xl font-black tracking-tight text-[#111827]">
+                    {program.title}
+                  </h3>
+                  <p className="mt-1.5 max-w-md text-sm leading-5 text-[#6B7280]">
+                    {program.copy}
+                  </p>
+                  <span className="mt-3 inline-block rounded-full bg-red-50 px-3 py-1 text-[11px] font-bold text-[#B91C1C]">
+                    {program.stat}
+                  </span>
+                </div>
+              </Reveal>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* TRAINING / PROGRAMS — "What We Do" */}
-        <section
-          id="training"
-          className="border-y border-[#E5E7EB] bg-[#FAFAF7]"
-        >
-          <div className="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-8">
-            <Eyebrow>What we do</Eyebrow>
-            <h2 className="mt-2 text-3xl font-black tracking-[-.03em] text-[#111827] md:text-4xl">
-              Programs built around real needs.
+      {/* EVENTS */}
+      <section
+        id="events"
+        className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8"
+      >
+        <Reveal className="flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <Eyebrow>Event calendar</Eyebrow>
+            <h2 className="mt-3 text-4xl font-black tracking-[-.03em] text-[#111827] md:text-5xl">
+              Learn, connect and grow together.
             </h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <CalendarSubscribeButton />
+            <a href="#contact" className="text-sm font-bold text-[#E53935]">
+              View all events →
+            </a>
+          </div>
+        </Reveal>
+        {!eventsLoaded ? (
+          <p className="mt-5 text-sm text-[#6B7280]">Loading events...</p>
+        ) : !upcomingEvents.length ? (
+          <p className="mt-5 text-sm text-[#6B7280]">
+            No upcoming events at the moment.
+          </p>
+        ) : (
+          <div className="mt-5 grid gap-6 md:grid-cols-3">
+            {upcomingEvents.map((event, index) => {
+              const day = event.eventDate ? event.eventDate.slice(8, 10) : null;
+              const month = event.eventDate
+                ? MONTH_ABBR[Number(event.eventDate.slice(5, 7)) - 1]
+                : null;
+              const fullDate = formatEventDate(event.eventDate);
+              const startTime = formatEventTime(event.startTime);
+              const endTime = formatEventTime(event.endTime);
+              const timeRange = startTime
+                ? `${startTime}${endTime ? ` – ${endTime}` : ""}`
+                : null;
+              const registrationOpen = isRegistrationOpen(event);
 
-            <div className="mt-4 grid gap-5 md:grid-cols-2">
-              {programs.map((program, index) => (
+              return (
                 <Reveal
                   as="article"
                   index={index}
-                  className="group overflow-hidden rounded-2xl border border-[#E5E7EB] border-t-4 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
-                  style={{ borderTopColor: program.accent }}
-                  key={program.title}
+                  className="group overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  key={event.id}
                 >
-                  <div className="h-52 overflow-hidden md:h-56">
-                    <img
-                      src={program.src}
-                      alt={program.title}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#E53935]">
-                      {program.category}
-                    </p>
-                    <h3 className="mt-1.5 text-xl font-black tracking-tight text-[#111827]">
-                      {program.title}
-                    </h3>
-                    <p className="mt-1.5 max-w-md text-sm leading-5 text-[#6B7280]">
-                      {program.copy}
-                    </p>
-                    <span className="mt-3 inline-block rounded-full bg-red-50 px-3 py-1 text-[11px] font-bold text-[#B91C1C]">
-                      {program.stat}
-                    </span>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* EVENTS */}
-        <section
-          id="events"
-          className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8"
-        >
-          <Reveal className="flex flex-wrap items-end justify-between gap-6">
-            <div>
-              <Eyebrow>Event calendar</Eyebrow>
-              <h2 className="mt-3 text-4xl font-black tracking-[-.03em] text-[#111827] md:text-5xl">
-                Learn, connect and grow together.
-              </h2>
-            </div>
-            <div className="flex items-center gap-4">
-              <CalendarSubscribeButton />
-              <a href="#contact" className="text-sm font-bold text-[#E53935]">
-                View all events →
-              </a>
-            </div>
-          </Reveal>
-          {!eventsLoaded ? (
-            <p className="mt-5 text-sm text-[#6B7280]">Loading events...</p>
-          ) : !upcomingEvents.length ? (
-            <p className="mt-5 text-sm text-[#6B7280]">
-              No upcoming events at the moment.
-            </p>
-          ) : (
-            <div className="mt-5 grid gap-6 md:grid-cols-3">
-              {upcomingEvents.map((event, index) => {
-                const day = event.eventDate
-                  ? event.eventDate.slice(8, 10)
-                  : null;
-                const month = event.eventDate
-                  ? MONTH_ABBR[Number(event.eventDate.slice(5, 7)) - 1]
-                  : null;
-                const fullDate = formatEventDate(event.eventDate);
-                const startTime = formatEventTime(event.startTime);
-                const endTime = formatEventTime(event.endTime);
-                const timeRange = startTime
-                  ? `${startTime}${endTime ? ` – ${endTime}` : ""}`
-                  : null;
-                const registrationOpen = isRegistrationOpen(event);
-
-                return (
-                  <Reveal
-                    as="article"
-                    index={index}
-                    className="group overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
-                    key={event.id}
-                  >
-                    {event.bannerUrl ? (
-                      <div className="relative h-48 overflow-hidden">
-                        <img
-                          src={event.bannerUrl}
-                          alt={event.name}
-                          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                        />
-                        {day && (
-                          <div className="absolute left-4 top-4 rounded-md bg-[#B91C1C] px-3 py-2 text-center text-white shadow-md">
-                            <b className="block text-2xl leading-none">{day}</b>
-                            <small className="font-mono text-[9px]">
-                              {month}
-                            </small>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      fullDate && (
-                        <p className="px-6 pt-6 font-mono text-xs font-bold text-[#B91C1C]">
-                          {fullDate}
-                        </p>
-                      )
-                    )}
-                    <div className="p-6">
-                      {event.type && (
-                        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#B91C1C]">
-                          {event.type}
-                        </p>
-                      )}
-                      <h3 className="mt-1 text-xl font-black text-[#111827]">
-                        {event.name}
-                      </h3>
-                      {(event.bannerUrl ? fullDate : null) ||
-                      timeRange ||
-                      event.location ? (
-                        <p className="mt-2 text-xs text-[#6B7280]">
-                          {[
-                            event.bannerUrl ? fullDate : null,
-                            timeRange,
-                            event.location,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </p>
-                      ) : null}
-                      {event.description && (
-                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#6B7280]">
-                          {event.description}
-                        </p>
-                      )}
-                      {registrationOpen && (
-                        <span className="mt-3 inline-block text-xs font-bold text-[#111827]">
-                          Registration open
-                        </span>
+                  {event.bannerUrl ? (
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={event.bannerUrl}
+                        alt={event.name}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                      />
+                      {day && (
+                        <div className="absolute left-4 top-4 rounded-md bg-[#B91C1C] px-3 py-2 text-center text-white shadow-md">
+                          <b className="block text-2xl leading-none">{day}</b>
+                          <small className="font-mono text-[9px]">
+                            {month}
+                          </small>
+                        </div>
                       )}
                     </div>
-                  </Reveal>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* HOW TO HELP — first card expanded, others collapsed (accordion) */}
-        <section className="border-y border-[#E5E7EB] bg-[#FAFAF7]">
-          <div className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
-            <Reveal>
-              <Eyebrow>How to help</Eyebrow>
-              <h2 className="mt-3 max-w-xl text-3xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-4xl">
-                Four ways to get involved.
-              </h2>
-              <p className="mt-2 max-w-lg text-sm leading-6 text-[#6B7280]">
-                You don&apos;t need special skills or spare hours — you need the
-                heart to show up. We&apos;ll handle the rest.
-              </p>
-            </Reveal>
-
-            <div className="mt-5 grid gap-4 md:grid-cols-4">
-              {HOW_TO_HELP.map((item, index) => {
-                const expanded = helpIndex === index;
-                return (
-                  <Reveal
-                    as="button"
-                    index={index}
-                    key={item.number}
-                    type="button"
-                    onClick={() => setHelpIndex(index)}
-                    className={`rounded-2xl border p-6 text-left transition ${
-                      expanded
-                        ? "border-[#E53935] bg-white shadow-md md:col-span-2"
-                        : "border-[#E5E7EB] bg-white hover:border-[#E53935]/40"
-                    }`}
-                  >
-                    <span className="text-2xl font-black text-[#E53935]">
-                      {item.number}
-                    </span>
-                    <h3 className="mt-3 text-base font-bold text-[#111827]">
-                      {item.title}
-                    </h3>
-                    {expanded && item.description && (
-                      <p className="mt-2 text-sm leading-6 text-[#6B7280]">
-                        {item.description}
+                  ) : (
+                    fullDate && (
+                      <p className="px-6 pt-6 font-mono text-xs font-bold text-[#B91C1C]">
+                        {fullDate}
+                      </p>
+                    )
+                  )}
+                  <div className="p-6">
+                    {event.type && (
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#B91C1C]">
+                        {event.type}
                       </p>
                     )}
-                  </Reveal>
-                );
-              })}
-            </div>
+                    <h3 className="mt-1 text-xl font-black text-[#111827]">
+                      {event.name}
+                    </h3>
+                    {(event.bannerUrl ? fullDate : null) ||
+                    timeRange ||
+                    event.location ? (
+                      <p className="mt-2 text-xs text-[#6B7280]">
+                        {[
+                          event.bannerUrl ? fullDate : null,
+                          timeRange,
+                          event.location,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    ) : null}
+                    {event.description && (
+                      <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#6B7280]">
+                        {event.description}
+                      </p>
+                    )}
+                    {registrationOpen && (
+                      <span className="mt-3 inline-block text-xs font-bold text-[#111827]">
+                        Registration open
+                      </span>
+                    )}
+                  </div>
+                </Reveal>
+              );
+            })}
           </div>
-        </section>
+        )}
+      </section>
 
-        {/* TESTIMONIALS — dark single-quote carousel */}
-        <section className="bg-[#0B0D10] py-6 md:py-8">
-          <Reveal as="div" className="mx-auto max-w-7xl px-5 md:px-10">
-            <Eyebrow light className="justify-center">
-              Why it matters
-            </Eyebrow>
-            <div className="mt-4">
-              <TestimonialCarousel items={TESTIMONIALS} />
-            </div>
-          </Reveal>
-        </section>
-
-        {/* GALLERY */}
-        <section className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
-          <Reveal className="flex flex-wrap items-end justify-between gap-5">
-            <div>
-              <Eyebrow>Activities / gallery</Eyebrow>
-              <h2 className="mt-3 text-4xl font-black tracking-[-.03em] text-[#111827] md:text-5xl">
-                Show up. Try things. Belong.
-              </h2>
-            </div>
-            <p className="max-w-xs text-sm leading-6 text-[#6B7280]">
-              Learning happens in classrooms, conversations, and all the moments
-              between.
-            </p>
-          </Reveal>
-          <Reveal index={1} className="mt-5">
-            <PhotoGallery items={galleryItems} />
-          </Reveal>
-        </section>
-
-        <VideoLibrarySection />
-
-        <PartnersSection />
-
-        {/* GRADIENT CTA BANNER */}
-        <section className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
-          <Reveal className="rounded-3xl bg-gradient-to-br from-[#E53935] to-[#F59E0B] px-6 py-7 text-center text-white md:px-16 md:py-9">
-            <h2 className="mx-auto max-w-2xl text-3xl font-black leading-tight md:text-4xl">
-              Your next skill is one enrollment away.
+      {/* HOW TO HELP — first card expanded, others collapsed (accordion) */}
+      <section className="border-y border-[#E5E7EB] bg-[#FAFAF7]">
+        <div className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
+          <Reveal>
+            <Eyebrow>How to help</Eyebrow>
+            <h2 className="mt-3 max-w-xl text-3xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-4xl">
+              Four ways to get involved.
             </h2>
-            <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-white/90 md:text-base">
-              Join a training batch, explore a new programme, or simply come
-              along and see what we do.
+            <p className="mt-2 max-w-lg text-sm leading-6 text-[#6B7280]">
+              You don&apos;t need special skills or spare hours — you need the
+              heart to show up. We&apos;ll handle the rest.
             </p>
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/register"
-                className="rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#B91C1C] transition hover:bg-white/90"
-              >
-                Join as a Learner
-              </Link>
-              <a
-                href="#contact"
-                className="rounded-full border border-white/40 px-6 py-3.5 text-sm font-bold text-white transition hover:border-white"
-              >
-                Talk to Someone First
+          </Reveal>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-4">
+            {HOW_TO_HELP.map((item, index) => {
+              const expanded = helpIndex === index;
+              return (
+                <Reveal
+                  as="button"
+                  index={index}
+                  key={item.number}
+                  type="button"
+                  onClick={() => setHelpIndex(index)}
+                  className={`rounded-2xl border p-6 text-left transition ${
+                    expanded
+                      ? "border-[#E53935] bg-white shadow-md md:col-span-2"
+                      : "border-[#E5E7EB] bg-white hover:border-[#E53935]/40"
+                  }`}
+                >
+                  <span className="text-2xl font-black text-[#E53935]">
+                    {item.number}
+                  </span>
+                  <h3 className="mt-3 text-base font-bold text-[#111827]">
+                    {item.title}
+                  </h3>
+                  {expanded && item.description && (
+                    <p className="mt-2 text-sm leading-6 text-[#6B7280]">
+                      {item.description}
+                    </p>
+                  )}
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS — dark single-quote carousel */}
+      <section className="bg-[#0B0D10] py-6 md:py-8">
+        <Reveal as="div" className="mx-auto max-w-7xl px-5 md:px-10">
+          <Eyebrow light className="justify-center">
+            Why it matters
+          </Eyebrow>
+          <div className="mt-4">
+            <TestimonialCarousel items={TESTIMONIALS} />
+          </div>
+        </Reveal>
+      </section>
+
+      {/* GALLERY */}
+      <section className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
+        <Reveal className="flex flex-wrap items-end justify-between gap-5">
+          <div>
+            <Eyebrow>Activities / gallery</Eyebrow>
+            <h2 className="mt-3 text-4xl font-black tracking-[-.03em] text-[#111827] md:text-5xl">
+              Show up. Try things. Belong.
+            </h2>
+          </div>
+          <p className="max-w-xs text-sm leading-6 text-[#6B7280]">
+            Learning happens in classrooms, conversations, and all the moments
+            between.
+          </p>
+        </Reveal>
+        <Reveal index={1} className="mt-5">
+          <PhotoGallery items={galleryItems} />
+        </Reveal>
+      </section>
+
+      <VideoLibrarySection />
+
+      <PartnersSection />
+
+      {/* GRADIENT CTA BANNER */}
+      <section className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
+        <Reveal className="rounded-3xl bg-gradient-to-br from-[#E53935] to-[#F59E0B] px-6 py-7 text-center text-white md:px-16 md:py-9">
+          <h2 className="mx-auto max-w-2xl text-3xl font-black leading-tight md:text-4xl">
+            Your next skill is one enrollment away.
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-white/90 md:text-base">
+            Join a training batch, explore a new programme, or simply come along
+            and see what we do.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/register"
+              className="rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#B91C1C] transition hover:bg-white/90"
+            >
+              Join as a Learner
+            </Link>
+            <a
+              href="#contact"
+              className="rounded-full border border-white/40 px-6 py-3.5 text-sm font-bold text-white transition hover:border-white"
+            >
+              Talk to Someone First
+            </a>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* CONTACT FORM */}
+      <section id="contact" className="bg-[#FAFAF7]">
+        <div className="mx-auto grid max-w-7xl gap-5 px-4 py-5 md:grid-cols-[.9fr_1.1fr] md:gap-8 md:px-7 md:py-7">
+          <Reveal>
+            <Eyebrow>Get in touch</Eyebrow>
+
+            <h2 className="mt-3 max-w-lg text-3xl font-bold leading-[1.08] tracking-[-0.04em] text-[#111827] md:text-4xl">
+              Have a question? Send us a message.
+            </h2>
+
+            <p className="mt-3 max-w-md text-sm leading-6 text-[#6B7280]">
+              Whether you&apos;re exploring a program, need support, or want to
+              partner with us — our team will get back to you.
+            </p>
+
+            <div className="mt-3 space-y-2 text-sm text-[#374151]">
+              <p className="flex items-center gap-2">
+                <span className="text-[#E53935]">✉</span>
+                nextacademi@gmail.com
+              </p>
+
+              <p className="flex items-center gap-2">
+                <span className="text-[#E53935]">📍</span>
+                Singapore
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal index={1}>
+            <ContactForm />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* FOOTER — dark per the reference theme */}
+      <footer className="border-t border-white/10 bg-[#0B0D10] text-white">
+        <div className="mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[1.4fr_1fr_1fr] md:gap-6 md:px-10 md:py-8">
+          <div>
+            <Brand light />
+            <p className="mt-3 max-w-xs text-sm leading-6 text-white/50">
+              Practical learning for people building stronger careers,
+              classrooms, and communities.
+            </p>
+            <button
+              onClick={goToLearning}
+              className="mt-5 inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              Go to My Learning <span className="ml-2">↗</span>
+            </button>
+          </div>
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
+              Explore
+            </p>
+            <div className="mt-4 grid gap-2.5 text-sm text-white/70">
+              <a href="#home" className="transition hover:text-white">
+                Home
+              </a>
+              <a href="#training" className="transition hover:text-white">
+                Training
+              </a>
+              <a href="#events" className="transition hover:text-white">
+                Events
+              </a>
+              <a href="#about" className="transition hover:text-white">
+                About
+              </a>
+              <a href="#contact" className="transition hover:text-white">
+                Contact
               </a>
             </div>
-          </Reveal>
-        </section>
-
-        {/* CONTACT FORM */}
-        <section id="contact" className="bg-[#FAFAF7]">
-          <div className="mx-auto grid max-w-7xl gap-5 px-4 py-5 md:grid-cols-[.9fr_1.1fr] md:gap-8 md:px-7 md:py-7">
-            <Reveal>
-              <Eyebrow>Get in touch</Eyebrow>
-
-              <h2 className="mt-3 max-w-lg text-3xl font-bold leading-[1.08] tracking-[-0.04em] text-[#111827] md:text-4xl">
-                Have a question? Send us a message.
-              </h2>
-
-              <p className="mt-3 max-w-md text-sm leading-6 text-[#6B7280]">
-                Whether you&apos;re exploring a program, need support, or want
-                to partner with us — our team will get back to you.
-              </p>
-
-              <div className="mt-3 space-y-2 text-sm text-[#374151]">
-                <p className="flex items-center gap-2">
-                  <span className="text-[#E53935]">✉</span>
-                  nextacademi@gmail.com
-                </p>
-
-                <p className="flex items-center gap-2">
-                  <span className="text-[#E53935]">📍</span>
-                  Singapore
-                </p>
-              </div>
-            </Reveal>
-
-            <Reveal index={1}>
-              <ContactForm />
-            </Reveal>
           </div>
-        </section>
-
-        {/* FOOTER — dark per the reference theme */}
-        <footer className="border-t border-white/10 bg-[#0B0D10] text-white">
-          <div className="mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[1.4fr_1fr_1fr] md:gap-6 md:px-10 md:py-8">
-            <div>
-              <Brand light />
-              <p className="mt-3 max-w-xs text-sm leading-6 text-white/50">
-                Practical learning for people building stronger careers,
-                classrooms, and communities.
-              </p>
-              <button
-                onClick={goToLearning}
-                className="mt-5 inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20"
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
+              Get in touch
+            </p>
+            <div className="mt-4 grid gap-2.5 text-sm text-white/70">
+              <a
+                href="mailto:nextacademi@gmail.com"
+                className="flex items-center gap-2 transition hover:text-white"
               >
-                Go to My Learning <span className="ml-2">↗</span>
-              </button>
-            </div>
-            <div>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
-                Explore
-              </p>
-              <div className="mt-4 grid gap-2.5 text-sm text-white/70">
-                <a href="#home" className="transition hover:text-white">
-                  Home
-                </a>
-                <a href="#training" className="transition hover:text-white">
-                  Training
-                </a>
-                <a href="#events" className="transition hover:text-white">
-                  Events
-                </a>
-                <a href="#about" className="transition hover:text-white">
-                  About
-                </a>
-                <a href="#contact" className="transition hover:text-white">
-                  Contact
-                </a>
-              </div>
-            </div>
-            <div>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
-                Get in touch
-              </p>
-              <div className="mt-4 grid gap-2.5 text-sm text-white/70">
-                <a
-                  href="mailto:nextacademi@gmail.com"
-                  className="flex items-center gap-2 transition hover:text-white"
-                >
-                  <span className="text-white/40">✉</span> nextacademi@gmail.com
-                </a>
-                <span className="flex items-center gap-2">
-                  <span className="text-white/40">📍</span> Singapore
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-white/10 px-5 py-4 md:px-10">
-            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 text-[11px] text-white/40 sm:flex-row">
-              <span>© 2026 Next Academy. Learning for what comes next.</span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#F04438]" />{" "}
-                Singapore
+                <span className="text-white/40">✉</span> nextacademi@gmail.com
+              </a>
+              <span className="flex items-center gap-2">
+                <span className="text-white/40">📍</span> Singapore
               </span>
             </div>
           </div>
-        </footer>
-      </main>
+        </div>
+        <div className="border-t border-white/10 px-5 py-4 md:px-10">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 text-[11px] text-white/40 sm:flex-row">
+            <span>© 2026 Next Academy. Learning for what comes next.</span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#F04438]" />{" "}
+              Singapore
+            </span>
+          </div>
+        </div>
+      </footer>
+    </main>
   );
 }
