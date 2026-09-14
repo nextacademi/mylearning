@@ -15,7 +15,7 @@ const MAX_PARTICLES = 200;
 // brief pass through the wordmark — the opposite emphasis of LogoReveal
 // (where the wordmark IS the payoff) — so this reads as its own ambient
 // "orbiting" mark rather than a repeat of the intro.
-const PHASE_MS = { text: 1500, toSphere: 1300, sphere: 7200, toText: 1300 };
+const PHASE_MS = { text: 900, toSphere: 950, sphere: 7200, toText: 950 };
 const NEXT_PHASE = { text: "toSphere", toSphere: "sphere", sphere: "toText", toText: "text" };
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -47,7 +47,7 @@ function PersonGlyph() {
   );
 }
 
-function SpherePartial({ textX, textY, sphereX, sphereY, sphereZ, originX, originY, color, opacity, iconSize, delayFrac, phase }) {
+function SpherePartial({ textX, textY, sphereX, sphereY, sphereZ, color, opacity, iconSize, delayFrac, phase }) {
   const resolving = phase === "sphere" || phase === "toSphere";
   const target = resolving
     ? { x: sphereX, y: sphereY, z: sphereZ, opacity, scale: 1, filter: "blur(0px)" }
@@ -57,9 +57,13 @@ function SpherePartial({ textX, textY, sphereX, sphereY, sphereZ, originX, origi
     <motion.span
       className="absolute left-1/2 top-1/2 will-change-transform"
       style={{ width: iconSize, height: iconSize, color, marginLeft: -iconSize / 2, marginTop: -iconSize / 2 }}
-      initial={{ x: originX, y: originY, z: 0, opacity: 0, scale: 0.3, filter: "blur(6px)" }}
+      // `initial={false}` — the crowd should be there the instant the page
+      // is, not fly in from scattered points on first load. This only
+      // affects the very first paint; every later phase change still
+      // animates normally via the `animate` prop below.
+      initial={false}
       animate={target}
-      transition={{ duration: moving ? 1.05 : 0.7, delay: moving ? delayFrac * 0.45 : 0, ease: EASE }}
+      transition={{ duration: moving ? 0.75 : 0.7, delay: moving ? delayFrac * 0.2 : 0, ease: EASE }}
     >
       <PersonGlyph />
     </motion.span>
@@ -165,20 +169,16 @@ export default function HeroParticleSphere({ words, className = "" }) {
       // part of giving this its own distinct palette/mood.
       const roll = rand();
       const color = roll < 0.4 ? "#ff3b3b" : roll < 0.58 ? "#9aa0a6" : point.word.color;
-      const angle = rand() * Math.PI * 2;
-      const originRadius = 260 + rand() * 260;
       return {
         textX: point.x - centerX,
         textY: point.y - centerY,
         sphereX: spherePoints[i].x,
         sphereY: spherePoints[i].y,
         sphereZ: spherePoints[i].z,
-        originX: Math.cos(angle) * originRadius,
-        originY: Math.sin(angle) * originRadius,
         color,
         opacity: 0.75 + rand() * 0.25,
         delayFrac: rand(),
-        iconSize: 9 + rand() * 6,
+        iconSize: 13 + rand() * 8,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
