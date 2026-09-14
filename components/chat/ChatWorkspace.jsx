@@ -48,6 +48,18 @@ function timeAgo(timestamp) {
   return date.toLocaleDateString();
 }
 
+// "Today" / "Yesterday" / "12 Mar" divider text — inserted between
+// messages whenever the calendar day changes, like Messenger's thread.
+function dayLabel(timestamp) {
+  const date = timestamp?.toDate?.();
+  if (!date) return "";
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(new Date()) - startOfDay(date)) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: date.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
+}
+
 // Display name/avatar for a conversation row or header — a group shows its
 // own name/photo; a direct conversation shows the other participant's.
 function conversationDisplay(conversation, currentUserId) {
@@ -325,27 +337,27 @@ export default function ChatWorkspace({ currentUserId, currentUserRole, currentU
   const canCreateGroup = groupCreatorRoles.has(currentUserRole);
 
   return (
-    <div className="grid gap-0 overflow-hidden rounded-2xl border border-border-subtle bg-card shadow-md lg:h-[calc(100vh-140px)] lg:grid-cols-[280px_1fr]">
+    <div className="grid gap-0 overflow-hidden rounded-3xl border border-border-subtle bg-card shadow-xl lg:h-[calc(100vh-140px)] lg:grid-cols-[300px_1fr]">
       <div className="flex flex-col border-b border-border-subtle bg-card lg:border-b-0 lg:border-r">
-        <div className="flex items-center justify-between gap-2 p-3.5">
-          <b className="text-sm font-extrabold text-ink">Chats</b>
+        <div className="flex items-center justify-between gap-2 p-4">
+          <b className="text-base font-extrabold tracking-tight text-ink">Chats</b>
           <button
             type="button"
             onClick={() => setShowNewChat(true)}
             aria-label="Start a new chat"
             title="New chat"
-            className="grid h-8 w-8 place-items-center rounded-full bg-primary text-white shadow-sm transition-transform hover:scale-105 hover:bg-primary-hover active:scale-95"
+            className="grid h-9 w-9 place-items-center rounded-full bg-linear-to-br from-primary to-primary-hover text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
           >
             <UserPlus className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
-        <div className="relative px-3 pb-2.5">
-          <Search className="pointer-events-none absolute left-6 top-2.5 h-3.5 w-3.5 text-subtle" />
+        <div className="relative px-3.5 pb-3">
+          <Search className="pointer-events-none absolute left-7 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search Messenger"
-            className="w-full rounded-full border-none bg-page py-2 pl-8 pr-3 text-[11px] outline-none ring-1 ring-transparent transition focus:bg-card focus:ring-2 focus:ring-primary"
+            className="w-full rounded-full border-none bg-page py-2.5 pl-9 pr-3 text-xs outline-none ring-1 ring-transparent transition focus:bg-card focus:ring-2 focus:ring-primary"
           />
         </div>
         {notice && <p className="border-b border-border-subtle bg-success-soft px-3 py-1.5 text-[10px] font-semibold text-success">{notice}</p>}
@@ -368,21 +380,21 @@ export default function ChatWorkspace({ currentUserId, currentUserRole, currentU
                       setSelected(item.id);
                     }
                   }}
-                  className={`group flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition-all duration-150 active:scale-[0.98] ${isSelected ? "bg-active shadow-sm" : "hover:bg-page"}`}
+                  className={`group flex w-full cursor-pointer items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition-all duration-150 active:scale-[0.98] ${isSelected ? "bg-active shadow-sm" : "hover:bg-page"}`}
                 >
                   <span className="relative shrink-0">
                     {info.photo ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={info.photo} alt="" className={`h-10 w-10 rounded-full object-cover ring-2 transition ${isSelected ? "ring-primary" : "ring-transparent"}`} />
+                      <img src={info.photo} alt="" className={`h-12 w-12 rounded-full object-cover shadow-sm ring-2 transition ${isSelected ? "ring-primary" : "ring-transparent"}`} />
                     ) : (
-                      <span className={`grid h-10 w-10 place-items-center rounded-full bg-linear-to-br from-primary to-primary-hover text-xs font-bold text-white ring-2 transition ${isSelected ? "ring-primary" : "ring-transparent"}`}>
-                        {itemIsGroup ? <Users className="h-4 w-4" /> : initials(info.name)}
+                      <span className={`grid h-12 w-12 place-items-center rounded-full bg-linear-to-br from-primary to-primary-hover text-sm font-bold text-white shadow-sm ring-2 transition ${isSelected ? "ring-primary" : "ring-transparent"}`}>
+                        {itemIsGroup ? <Users className="h-4.5 w-4.5" /> : initials(info.name)}
                       </span>
                     )}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-2">
-                      <b className={`truncate text-xs ${unread > 0 ? "text-ink" : "text-ink/90"}`}>{info.name}</b>
+                      <b className={`truncate text-[13px] ${unread > 0 ? "text-ink" : "text-ink/90"}`}>{info.name}</b>
                       <span className="flex shrink-0 items-center gap-1">
                         <span className="text-[9px] text-subtle group-hover:hidden">{timeAgo(item.lastMessageAt)}</span>
                         <span className="hidden group-hover:inline-flex">
@@ -417,18 +429,18 @@ export default function ChatWorkspace({ currentUserId, currentUserRole, currentU
       <div className="flex min-h-[380px] flex-col bg-page/40">
         {conversation ? (
           <>
-            <div className="flex items-center gap-2.5 border-b border-border-subtle bg-card p-3 shadow-sm">
+            <div className="flex items-center gap-3 border-b border-border-subtle bg-card p-3.5 shadow-sm">
               {display.photo ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={display.photo} alt="" className="h-9 w-9 rounded-full object-cover" />
+                <img src={display.photo} alt="" className="h-11 w-11 rounded-full object-cover shadow-sm" />
               ) : (
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-linear-to-br from-primary to-primary-hover text-xs font-bold text-white">
-                  {isGroup ? <Users className="h-4 w-4" /> : initials(display.name)}
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-linear-to-br from-primary to-primary-hover text-sm font-bold text-white shadow-sm">
+                  {isGroup ? <Users className="h-4.5 w-4.5" /> : initials(display.name)}
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <b className="block truncate text-xs text-ink">{display.name}</b>
-                <span className="text-[10px] text-subtle">{display.sub}</span>
+                <b className="block truncate text-sm text-ink">{display.name}</b>
+                <span className="text-[11px] text-subtle">{display.sub}</span>
               </div>
               {isGroup && (
                 <button type="button" onClick={() => setShowGroupSettings(true)} className="rounded-full border border-border-subtle px-3 py-1.5 text-[10px] font-bold text-primary transition hover:bg-active active:scale-95">Manage</button>
@@ -436,17 +448,28 @@ export default function ChatWorkspace({ currentUserId, currentUserRole, currentU
             </div>
             <div className="flex-1 space-y-1 overflow-y-auto p-3">
               {messages.length ? (
-                messages.map((item) => (
-                  <MessageBubble
-                    key={item.id}
-                    item={item}
-                    mine={item.senderId === currentUserId}
-                    senderName={isGroup ? conversation.participantNames?.[item.senderId] : undefined}
-                    onReply={setReplyTo}
-                    onDelete={handleDelete}
-                    onJumpTo={handleJumpTo}
-                  />
-                ))
+                messages.map((item, index) => {
+                  const prevLabel = index > 0 ? dayLabel(messages[index - 1].createdAt) : null;
+                  const label = dayLabel(item.createdAt);
+                  const showDivider = label && label !== prevLabel;
+                  return (
+                    <div key={item.id}>
+                      {showDivider && (
+                        <div className="my-3 flex items-center justify-center">
+                          <span className="rounded-full bg-page px-3 py-1 text-[10px] font-bold text-subtle">{label}</span>
+                        </div>
+                      )}
+                      <MessageBubble
+                        item={item}
+                        mine={item.senderId === currentUserId}
+                        senderName={isGroup ? conversation.participantNames?.[item.senderId] : undefined}
+                        onReply={setReplyTo}
+                        onDelete={handleDelete}
+                        onJumpTo={handleJumpTo}
+                      />
+                    </div>
+                  );
+                })
               ) : (
                 <div className="grid h-full place-items-center text-xs text-muted">No messages yet — say hello. 👋</div>
               )}
@@ -475,8 +498,11 @@ export default function ChatWorkspace({ currentUserId, currentUserRole, currentU
         ) : (
           <div className="grid flex-1 place-items-center p-8 text-center">
             <div>
-              <MessageCircle className="mx-auto h-8 w-8 text-subtle" aria-hidden="true" />
-              <p className="mt-2 text-xs text-muted">Select a conversation to start messaging.</p>
+              <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-linear-to-br from-primary/15 to-primary-hover/15">
+                <MessageCircle className="h-7 w-7 text-primary" aria-hidden="true" />
+              </span>
+              <p className="mt-3 text-sm font-semibold text-ink">Your Messages</p>
+              <p className="mt-1 text-xs text-muted">Select a conversation to start messaging.</p>
             </div>
           </div>
         )}

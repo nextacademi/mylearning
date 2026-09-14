@@ -57,14 +57,14 @@ export default function MessageBubble({ item, mine, senderName, onReply, onDelet
   return (
     <div id={`msg-${item.id}`} className={`group flex items-end gap-1 ${mine ? "justify-end" : "justify-start"}`}>
       {!mine && (
-        <div className="flex gap-1 opacity-0 transition group-hover:opacity-100">
-          <button type="button" onClick={() => onReply(item)} className="text-subtle hover:text-primary" aria-label="Reply">
-            <Reply className="h-3 w-3" />
+        <div className="flex gap-0.5 opacity-0 transition group-hover:opacity-100">
+          <button type="button" onClick={() => onReply(item)} className="rounded-full p-1.5 text-subtle transition hover:bg-active hover:text-primary" aria-label="Reply">
+            <Reply className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
       <div
-        className={`max-w-[75%] px-3 py-2 text-[11px] shadow-sm transition-transform ${mine ? "rounded-2xl rounded-br-md bg-linear-to-br from-primary to-primary-hover text-white" : "rounded-2xl rounded-bl-md border border-border-subtle bg-card text-ink"}`}
+        className={`max-w-[75%] px-3.5 py-2.5 text-[13px] leading-5 shadow-sm transition hover:shadow-md ${mine ? "rounded-2xl rounded-br-md bg-linear-to-br from-primary to-primary-hover text-white" : "rounded-2xl rounded-bl-md border border-border-subtle bg-card text-ink"}`}
       >
         {!mine && senderName && <p className="mb-0.5 text-[10px] font-bold text-primary">{senderName}</p>}
         <ReplyPreview item={item} onJumpTo={onJumpTo} tone={mine ? "mine" : "theirs"} />
@@ -83,14 +83,14 @@ export default function MessageBubble({ item, mine, senderName, onReply, onDelet
           {mine && (item.readAt ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />)}
         </span>
       </div>
-      <div className="flex gap-1 opacity-0 transition group-hover:opacity-100">
+      <div className="flex gap-0.5 opacity-0 transition group-hover:opacity-100">
         {mine && (
-          <button type="button" onClick={() => onReply(item)} className="text-subtle hover:text-primary" aria-label="Reply">
+          <button type="button" onClick={() => onReply(item)} className="rounded-full p-1.5 text-subtle transition hover:bg-active hover:text-primary" aria-label="Reply">
             <Reply className="h-3.5 w-3.5" />
           </button>
         )}
         {mine && (
-          <button type="button" onClick={() => onDelete(item)} className="text-subtle hover:text-primary" aria-label="Delete">
+          <button type="button" onClick={() => onDelete(item)} className="rounded-full p-1.5 text-subtle transition hover:bg-active hover:text-primary" aria-label="Delete">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         )}
