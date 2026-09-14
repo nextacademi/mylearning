@@ -100,7 +100,6 @@ export default function IdCardPrint({
   active,
   status,
   onEditProfile,
-  hideBrandCaption = false,
 }) {
   const [key] = useState(() => cacheKey(mode, studentId));
   const [cached] = useState(() => readCache(key));
@@ -232,7 +231,7 @@ export default function IdCardPrint({
   return (
     <MotionConfig reducedMotion="user">
     <motion.div
-      className="grid gap-6 lg:grid-cols-[1fr_1.1fr] lg:items-start"
+      className="grid gap-6 lg:grid-cols-[auto_1fr] lg:items-stretch"
       initial="hidden"
       animate="show"
       variants={fadeSlideUp}
@@ -242,7 +241,7 @@ export default function IdCardPrint({
       <div>
         <motion.div
           id="id-card"
-          className="mx-auto w-full max-w-sm rounded-3xl border border-red-line bg-gradient-to-b from-active to-card p-5 shadow-sm sm:p-6"
+          className="mx-auto w-80 max-w-full rounded-3xl border border-red-line bg-gradient-to-b from-active to-card p-5 shadow-sm sm:p-6"
           initial="hidden"
           animate="show"
           variants={cardScale}
@@ -252,15 +251,9 @@ export default function IdCardPrint({
               <img src="/logo.jpeg" alt={`${organization} logo`} className="h-8 w-8 rounded-lg object-contain" />
               <div>
                 <b className="block text-xs text-ink">{organization}</b>
-                {/* Skipped whenever the caller already shows its own
-                    "Digital Membership" eyebrow above the card (the Settings
-                    modal via onEditProfile, or any page-level header that
-                    passes hideBrandCaption) — showing it twice would be
-                    redundant. Consumers with no such header (a student's
-                    card view, the QR check-in dialog) keep it. */}
-                {!onEditProfile && !hideBrandCaption && (
-                  <small className="block text-[9px] font-bold uppercase tracking-widest text-primary">Digital Membership</small>
-                )}
+                <small className="block text-[9px] font-bold uppercase tracking-widest text-primary">
+                  Digital Membership
+                </small>
               </div>
             </div>
             <span
@@ -275,9 +268,9 @@ export default function IdCardPrint({
           <div className="mt-4 flex items-center gap-4">
             {resolvedPhoto ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={resolvedPhoto} alt={name} className="h-16 w-16 shrink-0 rounded-full border-2 border-red-line object-cover" />
+              <img src={resolvedPhoto} alt={name} className="h-[72px] w-[72px] shrink-0 rounded-full border-2 border-red-line object-cover" />
             ) : (
-              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-red-line bg-page text-xl font-bold text-subtle">
+              <span className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full border-2 border-red-line bg-page text-xl font-bold text-subtle">
                 {name?.[0]?.toUpperCase() || "?"}
               </span>
             )}
@@ -346,13 +339,13 @@ export default function IdCardPrint({
       </div>
 
       <motion.div
-        className="no-print rounded-2xl border border-border-subtle bg-card p-6 shadow-sm"
+        className="no-print flex h-full flex-col rounded-2xl border border-border-subtle bg-card p-6 shadow-sm lg:p-8"
         initial="hidden"
         animate="show"
         variants={panelReveal}
       >
-        <b className="text-sm text-ink">How to use</b>
-        <ul className="mt-3 space-y-2 text-xs leading-5 text-muted">
+        <b className="text-base text-ink">How to use</b>
+        <ul className="mt-4 space-y-3 text-sm font-semibold leading-6 text-ink">
           <li>Open this page before you reach the check-in desk.</li>
           <li>Turn screen brightness up so the QR scans easily.</li>
           <li>First scan checks you in; scan again when you leave to record your session.</li>
@@ -379,7 +372,7 @@ export default function IdCardPrint({
             onClick={onEditProfile}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
-            className="mt-4 w-full rounded-xl border border-border-subtle px-4 py-2.5 text-xs font-bold text-ink transition-colors hover:bg-page"
+            className="mt-6 w-full rounded-xl border border-border-subtle px-4 py-2.5 text-xs font-bold text-ink transition-colors hover:bg-page"
           >
             Update photo &amp; profile in Settings
           </motion.button>

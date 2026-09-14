@@ -53,7 +53,7 @@ function StatusBadge({ value }) {
 }
 function EventThumbnail({ event }) {
   return (
-    <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-page">
+    <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-page">
       {event.bannerUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={event.bannerUrl} alt={event.name} className="h-full w-full object-cover" />
@@ -78,9 +78,9 @@ function EventCard({ event, onEdit, onTogglePublish, onDelete, canManage }) {
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-border-subtle bg-card shadow-sm transition hover:shadow-md">
       <EventThumbnail event={event} />
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-3.5">
         <h3 className="truncate text-sm font-bold text-ink" title={event.name}>{event.name}</h3>
-        <div className="mt-2 space-y-1.5 text-xs text-muted">
+        <div className="mt-1.5 space-y-1 text-xs text-muted">
           <p className="flex items-center gap-1.5">
             <CalendarDays className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden="true" />
             <span className="truncate">{event.eventDate || "—"}{timeLabel ? ` · ${timeLabel}` : ""}</span>
@@ -102,7 +102,7 @@ function EventCard({ event, onEdit, onTogglePublish, onDelete, canManage }) {
             </p>
           )}
         </div>
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-border-subtle pt-3">
+        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border-subtle pt-2.5">
           <Link href={`/dashboard/events/${event.id}`} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-hover">View</Link>
           {canManage && (
             <div className="flex items-center gap-0.5">
@@ -309,7 +309,7 @@ export default function EventManagement() {
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const [tab, setTab] = useState("Table");
+  const [tab, setTab] = useState("Grid");
   const [form, setForm] = useState(blankForm);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -521,7 +521,7 @@ export default function EventManagement() {
       </section>
 
       <div className="flex gap-2">
-        {["Table", "List", "Grid", "Calendar"].map((item) => (
+        {["Grid", "List", "Table", "Calendar"].map((item) => (
           <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${tab === item ? "bg-primary text-white" : "bg-page text-muted hover:bg-active hover:text-primary"}`}>{item}</button>
         ))}
       </div>
@@ -593,7 +593,7 @@ export default function EventManagement() {
           {liveLoading ? (
             <p className="py-10 text-center text-sm text-muted">Loading events...</p>
           ) : events.length ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {events.map((event) => (
                 <EventCard key={event.id} event={event} onEdit={open} onTogglePublish={togglePublish} onDelete={setConfirmDelete} canManage={canManage} />
               ))}

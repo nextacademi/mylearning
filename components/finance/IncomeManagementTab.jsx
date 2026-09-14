@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CircleDollarSign, Clock, Hash, Wallet } from "lucide-react";
 import { stopEnterSubmit } from "../../lib/ui/keyboard";
 import { createIncome, deleteIncome as deleteIncomeRequest, updateIncome } from "../../lib/services/finance-service";
+import { loadStudentDirectory } from "../../lib/services/student-service";
 import { formatDate, formatMoney } from "../training/PaymentHistoryTable";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
@@ -57,15 +58,31 @@ function Dialog({ title, children, close, wide }) {
 const LABEL = "grid gap-1 text-xs font-bold text-muted";
 const FIELD = "rounded-xl border border-border-subtle px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
 
-function IncomeForm({ initial, saving, onCancel, onSubmit }) {
+function IncomeForm({ initial, saving, onCancel, onSubmit, students, courses }) {
   const [form, setForm] = useState(
     initial || {
-      date: today(), source: "", personName: "", courseName: "", amount: "",
+      date: today(), source: "", personId: "", personName: "", courseId: "", courseName: "", amount: "",
       paymentMethod: "Cash", reference: "", status: "Paid", description: "",
     },
   );
   const [error, setError] = useState("");
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
+
+  // Picking a real student/batch fills BOTH the id (so this income record
+  // can actually be traced back to that student/training) and the display
+  // name (so the table/receipt still read fine even if that student or
+  // training is later renamed or removed) — the same id+name pairing
+  // lib/server/finance-core.js already stores for personId/courseId.
+  function selectStudent(event) {
+    const id = event.target.value;
+    const student = students.find((item) => item.id === id);
+    setForm((current) => ({ ...current, personId: id, personName: student ? student.displayName || student.email || "" : current.personName }));
+  }
+  function selectCourse(event) {
+    const id = event.target.value;
+    const course = courses.find((item) => item.id === id);
+    setForm((current) => ({ ...current, courseId: id, courseName: course ? course.title || "" : "" }));
+  }
 
   const amountNum = form.amount === "" ? null : Number(form.amount);
   const amountError = amountNum !== null && (!Number.isFinite(amountNum) || amountNum <= 0) ? "Amount must be greater than zero." : null;
@@ -126,12 +143,22 @@ function IncomeForm({ initial, saving, onCancel, onSubmit }) {
           </select>
         </label>
         <label className={LABEL}>
-          Person <span className="font-normal text-subtle">(optional)</span>
+          Student <span className="font-normal text-subtle">(optional — for tracking which student this came from)</span>
+          <select value={form.personId} onChange={selectStudent} className={FIELD}>
+            <option value="">Not a specific student</option>
+            {students.map((item) => <option key={item.id} value={item.id}>{item.displayName || item.email}</option>)}
+          </select>
+        </label>
+        <label className={LABEL}>
+          Person <span className="font-normal text-subtle">(optional — donor/sponsor name, or overrides the student above)</span>
           <input value={form.personName} onChange={set("personName")} onKeyDown={stopEnterSubmit} placeholder="e.g. donor / sponsor name" className={FIELD} />
         </label>
         <label className={LABEL}>
-          Course / Training <span className="font-normal text-subtle">(optional)</span>
-          <input value={form.courseName} onChange={set("courseName")} onKeyDown={stopEnterSubmit} placeholder="e.g. related programme" className={FIELD} />
+          Training / Batch <span className="font-normal text-subtle">(optional — for tracking which batch this came from)</span>
+          <select value={form.courseId} onChange={selectCourse} className={FIELD}>
+            <option value="">Not tied to a training</option>
+            {courses.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+          </select>
         </label>
         <label className={LABEL}>
           Reference / Transaction ID <span className="font-normal text-subtle">(optional)</span>
@@ -171,7 +198,7 @@ function IncomeView({ record, close }) {
         <ViewRow label="Date">{formatDate(record.date)}</ViewRow>
         <ViewRow label="Source">{record.source}</ViewRow>
         <ViewRow label="Person">{record.personName}</ViewRow>
-        <ViewRow label="Course">{record.courseName}</ViewRow>
+        <ViewRow label="Training / Batch">{record.courseName}</ViewRow>
         <ViewRow label="Amount"><span className="text-success">{formatMoney(record.amount)}</span></ViewRow>
         <ViewRow label="Payment Method">{record.paymentMethod}</ViewRow>
         <ViewRow label="Reference">{record.reference}</ViewRow>
@@ -197,6 +224,17 @@ export default function IncomeManagementTab({ income, loading, onChanged }) {
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [courses, setCourses] = useState([]);
+
+  // For the Student / Training selects in the Add/Edit Income form — a
+  // one-time self-fetch (same pattern as AssetsTab), not tied to the
+  // overview's loading state above.
+  useEffect(() => {
+    loadStudentDirectory()
+      .then((result) => { setStudents(result.students || []); setCourses(result.courses || []); })
+      .catch(() => {});
+  }, []);
 
   const dated = useMemo(
     () => income.filter((item) => (!fromDate || (item.date || "") >= fromDate) && (!toDate || (item.date || "") <= toDate)),
@@ -213,7 +251,7 @@ export default function IncomeManagementTab({ income, loading, onChanged }) {
     { key: "date", header: "Date", sortable: true, accessor: (i) => i.date || "", render: (i) => <span className="whitespace-nowrap text-xs">{formatDate(i.date)}</span> },
     { key: "source", header: "Income Source", sortable: true, filter: {}, accessor: (i) => i.source || "", render: (i) => <b className="text-ink">{i.source}</b> },
     { key: "personName", header: "Person / Student", accessor: (i) => i.personName || "" },
-    { key: "courseName", header: "Course / Training", sortable: true, filter: {}, accessor: (i) => i.courseName || "" },
+    { key: "courseName", header: "Training / Batch", sortable: true, filter: {}, accessor: (i) => i.courseName || "" },
     { key: "amount", header: "Amount", align: "right", sortable: true, accessor: (i) => Number(i.amount || 0), render: (i) => <b className="whitespace-nowrap text-success">{formatMoney(i.amount)}</b>, exportValue: (i) => Number(i.amount || 0) },
     { key: "paymentMethod", header: "Method", sortable: true, filter: {}, accessor: (i) => i.paymentMethod || "" },
     { key: "status", header: "Status", sortable: true, filter: {}, accessor: (i) => i.status || "Paid", render: (i) => <StatusBadge value={i.status} /> },
@@ -307,7 +345,7 @@ export default function IncomeManagementTab({ income, loading, onChanged }) {
 
       {adding && (
         <Dialog title="Add Income" close={() => !saving && setAdding(false)} wide>
-          <IncomeForm saving={saving} onCancel={() => setAdding(false)} onSubmit={handleCreate} />
+          <IncomeForm saving={saving} onCancel={() => setAdding(false)} onSubmit={handleCreate} students={students} courses={courses} />
         </Dialog>
       )}
       {editing && (
@@ -316,7 +354,9 @@ export default function IncomeManagementTab({ income, loading, onChanged }) {
             initial={{
               date: editing.date || today(),
               source: editing.source || "",
+              personId: editing.personId || "",
               personName: editing.personName || "",
+              courseId: editing.courseId || "",
               courseName: editing.courseName || "",
               amount: editing.amount ?? "",
               paymentMethod: editing.paymentMethod || "Cash",
@@ -327,6 +367,8 @@ export default function IncomeManagementTab({ income, loading, onChanged }) {
             saving={saving}
             onCancel={() => setEditing(null)}
             onSubmit={handleUpdate}
+            students={students}
+            courses={courses}
           />
         </Dialog>
       )}

@@ -24,7 +24,7 @@ function Brand() {
         className="h-10 w-10 rounded-xl object-contain shadow-sm"
       />
       <div>
-        <p className="text-sm font-bold leading-tight text-ink">
+        <p className="text-lg font-bold leading-tight text-ink">
           Next Academy
         </p>
         <p className="text-[9px] font-semibold uppercase tracking-[.18em] text-primary">

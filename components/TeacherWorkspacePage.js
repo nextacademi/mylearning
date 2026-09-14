@@ -1235,7 +1235,6 @@ export default function TeacherWorkspacePage({ module = "Dashboard" }) {
         photoURL={profile?.photoURL}
         active={profile?.active}
         status={profile?.status}
-        hideBrandCaption
         onEditProfile={() => router.push(paths.Settings)}
       />
     </section>

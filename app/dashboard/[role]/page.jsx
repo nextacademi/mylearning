@@ -259,7 +259,6 @@ function DirectorDashboard({ profile, user }) {
                   photoURL={profile?.photoURL}
                   active={profile?.active}
                   status={profile?.status}
-                  hideBrandCaption
                   onEditProfile={() => setActive("Settings")}
                 />
               </section>
@@ -416,7 +415,6 @@ function DashboardContent({ role, profile, user }) {
                   photoURL={profile?.photoURL}
                   active={profile?.active}
                   status={profile?.status}
-                  hideBrandCaption
                   onEditProfile={() => selectModule("Settings")}
                 />
               </section>

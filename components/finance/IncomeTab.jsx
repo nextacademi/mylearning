@@ -17,7 +17,7 @@ export default function IncomeTab({ payments, loading }) {
   const columns = useMemo(() => [
     { key: "id", header: "Payment ID", accessor: (p) => p.id, render: (p) => <span className="font-mono text-[11px] text-muted">{p.id.slice(0, 10)}…</span> },
     { key: "studentName", header: "Student", sortable: true, accessor: (p) => `${p.studentName || ""} ${p.userId || ""}`, render: (p) => <span><b className="block text-ink">{p.studentName}</b><span className="text-[11px] text-muted">{p.userId}</span></span>, exportValue: (p) => p.studentName || "" },
-    { key: "courseTitle", header: "Course", sortable: true, filter: {}, accessor: (p) => p.courseTitle || "", render: (p) => <span><b className="block text-ink">{p.courseTitle}</b><span className="font-mono text-[11px] text-muted">{p.courseCode}</span></span> },
+    { key: "courseTitle", header: "Training", sortable: true, filter: {}, accessor: (p) => p.courseTitle || "", render: (p) => <span><b className="block text-ink">{p.courseTitle}</b><span className="font-mono text-[11px] text-muted">{p.courseCode}</span></span> },
     { key: "paymentDate", header: "Date", sortable: true, accessor: (p) => p.paymentDate || "", render: (p) => <span className="text-xs">{formatDate(p.paymentDate)}</span> },
     { key: "amount", header: "Amount", align: "right", sortable: true, accessor: (p) => Number(p.amount || 0), render: (p) => <b className="text-success">{formatMoney(p.amount)}</b>, exportValue: (p) => Number(p.amount || 0) },
     { key: "paymentMethod", header: "Method", sortable: true, filter: {}, accessor: (p) => p.paymentMethod || "" },

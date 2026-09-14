@@ -170,12 +170,12 @@ function TrainingThumbnail({ course }) {
       <img
         src={course.thumbnailUrl}
         alt={course.title || "Training thumbnail"}
-        className="h-[180px] w-full rounded-t-3xl object-cover"
+        className="h-[200px] w-full rounded-t-3xl object-cover"
       />
     );
   }
   return (
-    <div className="grid h-[180px] w-full place-items-center rounded-t-3xl border-b border-border-subtle bg-page text-sm font-semibold text-subtle">
+    <div className="grid h-[200px] w-full place-items-center rounded-t-3xl border-b border-border-subtle bg-page text-sm font-semibold text-subtle">
       No Image
     </div>
   );
@@ -245,7 +245,7 @@ export default function TrainingManagement({ role }) {
   const [saving, setSaving] = useState(false);
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState("");
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState("cards");
   const [wordOpen, setWordOpen] = useState(false);
   const isTeacher = role === "Teacher";
 
@@ -402,8 +402,8 @@ export default function TrainingManagement({ role }) {
     {!isTeacher && (
       <div className="flex justify-end">
         <div className="inline-flex overflow-hidden rounded-xl border border-border-subtle">
-          <button type="button" onClick={() => setViewMode("table")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold ${viewMode === "table" ? "bg-success text-white" : "bg-card text-muted"}`}><Table2 className="h-3.5 w-3.5" /> Table</button>
           <button type="button" onClick={() => setViewMode("cards")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold ${viewMode === "cards" ? "bg-success text-white" : "bg-card text-muted"}`}><LayoutGrid className="h-3.5 w-3.5" /> Cards</button>
+          <button type="button" onClick={() => setViewMode("table")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold ${viewMode === "table" ? "bg-success text-white" : "bg-card text-muted"}`}><Table2 className="h-3.5 w-3.5" /> Table</button>
         </div>
       </div>
     )}
@@ -418,11 +418,11 @@ export default function TrainingManagement({ role }) {
           <p className="py-10 text-center text-sm text-muted">{isTeacher ? "Loading assigned trainings..." : "Loading training..."}</p>
         ) : courses.length ? (
           isTeacher ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {courses.map((course) => <TeacherTrainingCard key={course.id} course={course} />)}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {courses.map((course) => (
                 <AdminTrainingCard key={course.id} course={course} canManage={data.canManage} onEdit={open} />
               ))}

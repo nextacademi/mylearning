@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { stopEnterSubmit } from "../../lib/ui/keyboard";
-import { createExpense, deleteExpense as deleteExpenseRequest, updateExpense } from "../../lib/services/finance-service";
+import { createAsset, createExpense, deleteExpense as deleteExpenseRequest, updateExpense } from "../../lib/services/finance-service";
 import { formatDate, formatMoney } from "../training/PaymentHistoryTable";
 import { useConfirm } from "../ui/ConfirmDialog";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
 
-const categories = ["Rent", "Salary", "Utilities", "Equipment", "Marketing", "Transport", "Maintenance", "Software", "Training Materials", "Other"];
+const categories = ["Rent", "Salary", "Utilities", "Equipment", "Marketing", "Transport", "Maintenance", "Software", "Training Materials", "Food and Drinks", "Assets", "Other"];
 const methods = ["Cash", "Bank Transfer", "Card", "Other"];
 
 function Dialog({ title, children, close }) {
@@ -131,7 +131,26 @@ export default function ExpensesTab({ expenses, loading, onChanged }) {
     setSaving(true);
     try {
       await createExpense(values);
-      setMessage("Expense added.");
+      // An "Assets" expense also registers as an owned asset — one record
+      // in each ledger, since Expenses (what was spent) and Assets (what
+      // the academy owns/what it's worth) track different questions.
+      // Quantity 1 / unit cost = the expense amount is the only sane
+      // default without asking the user to fill out a second form; they
+      // can refine it (split quantity, adjust category) from the Assets
+      // tab afterwards.
+      if (values.category === "Assets") {
+        await createAsset({
+          itemName: values.description?.trim() || "Asset (from expense)",
+          category: "Other",
+          quantity: 1,
+          unitCost: values.amount,
+          purchaseDate: values.expenseDate,
+          status: "Active",
+          description: values.description,
+          reference: values.reference,
+        });
+      }
+      setMessage(values.category === "Assets" ? "Expense added and recorded in Assets." : "Expense added.");
       setAdding(false);
       onChanged();
     } finally {
