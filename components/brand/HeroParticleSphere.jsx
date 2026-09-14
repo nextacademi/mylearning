@@ -4,11 +4,11 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useAnimationFrame, useReducedMotion } from "framer-motion";
 import { sampleGlyphPoints, seededRandom } from "./textGlyphPoints";
 
-// Higher than before (was 200) — at the larger hero container size the
-// "NEXT ACADEMY" wordmark needs more points per letter to stay legible,
-// not just look like scattered dots. Still well under LogoReveal's
-// full-screen 360 since this runs continuously in a hero corner.
-const MAX_PARTICLES = 280;
+// Matches LogoReveal's full-screen particle count — the wordmark needs
+// this many points at the hero's larger container size to read as clean
+// letterforms rather than a speckled blob. Smaller icons (below) offset
+// the extra render cost.
+const MAX_PARTICLES = 360;
 
 // One loop: settle as the wordmark -> burst apart -> re-form as a rotating
 // 3D sphere of tiny people -> hold & spin -> burst apart -> re-form as the
@@ -194,10 +194,12 @@ export default function HeroParticleSphere({ words, className = "" }) {
     return points.map((point, i) => {
       // A warmer, more red-forward mix than LogoReveal's crisp white
       // wordmark, plus a dimmer "gray" third tone for depth variety —
-      // matching the layered look of the crowd/sphere reference stills —
-      // part of giving this its own distinct palette/mood.
+      // matching the layered look of the crowd/sphere reference stills.
+      // Majority now follows the letter's actual color (was 42%, is 65%)
+      // so the wordmark reads as clean letterforms instead of a speckled
+      // blob — the red/gray flecks are an accent, not the dominant tone.
       const roll = rand();
-      const color = roll < 0.4 ? "#ff3b3b" : roll < 0.58 ? "#9aa0a6" : point.word.color;
+      const color = roll < 0.2 ? "#ff3b3b" : roll < 0.35 ? "#9aa0a6" : point.word.color;
       return {
         textX: point.x - centerX,
         textY: point.y - centerY,
@@ -207,7 +209,7 @@ export default function HeroParticleSphere({ words, className = "" }) {
         color,
         opacity: 0.75 + rand() * 0.25,
         delayFrac: rand(),
-        iconSize: 13 + rand() * 7,
+        iconSize: 10 + rand() * 5,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

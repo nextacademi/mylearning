@@ -172,18 +172,6 @@ function formatEventTime(hhmm) {
   return `${hour12}:${String(minute).padStart(2, "0")} ${period}`;
 }
 
-const HOW_TO_HELP = [
-  {
-    number: "01",
-    title: "Join a training batch",
-    description:
-      "Enroll in a live batch and learn alongside people building the same skills you are.",
-  },
-  { number: "02", title: "Share your knowledge" },
-  { number: "03", title: "Volunteer with us" },
-  { number: "04", title: "Support a learner" },
-];
-
 const TESTIMONIALS = [
   {
     avatar: photos.learner,
@@ -232,10 +220,7 @@ function Brand({ light = false }) {
         alt="Next Academy logo"
         className="h-8 w-8 rounded-[9px_9px_9px_2px] object-contain"
       />
-      <span className="text-[#B91C1C]">N</span>ext{" "}
-      <span className={light ? "text-white/90" : "text-[#E53935]"}>
-        Academy
-      </span>
+      <span>Next Academy</span>
     </a>
   );
 }
@@ -534,7 +519,6 @@ export default function PublicSite() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [events, setEvents] = useState([]);
   const [eventsLoaded, setEventsLoaded] = useState(false);
-  const [helpIndex, setHelpIndex] = useState(0);
   const verifiedUser =
     user &&
     (user.emailVerified ||
@@ -966,51 +950,6 @@ export default function PublicSite() {
             })}
           </div>
         )}
-      </section>
-
-      {/* HOW TO HELP — first card expanded, others collapsed (accordion) */}
-      <section className="border-y border-[#E5E7EB] bg-[#FAFAF7]">
-        <div className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
-          <Reveal>
-            <Eyebrow>How to help</Eyebrow>
-            <h2 className={`${displayFont.className} mt-3 max-w-xl text-3xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-4xl`}>
-              Four ways to get involved.
-            </h2>
-            <p className="mt-2 max-w-lg text-sm leading-6 text-[#6B7280]">
-              You don&apos;t need special skills or spare hours — you need the
-              heart to show up. We&apos;ll handle the rest.
-            </p>
-          </Reveal>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-4">
-            {HOW_TO_HELP.map((item, index) => {
-              const expanded = helpIndex === index;
-              return (
-                <Reveal
-                  as="button"
-                  index={index}
-                  key={item.number}
-                  type="button"
-                  onClick={() => setHelpIndex(index)}
-                  className={`rounded-2xl border p-6 text-left transition ${
-                    expanded
-                      ? "border-[#E53935] bg-white shadow-md md:col-span-2"
-                      : "border-[#E5E7EB] bg-white hover:border-[#E53935]/40"
-                  }`}
-                >
-                  <h3 className="text-base font-bold text-[#111827]">
-                    {item.title}
-                  </h3>
-                  {expanded && item.description && (
-                    <p className="mt-2 text-sm leading-6 text-[#6B7280]">
-                      {item.description}
-                    </p>
-                  )}
-                </Reveal>
-              );
-            })}
-          </div>
-        </div>
       </section>
 
       {/* TESTIMONIALS — dark single-quote carousel */}
