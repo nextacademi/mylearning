@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Space_Grotesk, Inter } from "next/font/google";
 import { motion } from "framer-motion";
 import { useAuth } from "../lib/auth-context";
 import { submitContactInquiry } from "../lib/contact-inquiries-data";
@@ -24,12 +24,19 @@ import HeroParticleSphere from "./brand/HeroParticleSphere";
 // explicitly scoped to dashboard surfaces — this keeps the redesign
 // isolated to the public site with zero risk of bleeding into
 // dashboard/admin/teacher/student UI.
-// Landing-page-only typeface — a distinct, more geometric sans than the
-// app-wide Geist font in app/layout.js — applied to <main> below so it
-// never bleeds into dashboard/admin/teacher/student UI.
-const publicFont = Plus_Jakarta_Sans({
+// Landing-page-only typography — a premium display/body pairing, distinct
+// from the app-wide Geist font in app/layout.js, applied only within this
+// component so it never bleeds into dashboard/admin/teacher/student UI.
+// Space Grotesk (headlines) + Inter (body/UI) is a common premium SaaS
+// pairing — a distinctive geometric display face for impact, paired with
+// the industry-standard readable workhorse for everything else.
+const displayFont = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: ["500", "600", "700"],
+});
+const publicFont = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const RED = "#E53935";
@@ -699,7 +706,7 @@ export default function PublicSite() {
                 Next Academy · Learning Platform
               </Eyebrow>
 
-              <h1 className="mt-4 max-w-xl text-5xl font-black leading-[1.03] tracking-[-.03em] text-white md:text-6xl lg:text-7xl">
+              <h1 className={`${displayFont.className} mt-4 max-w-xl text-5xl font-black leading-[1.03] tracking-[-.03em] text-white md:text-6xl lg:text-7xl`}>
                 Learn today.
                 <br />
                 Grow your career.
@@ -757,7 +764,7 @@ export default function PublicSite() {
       >
         <div>
           <Eyebrow>About Next Academy</Eyebrow>
-          <h2 className="mt-3 max-w-lg text-4xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-5xl">
+          <h2 className={`${displayFont.className} mt-3 max-w-lg text-4xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-5xl`}>
             Building skills that create real opportunities.
           </h2>
           <p className="mt-4 max-w-md text-base leading-7 text-[#6B7280]">
@@ -796,7 +803,7 @@ export default function PublicSite() {
       <section id="training" className="border-y border-[#E5E7EB] bg-[#FAFAF7]">
         <div className="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-8">
           <Eyebrow>What we do</Eyebrow>
-          <h2 className="mt-2 text-3xl font-black tracking-[-.03em] text-[#111827] md:text-4xl">
+          <h2 className={`${displayFont.className} mt-2 text-3xl font-black tracking-[-.03em] text-[#111827] md:text-4xl`}>
             Programs built around real needs.
           </h2>
 
@@ -844,7 +851,7 @@ export default function PublicSite() {
         <Reveal className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <Eyebrow>Event calendar</Eyebrow>
-            <h2 className="mt-3 text-4xl font-black tracking-[-.03em] text-[#111827] md:text-5xl">
+            <h2 className={`${displayFont.className} mt-3 text-4xl font-black tracking-[-.03em] text-[#111827] md:text-5xl`}>
               Learn, connect and grow together.
             </h2>
           </div>
@@ -951,7 +958,7 @@ export default function PublicSite() {
         <div className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
           <Reveal>
             <Eyebrow>How to help</Eyebrow>
-            <h2 className="mt-3 max-w-xl text-3xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-4xl">
+            <h2 className={`${displayFont.className} mt-3 max-w-xl text-3xl font-black leading-[1.05] tracking-[-.03em] text-[#111827] md:text-4xl`}>
               Four ways to get involved.
             </h2>
             <p className="mt-2 max-w-lg text-sm leading-6 text-[#6B7280]">
@@ -1011,7 +1018,7 @@ export default function PublicSite() {
         <Reveal className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <Eyebrow>Activities / gallery</Eyebrow>
-            <h2 className="mt-3 text-4xl font-black tracking-[-.03em] text-[#111827] md:text-5xl">
+            <h2 className={`${displayFont.className} mt-3 text-4xl font-black tracking-[-.03em] text-[#111827] md:text-5xl`}>
               Show up. Try things. Belong.
             </h2>
           </div>
@@ -1032,7 +1039,7 @@ export default function PublicSite() {
       {/* GRADIENT CTA BANNER */}
       <section className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
         <Reveal className="rounded-3xl bg-gradient-to-br from-[#E53935] to-[#F59E0B] px-6 py-7 text-center text-white md:px-16 md:py-9">
-          <h2 className="mx-auto max-w-2xl text-3xl font-black leading-tight md:text-4xl">
+          <h2 className={`${displayFont.className} mx-auto max-w-2xl text-3xl font-black leading-tight md:text-4xl`}>
             Your next skill is one enrollment away.
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-white/90 md:text-base">
@@ -1062,7 +1069,7 @@ export default function PublicSite() {
           <Reveal>
             <Eyebrow>Get in touch</Eyebrow>
 
-            <h2 className="mt-3 max-w-lg text-3xl font-bold leading-[1.08] tracking-[-0.04em] text-[#111827] md:text-4xl">
+            <h2 className={`${displayFont.className} mt-3 max-w-lg text-3xl font-bold leading-[1.08] tracking-[-0.04em] text-[#111827] md:text-4xl`}>
               Have a question? Send us a message.
             </h2>
 
