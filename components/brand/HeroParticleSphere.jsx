@@ -4,18 +4,21 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useAnimationFrame, useReducedMotion } from "framer-motion";
 import { sampleGlyphPoints, seededRandom } from "./textGlyphPoints";
 
-// Lighter cap than the full-screen LogoReveal's ParticleText (360) — this
-// one runs continuously in a hero corner rather than once, so it needs to
-// stay cheap indefinitely, not just for a few seconds.
-const MAX_PARTICLES = 200;
+// Higher than before (was 200) — at the larger hero container size the
+// "NEXT ACADEMY" wordmark needs more points per letter to stay legible,
+// not just look like scattered dots. Still well under LogoReveal's
+// full-screen 360 since this runs continuously in a hero corner.
+const MAX_PARTICLES = 280;
 
 // One loop: settle as the wordmark -> burst apart -> re-form as a rotating
 // 3D sphere of tiny people -> hold & spin -> burst apart -> re-form as the
 // wordmark again. Deliberately sphere-dominant (long hold) with only a
 // brief pass through the wordmark — the opposite emphasis of LogoReveal
 // (where the wordmark IS the payoff) — so this reads as its own ambient
-// "orbiting" mark rather than a repeat of the intro.
-const PHASE_MS = { text: 900, toSphere: 950, sphere: 7200, toText: 950 };
+// "orbiting" mark rather than a repeat of the intro. `text` is held longer
+// than the original 900ms so the wordmark is actually readable, not just
+// glimpsed mid-transition.
+const PHASE_MS = { text: 1500, toSphere: 950, sphere: 7200, toText: 950 };
 const NEXT_PHASE = { text: "toSphere", toSphere: "sphere", sphere: "toText", toText: "text" };
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -86,6 +89,7 @@ export default function HeroParticleSphere({ words, className = "" }) {
   const groupRef = useRef(null);
   const inViewRef = useRef(true);
   const rotationRef = useRef(0);
+  const rotationResetRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [fontFamily, setFontFamily] = useState("sans-serif");
   const [phase, setPhase] = useState("sphere");
@@ -134,6 +138,24 @@ export default function HeroParticleSphere({ words, className = "" }) {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [reducedMotion]);
 
+  // The continuous sphere spin leaves rotationRef at an arbitrary angle
+  // whenever the hold ends — anywhere in 0-360deg+ per lap. Left alone,
+  // the flat wordmark (toText/text/toSphere) would keep whatever angle
+  // the sphere last had, which is a mirrored view of the text any time
+  // that angle lands past 90/270deg. So as soon as "toText" starts, ease
+  // rotationRef back to the nearest multiple of 360 (visually identical
+  // to 0deg) in sync with the particles collapsing flat, so the wordmark
+  // is always front-on and readable by the time "text" is reached.
+  useEffect(() => {
+    if (phase !== "toText") return undefined;
+    rotationResetRef.current = {
+      from: rotationRef.current,
+      to: Math.round(rotationRef.current / 360) * 360,
+      elapsed: 0,
+    };
+    return () => { rotationResetRef.current = null; };
+  }, [phase]);
+
   // Manual, continuously-incrementing rotateY (no React re-render, no
   // Framer Motion `repeat` loop boundary to snap back at) — only while
   // resting as a sphere and actually on screen.
@@ -141,6 +163,13 @@ export default function HeroParticleSphere({ words, className = "" }) {
     if (!groupRef.current) return;
     if (phase === "sphere" && inViewRef.current && !reducedMotion) {
       rotationRef.current += delta * 0.018;
+    } else if (rotationResetRef.current) {
+      const reset = rotationResetRef.current;
+      reset.elapsed += delta;
+      const t = Math.min(reset.elapsed / PHASE_MS.toText, 1);
+      const eased = 1 - (1 - t) ** 3;
+      rotationRef.current = reset.from + (reset.to - reset.from) * eased;
+      if (t >= 1) rotationResetRef.current = null;
     }
     groupRef.current.style.transform = `rotateY(${rotationRef.current}deg)`;
   });
@@ -178,7 +207,7 @@ export default function HeroParticleSphere({ words, className = "" }) {
         color,
         opacity: 0.75 + rand() * 0.25,
         delayFrac: rand(),
-        iconSize: 16 + rand() * 10,
+        iconSize: 13 + rand() * 7,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

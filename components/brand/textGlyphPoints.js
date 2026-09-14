@@ -70,6 +70,23 @@ function nearestSegment(segments, relX, relY) {
   return best;
 }
 
+// Picks the nearest of a word's `parts` by horizontal position only (parts
+// always share the word's own top/bottom, so 1D distance is enough) — lets
+// e.g. a word's first letter carry a different accent color than the rest
+// without a rendering seam, since the word is still drawn as one string.
+function nearestPart(parts, relX) {
+  let best = parts[0];
+  let bestDist = Infinity;
+  for (const part of parts) {
+    const dist = Math.max(part.startX - relX, 0, relX - part.endX);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = part;
+    }
+  }
+  return best;
+}
+
 // Renders `words` onto an offscreen canvas sized (width x height) and
 // returns up to `maxPoints` points sampled evenly across the glyph pixels
 // — each `{ x, y, word }`, x/y in absolute canvas pixel coordinates
@@ -106,6 +123,22 @@ export function sampleGlyphPoints({ width, height, words, fontWeight, fontFamily
   ctx.textBaseline = "middle";
   layout.segments.forEach((seg) => ctx.fillText(seg.text, centerX + seg.startX, centerY + seg.centerY));
 
+  // Optional per-word `parts` (e.g. [{text:"N", color:"#ff3b3b"}, {text:
+  // "EXT", color:"#fff"}]) get their pixel-space bounds computed here, once
+  // the real font/size is locked in — the word itself is still rendered as
+  // a single fillText call above so kerning stays correct; this only slices
+  // up the already-rendered glyph's width for color attribution below.
+  layout.segments.forEach((seg) => {
+    if (!seg.parts?.length) return;
+    let cursor = seg.startX;
+    seg.partBounds = seg.parts.map((part) => {
+      const partWidth = ctx.measureText(part.text).width;
+      const bound = { ...part, startX: cursor, endX: cursor + partWidth };
+      cursor += partWidth;
+      return bound;
+    });
+  });
+
   const { data } = ctx.getImageData(0, 0, width, height);
   const step = Math.max(2, Math.round(Math.min(width, height) / 130));
   const points = [];
@@ -125,7 +158,9 @@ export function sampleGlyphPoints({ width, height, words, fontWeight, fontFamily
   }
 
   const withWords = chosen.map((point) => {
-    const word = nearestSegment(layout.segments, point.x - centerX, point.y - centerY);
+    const relX = point.x - centerX;
+    const seg = nearestSegment(layout.segments, relX, point.y - centerY);
+    const word = seg.partBounds?.length ? nearestPart(seg.partBounds, relX) : seg;
     return { x: point.x, y: point.y, word };
   });
 

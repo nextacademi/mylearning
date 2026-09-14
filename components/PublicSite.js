@@ -12,10 +12,25 @@ import { computeEventStatus, isRegistrationOpen } from "../lib/events-shared";
 import TestimonialCarousel from "./public/TestimonialCarousel";
 import PhotoGallery from "./public/PhotoGallery";
 import VideoLibrarySection from "./public/VideoLibrarySection";
-import PartnersSection from "./public/PartnersSection";
 import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
-import { BRAND_WORDS } from "./brand/LogoReveal";
 import HeroParticleSphere from "./brand/HeroParticleSphere";
+
+// Hero-only wordmark variant — same "NEXT ACADEMY" as BRAND_WORDS (the
+// full-screen LogoReveal intro), but with "N" split out in the brand red
+// so the hero's looping particle sphere reads as a stylized logo mark, not
+// plain text. Kept separate from LogoReveal's BRAND_WORDS so the once-per-
+// session intro reveal is untouched.
+const HERO_WORDMARK = [
+  {
+    text: "NEXT",
+    color: "#ffffff",
+    parts: [
+      { text: "N", color: "#ff3b3b" },
+      { text: "EXT", color: "#ffffff" },
+    ],
+  },
+  { text: "ACADEMY", color: "#ff3b3b" },
+];
 
 // Landing-page-only color system (blood red + white/off-white + dark text,
 // plus a near-black for the dark sections the 24asia.pages.dev-style
@@ -217,9 +232,9 @@ function Brand({ light = false }) {
         alt="Next Academy logo"
         className="h-8 w-8 rounded-[9px_9px_9px_2px] object-contain"
       />
-      next
-      <span className={light ? "-ml-2 text-white/90" : "-ml-2 text-[#E53935]"}>
-        academy
+      <span className="text-[#B91C1C]">N</span>ext{" "}
+      <span className={light ? "text-white/90" : "text-[#E53935]"}>
+        Academy
       </span>
     </a>
   );
@@ -744,7 +759,7 @@ export default function PublicSite() {
             <div className="relative hidden justify-center md:flex md:justify-end">
               <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[#ff2d2d]/15 blur-[100px]" />
               <HeroParticleSphere
-                words={BRAND_WORDS}
+                words={HERO_WORDMARK}
                 className="w-full max-w-[460px] lg:max-w-[560px]"
               />
             </div>
@@ -983,10 +998,7 @@ export default function PublicSite() {
                       : "border-[#E5E7EB] bg-white hover:border-[#E53935]/40"
                   }`}
                 >
-                  <span className="text-2xl font-black text-[#E53935]">
-                    {item.number}
-                  </span>
-                  <h3 className="mt-3 text-base font-bold text-[#111827]">
+                  <h3 className="text-base font-bold text-[#111827]">
                     {item.title}
                   </h3>
                   {expanded && item.description && (
@@ -1033,8 +1045,6 @@ export default function PublicSite() {
       </section>
 
       <VideoLibrarySection />
-
-      <PartnersSection />
 
       {/* GRADIENT CTA BANNER */}
       <section className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
