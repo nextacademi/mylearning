@@ -49,7 +49,6 @@ export const roleConfig = {
       "Certificates",
       "Model Test",
       "My Shop",
-      "ID Card",
       "Chat",
       "QR Scanner",
       "Settings",
@@ -63,7 +62,6 @@ export const roleConfig = {
       "Activities",
       "Training",
       "Achievements",
-      "ID Card",
       "Chat",
       "Settings",
     ],
@@ -151,7 +149,6 @@ export const roleConfig = {
       "Chat",
       "Achievement",
       "Model Test",
-      "ID Card",
       "Scan QR Code",
       "Settings",
     ],
@@ -398,26 +395,6 @@ function DashboardContent({ role, profile, user }) {
                 activeModule={active}
                 onNavigate={selectModule}
               />
-            ) : active === "ID Card" ? (
-              <section className="rounded-3xl border border-border-subtle/70 bg-card p-5 shadow-sm md:p-8">
-                <div className="mb-6 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[.2em] text-primary">Digital Membership</p>
-                  <h2 className="mt-1 text-2xl font-black text-ink sm:text-3xl">Your ID Card</h2>
-                  <p className="mx-auto mt-2 max-w-md text-xs text-muted sm:text-sm">
-                    Keep this ready at events and training — first scan checks you in, second scan checks you out and credits your hours.
-                  </p>
-                </div>
-                <IdCardPrint
-                  mode="self"
-                  roleLabel={role}
-                  fallbackName={name}
-                  fallbackEmail={user.email}
-                  photoURL={profile?.photoURL}
-                  active={profile?.active}
-                  status={profile?.status}
-                  onEditProfile={() => selectModule("Settings")}
-                />
-              </section>
             ) : active === "Chat" ? (
               <ChatWorkspace currentUserId={user.uid} currentUserRole={role} currentUserName={name} />
             ) : active === "Settings" ? (

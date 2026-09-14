@@ -566,30 +566,36 @@ export default function SettingsPage() {
               )}
             </motion.div>
 
-            {isBlocked ? (
-              <motion.div variants={liftCard} className="rounded-2xl border border-border-subtle bg-page p-5">
-                <b className="block text-sm text-ink">ID Card</b>
-                <p className="mt-1 text-xs text-muted">
-                  🔒 ID Card unavailable — your ID Card will become available after your account is approved.
-                </p>
-              </motion.div>
-            ) : (
-              <motion.button
-                type="button"
-                onClick={() => setShowIdCard(true)}
-                variants={liftCard}
-                whileHover="hover"
-                whileTap={{ scale: 0.98 }}
-                className="flex w-full items-center gap-3 rounded-2xl border border-red-line bg-active p-5 text-left shadow-sm"
-              >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-card text-primary">
-                  <Contact className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <span>
-                  <b className="block text-sm text-primary">View your ID Card</b>
-                  <span className="text-xs text-muted">Open your digital member card and check-in QR for events.</span>
-                </span>
-              </motion.button>
+            {/* ID Card / check-in QR is Teacher and Director only —
+                Students never had a real attendance QR use case for it,
+                and it's dropped from every other role's own sidebar (see
+                roleConfig in app/dashboard/[role]/page.jsx). */}
+            {["Teacher", "Director"].includes(profile?.role) && (
+              isBlocked ? (
+                <motion.div variants={liftCard} className="rounded-2xl border border-border-subtle bg-page p-5">
+                  <b className="block text-sm text-ink">ID Card</b>
+                  <p className="mt-1 text-xs text-muted">
+                    🔒 ID Card unavailable — your ID Card will become available after your account is approved.
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.button
+                  type="button"
+                  onClick={() => setShowIdCard(true)}
+                  variants={liftCard}
+                  whileHover="hover"
+                  whileTap={{ scale: 0.98 }}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-red-line bg-active p-5 text-left shadow-sm"
+                >
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-card text-primary">
+                    <Contact className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <span>
+                    <b className="block text-sm text-primary">View your ID Card</b>
+                    <span className="text-xs text-muted">Open your digital member card and check-in QR for events.</span>
+                  </span>
+                </motion.button>
+              )
             )}
 
             <motion.div variants={liftCard} whileHover="hover" className="rounded-2xl border border-border-subtle bg-card p-6 shadow-sm">
