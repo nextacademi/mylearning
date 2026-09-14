@@ -13,22 +13,17 @@ service firebase.storage {
         (documentMeta(docId).teacherIds is list && request.auth.uid in documentMeta(docId).teacherIds)
       );
     }
-    function courseMeta(courseId) { return firestore.get(/databases/(default)/documents/courses/$(courseId)).data; }
-    function ownsCourse(courseId) {
-      return teacher() && courseMeta(courseId).teacherIds is list && request.auth.uid in courseMeta(courseId).teacherIds;
-    }
     // Cross-service Storage->Firestore role lookups (role()/admin() above)
     // are not resolving in this project's Storage Rules runtime — even a
     // bare firestore.exists() check on the caller's own user doc is denied,
     // independent of the Firestore rules, the field name, or the Blaze
-    // billing plan (all verified). Training-thumbnail admin access is
-    // granted via an explicit UID allowlist instead, so it works regardless
-    // of that. Add a UID here (and redeploy) whenever a new Admin/Director
-    // account needs thumbnail upload/delete access.
-    function thumbnailAdminUids() {
-      return ['DNTldjNaGaRTTIzI0yfNJJ3j7zu2'];
-    }
-    function thumbnailAdmin() { return signedIn() && request.auth.uid in thumbnailAdminUids(); }
+    // billing plan (all verified). A hardcoded thumbnail-admin UID allowlist
+    // used to work around this here, but it silently breaks the moment that
+    // UID's account is deleted/recreated and needs a redeploy for every new
+    // Admin/Director. Course thumbnails are now uploaded server-side via
+    // /api/admin/training/thumbnail (Admin SDK) instead, same as
+    // academyEvents/banner, products/image, etc. below — no client write
+    // path is needed or allowed here at all.
 
     // A user's own profile photo. Authorization is pure path matching on
     // `request.auth.uid == uid` — no cross-service Firestore lookup, so it
@@ -37,8 +32,7 @@ service firebase.storage {
     // Any signed-in user may upload/replace only their own avatar; anyone
     // may read (avatars are shown across the app). Client-uploaded, then
     // the resulting download URL is written to users/{uid}.photoURL by
-    // lib/profile-data.js — the exact same "upload to Storage, save URL to
-    // the doc" flow lib/teacher-training.js uses for course thumbnails.
+    // lib/profile-data.js.
     match /users/{uid}/avatar/{fileName} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == uid
@@ -52,7 +46,7 @@ service firebase.storage {
     }
     match /courses/{courseId}/thumbnail/{fileName} {
       allow read: if true;
-      allow write, delete: if thumbnailAdmin() || ownsCourse(courseId);
+      allow write, delete: if false;
     }
     // Chat media. conversationId is already deterministic — two sorted
     // participant UIDs joined by "_" (see lib/chat-data.js) — so
@@ -81,13 +75,10 @@ service firebase.storage {
       allow read: if true;
       allow write, delete: if false;
     }
-    // Event banners. Unlike course thumbnails (client-uploaded, gated by the
-    // hardcoded thumbnailAdminUids() allowlist below because the real
-    // Admin/Director role check can't cross into Firestore from here), event
-    // banners are uploaded server-side via /api/admin/events/banner using
-    // the Admin SDK — that route already re-verifies Admin/Director via a
-    // same-service Firestore read before it touches Storage, so no
-    // client write path is needed or allowed here at all.
+    // Event banners — same reasoning as course thumbnails above: uploaded
+    // server-side via /api/admin/events/banner using the Admin SDK, which
+    // re-verifies Admin/Director via a same-service Firestore read before
+    // it touches Storage, so no client write path is needed or allowed here.
     match /academyEvents/{eventId}/banner/{fileName} {
       allow read: if true;
       allow write, delete: if false;
