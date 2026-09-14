@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { ChevronDown, ChevronUp, Circle, FileText, Link2, Pencil, PlayCircle, Trash2, Type } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, ChevronRight, ChevronUp, Circle, FileText, Link2, Pencil, PlayCircle, Trash2, Type } from "lucide-react";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../lib/auth-context";
 import AttendanceStatusPicker from "./AttendanceStatusPicker";
@@ -1261,6 +1262,25 @@ const CONTENT_TYPE_OPTIONS = [
 ];
 const CONTENT_ICON = { video: PlayCircle, pdf: FileText, document: FileText, link: Link2, text: Type, quiz: Circle };
 
+// Same Framer Motion vocabulary as components/settings/SettingsPage.jsx —
+// reused verbatim so the Modules UI's motion feels consistent with the rest
+// of the app rather than inventing a new set of timings/easings.
+const MODULES_EASE = [0.22, 1, 0.36, 1];
+const modulesStagger = { hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.03 } } };
+const moduleCardMotion = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: MODULES_EASE } },
+};
+const lessonRowMotion = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: MODULES_EASE } },
+};
+const expandCollapse = {
+  hidden: { opacity: 0, height: 0 },
+  show: { opacity: 1, height: "auto", transition: { duration: 0.3, ease: MODULES_EASE } },
+  exit: { opacity: 0, height: 0, transition: { duration: 0.2, ease: MODULES_EASE } },
+};
+
 function ModulesTab({ courseId, canEdit }) {
   const [modules, setModules] = useState([]);
   const [addingModule, setAddingModule] = useState(false);
@@ -1317,18 +1337,27 @@ function ModulesTab({ courseId, canEdit }) {
       title="Modules"
       action={
         canEdit && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             type="button"
             onClick={() => (addingModule ? resetModuleForm() : setAddingModule(true))}
             className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white"
           >
             {addingModule ? "Cancel" : "+ Add Module"}
-          </button>
+          </motion.button>
         )
       }
     >
+      <AnimatePresence initial={false}>
       {canEdit && addingModule && (
-        <form onSubmit={submitModule} className="mb-5 grid gap-3 rounded-2xl border border-border-subtle bg-page p-4 sm:grid-cols-2">
+        <motion.form
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.25, ease: MODULES_EASE }}
+          onSubmit={submitModule}
+          className="mb-5 grid gap-3 overflow-hidden rounded-2xl border border-border-subtle bg-page p-4 sm:grid-cols-2">
           <label className="grid gap-1 text-xs font-bold text-muted sm:col-span-2">
             Module title
             <input
@@ -1360,34 +1389,36 @@ function ModulesTab({ courseId, canEdit }) {
             />
           </label>
           <div className="flex items-center gap-3 sm:col-span-2">
-            <button type="submit" disabled={savingModule} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-40">
+            <motion.button whileHover={{ scale: savingModule ? 1 : 1.03 }} whileTap={{ scale: savingModule ? 1 : 0.97 }} type="submit" disabled={savingModule} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-40">
               {savingModule ? "Saving..." : editingModuleId ? "Save changes" : "Create module"}
-            </button>
+            </motion.button>
             {moduleError && <p className="text-xs text-primary">{moduleError}</p>}
           </div>
-        </form>
+        </motion.form>
       )}
+      </AnimatePresence>
 
       {modules.length ? (
-        <div className="space-y-3">
+        <motion.div className="space-y-3" initial="hidden" animate="show" variants={modulesStagger}>
           {modules.map((module, index) => (
-            <ModuleCard
-              key={module.id}
-              courseId={courseId}
-              module={module}
-              canEdit={canEdit}
-              isFirst={index === 0}
-              isLast={index === modules.length - 1}
-              onEdit={() => startEditModule(module)}
-              onDelete={() => {
-                if (window.confirm(`Delete "${module.title}" and all its lessons? This cannot be undone.`)) deleteModule(courseId, module.id);
-              }}
-              onTogglePublish={() => updateModule(courseId, module.id, { status: module.status === "Published" ? "Draft" : "Published" })}
-              onMoveUp={() => swapModuleOrder(courseId, modules[index], modules[index - 1])}
-              onMoveDown={() => swapModuleOrder(courseId, modules[index], modules[index + 1])}
-            />
+            <motion.div key={module.id} variants={moduleCardMotion}>
+              <ModuleCard
+                courseId={courseId}
+                module={module}
+                canEdit={canEdit}
+                isFirst={index === 0}
+                isLast={index === modules.length - 1}
+                onEdit={() => startEditModule(module)}
+                onDelete={() => {
+                  if (window.confirm(`Delete "${module.title}" and all its lessons? This cannot be undone.`)) deleteModule(courseId, module.id);
+                }}
+                onTogglePublish={() => updateModule(courseId, module.id, { status: module.status === "Published" ? "Draft" : "Published" })}
+                onMoveUp={() => swapModuleOrder(courseId, modules[index], modules[index - 1])}
+                onMoveDown={() => swapModuleOrder(courseId, modules[index], modules[index + 1])}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       ) : (
         <Empty>{canEdit ? 'No modules yet. Click "+ Add Module" to create the first one.' : "No modules published yet."}</Empty>
       )}
@@ -1408,9 +1439,16 @@ function ModuleCard({ courseId, module, canEdit, isFirst, isLast, onEdit, onDele
   }, [courseId, module.id, expanded]);
 
   return (
-    <div className="rounded-2xl border border-border-subtle">
+    <motion.div
+      className="overflow-hidden rounded-2xl border border-border-subtle bg-card"
+      whileHover={{ y: -2, boxShadow: "0 12px 24px -14px rgba(15,23,42,0.16)" }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3 p-4">
         <button type="button" onClick={() => setExpanded((current) => !current)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+          <motion.span animate={{ rotate: expanded ? 90 : 0 }} transition={{ duration: 0.2, ease: MODULES_EASE }} className="shrink-0 text-subtle">
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </motion.span>
           <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${module.status === "Published" ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`}>
             {module.status}
           </span>
@@ -1421,29 +1459,32 @@ function ModuleCard({ courseId, module, canEdit, isFirst, isLast, onEdit, onDele
         </button>
         {canEdit && (
           <div className="flex shrink-0 items-center gap-1">
-            <button type="button" onClick={onMoveUp} disabled={isFirst} title="Move up" className="rounded-lg p-1.5 text-muted hover:bg-page disabled:opacity-30">
+            <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={onMoveUp} disabled={isFirst} title="Move up" className="rounded-lg p-1.5 text-muted hover:bg-page disabled:opacity-30">
               <ChevronUp className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button type="button" onClick={onMoveDown} disabled={isLast} title="Move down" className="rounded-lg p-1.5 text-muted hover:bg-page disabled:opacity-30">
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={onMoveDown} disabled={isLast} title="Move down" className="rounded-lg p-1.5 text-muted hover:bg-page disabled:opacity-30">
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button type="button" onClick={onTogglePublish} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-page">
+            </motion.button>
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} type="button" onClick={onTogglePublish} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-page">
               {module.status === "Published" ? "Unpublish" : "Publish"}
-            </button>
-            <button type="button" onClick={onEdit} title="Edit" className="rounded-lg p-1.5 text-muted hover:bg-page">
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={onEdit} title="Edit" className="rounded-lg p-1.5 text-muted hover:bg-page">
               <Pencil className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button type="button" onClick={onDelete} title="Delete" className="rounded-lg p-1.5 text-muted hover:bg-page hover:text-primary">
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={onDelete} title="Delete" className="rounded-lg p-1.5 text-muted hover:bg-page hover:text-primary">
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-            </button>
+            </motion.button>
           </div>
         )}
       </div>
 
+      <AnimatePresence initial={false}>
       {expanded && (
-        <div className="border-t border-border-subtle p-4">
+        <motion.div variants={expandCollapse} initial="hidden" animate="show" exit="exit" className="border-t border-border-subtle p-4">
           {canEdit && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               type="button"
               onClick={() => {
                 if (addingLesson) {
@@ -1456,43 +1497,54 @@ function ModuleCard({ courseId, module, canEdit, isFirst, isLast, onEdit, onDele
               className="mb-3 rounded-xl border border-border-subtle px-3 py-2 text-xs font-bold text-ink hover:bg-page"
             >
               {addingLesson ? "Cancel" : "+ Add Lesson"}
-            </button>
+            </motion.button>
           )}
+          <AnimatePresence initial={false}>
           {canEdit && addingLesson && (
-            <LessonForm
-              courseId={courseId}
-              moduleId={module.id}
-              editingLessonId={editingLessonId}
-              lessons={lessons}
-              onDone={() => {
-                setAddingLesson(false);
-                setEditingLessonId("");
-              }}
-            />
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: MODULES_EASE }}
+              className="overflow-hidden"
+            >
+              <LessonForm
+                courseId={courseId}
+                moduleId={module.id}
+                editingLessonId={editingLessonId}
+                lessons={lessons}
+                onDone={() => {
+                  setAddingLesson(false);
+                  setEditingLessonId("");
+                }}
+              />
+            </motion.div>
           )}
+          </AnimatePresence>
           {lessons.length ? (
-            <div className="space-y-2">
+            <motion.div className="space-y-2" initial="hidden" animate="show" variants={modulesStagger}>
               {lessons.map((lesson, index) => (
-                <LessonRow
-                  key={lesson.id}
-                  lesson={lesson}
-                  canEdit={canEdit}
-                  isFirst={index === 0}
-                  isLast={index === lessons.length - 1}
-                  onPreview={() => setPreviewLesson(lesson)}
-                  onEdit={() => {
-                    setEditingLessonId(lesson.id);
-                    setAddingLesson(true);
-                  }}
-                  onDelete={() => {
-                    if (window.confirm(`Delete "${lesson.title}"?`)) deleteLesson(courseId, module.id, lesson.id);
-                  }}
-                  onTogglePublish={() => updateLesson(courseId, module.id, lesson.id, { status: lesson.status === "Published" ? "Draft" : "Published" })}
-                  onMoveUp={() => swapLessonOrder(courseId, module.id, lessons[index], lessons[index - 1])}
-                  onMoveDown={() => swapLessonOrder(courseId, module.id, lessons[index], lessons[index + 1])}
-                />
+                <motion.div key={lesson.id} variants={lessonRowMotion}>
+                  <LessonRow
+                    lesson={lesson}
+                    canEdit={canEdit}
+                    isFirst={index === 0}
+                    isLast={index === lessons.length - 1}
+                    onPreview={() => setPreviewLesson(lesson)}
+                    onEdit={() => {
+                      setEditingLessonId(lesson.id);
+                      setAddingLesson(true);
+                    }}
+                    onDelete={() => {
+                      if (window.confirm(`Delete "${lesson.title}"?`)) deleteLesson(courseId, module.id, lesson.id);
+                    }}
+                    onTogglePublish={() => updateLesson(courseId, module.id, lesson.id, { status: lesson.status === "Published" ? "Draft" : "Published" })}
+                    onMoveUp={() => swapLessonOrder(courseId, module.id, lessons[index], lessons[index - 1])}
+                    onMoveDown={() => swapLessonOrder(courseId, module.id, lessons[index], lessons[index + 1])}
+                  />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           ) : (
             <p className="text-xs text-muted">No lessons yet.</p>
           )}
@@ -1507,16 +1559,21 @@ function ModuleCard({ courseId, module, canEdit, isFirst, isLast, onEdit, onDele
               <LessonContentViewer courseId={courseId} moduleId={module.id} lesson={previewLesson} />
             </div>
           )}
-        </div>
+        </motion.div>
       )}
-    </div>
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
 function LessonRow({ lesson, canEdit, isFirst, isLast, onEdit, onDelete, onTogglePublish, onMoveUp, onMoveDown, onPreview }) {
   const Icon = CONTENT_ICON[lesson.contentType] || FileText;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-subtle px-3 py-2.5">
+    <motion.div
+      whileHover={{ x: 2 }}
+      transition={{ duration: 0.15 }}
+      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-subtle bg-card px-3 py-2.5"
+    >
       <button type="button" onClick={onPreview} className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-primary">
         <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden="true" />
         <span className="min-w-0 truncate text-sm font-semibold text-ink">{lesson.title}</span>
@@ -1526,24 +1583,24 @@ function LessonRow({ lesson, canEdit, isFirst, isLast, onEdit, onDelete, onToggl
       </button>
       {canEdit && (
         <div className="flex shrink-0 items-center gap-1">
-          <button type="button" onClick={onMoveUp} disabled={isFirst} className="rounded-lg p-1 text-muted hover:bg-page disabled:opacity-30">
+          <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={onMoveUp} disabled={isFirst} className="rounded-lg p-1 text-muted hover:bg-page disabled:opacity-30">
             <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
-          <button type="button" onClick={onMoveDown} disabled={isLast} className="rounded-lg p-1 text-muted hover:bg-page disabled:opacity-30">
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={onMoveDown} disabled={isLast} className="rounded-lg p-1 text-muted hover:bg-page disabled:opacity-30">
             <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
-          <button type="button" onClick={onTogglePublish} className="rounded-lg border border-border-subtle px-2 py-1 text-[10px] font-bold text-ink hover:bg-page">
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} type="button" onClick={onTogglePublish} className="rounded-lg border border-border-subtle px-2 py-1 text-[10px] font-bold text-ink hover:bg-page">
             {lesson.status === "Published" ? "Unpublish" : "Publish"}
-          </button>
-          <button type="button" onClick={onEdit} className="rounded-lg p-1 text-muted hover:bg-page">
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={onEdit} className="rounded-lg p-1 text-muted hover:bg-page">
             <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
-          <button type="button" onClick={onDelete} className="rounded-lg p-1 text-muted hover:bg-page hover:text-primary">
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={onDelete} className="rounded-lg p-1 text-muted hover:bg-page hover:text-primary">
             <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
+          </motion.button>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 

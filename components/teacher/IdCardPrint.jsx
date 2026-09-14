@@ -251,7 +251,7 @@ export default function IdCardPrint({
             <div className="flex items-center gap-2">
               <img src="/logo.jpeg" alt={`${organization} logo`} className="h-8 w-8 rounded-lg object-contain" />
               <div>
-                <b className="block text-xs text-ink">{organization} Member</b>
+                <b className="block text-xs text-ink">{organization}</b>
                 {/* Skipped whenever the caller already shows its own
                     "Digital Membership" eyebrow above the card (the Settings
                     modal via onEditProfile, or any page-level header that
