@@ -56,7 +56,6 @@ export const roleConfig = {
       "Attendance",
       "Documents",
       "Achievements",
-      "Certificates",
       "Model Test",
       "My Shop",
       "ID Card",
@@ -198,18 +197,6 @@ function DirectorDashboard({ profile, user }) {
   const [active, setActive] = useState(
     requestedTab && config.modules.includes(requestedTab) ? requestedTab : "Dashboard",
   );
-  // Keeps `?tab=` in sync with whatever tab is actually showing, not just
-  // on the way in — without this, clicking around the sidebar never
-  // touches the URL, so refreshing on (say) Settings silently dropped back
-  // to Dashboard on reload. `history.replaceState` (not router.replace)
-  // deliberately avoids any Next.js navigation/refetch — this is a pure
-  // URL bookmark update, nothing here should re-render or re-fetch data.
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("tab") === active) return;
-    url.searchParams.set("tab", active);
-    window.history.replaceState(null, "", url);
-  }, [active]);
   const name =
     profile.displayName ||
     user.displayName ||
@@ -307,16 +294,6 @@ function DashboardContent({ role, profile, user }) {
   const [active, setActive] = useState(
     requestedTab && config.modules.includes(requestedTab) ? requestedTab : "Dashboard",
   );
-  // See DirectorDashboard's identical effect for why: keeps `?tab=` synced
-  // to whatever tab is actually active so a refresh (e.g. on Settings)
-  // doesn't silently drop back to Dashboard. Pure URL bookmark update via
-  // history.replaceState — no Next.js navigation/refetch triggered.
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("tab") === active) return;
-    url.searchParams.set("tab", active);
-    window.history.replaceState(null, "", url);
-  }, [active]);
   const [teacherProfile, setTeacherProfile] = useState(profile);
   const [teacherProfileError, setTeacherProfileError] = useState("");
   const name =
