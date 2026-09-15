@@ -25,11 +25,11 @@ const HERO_WORDMARK = [
     text: "NEXT",
     color: "#ffffff",
     parts: [
-      { text: "N", color: "#ff3b3b" },
+      { text: "N", color: "#F04438" },
       { text: "EXT", color: "#ffffff" },
     ],
   },
-  { text: "ACADEMY", color: "#ff3b3b" },
+  { text: "ACADEMY", color: "#F04438" },
 ];
 
 // Landing-page-only color system (blood red + white/off-white + dark text,
@@ -135,6 +135,81 @@ const galleryItems = [
     src: "/WhatsApp Image 2026-09-09 at 11.15.10 PM.jpeg",
     category: "Highlights",
     title: "Recent Moments",
+  },
+];
+
+// "Our Team" section data — edit names/roles/photo/socials here only, the
+// section itself just maps over this. `photo` can be either a plain local
+// path (drop a real file at that path in /public and it appears
+// automatically — Founder/Co-founder are left pointed at /team/*.jpg for
+// exactly that) or any image URL, like the Unsplash placeholders standing
+// in for Teacher One/Two/Three below. If a photo is ever missing/broken,
+// TeamCard falls back to an initials avatar rather than a broken-image
+// icon. Any social field left empty (or omitted) simply doesn't render
+// that icon — see the `href &&` guards in TeamCard below. The social URLs
+// below are placeholders (swap for each person's real profile link) —
+// filled in rather than left blank so the icons/hover states are visible
+// on the live page; clear a field back to "" to hide that icon again.
+const TEAM_MEMBERS = [
+  {
+    id: "founder",
+    name: "",
+    role: "Founder",
+    photo: "/team/founder.jpg",
+    socials: {
+      facebook: "https://facebook.com/nextacademy",
+      instagram: "https://instagram.com/nextacademy",
+      linkedin: "https://linkedin.com/company/nextacademy",
+      twitter: "https://x.com/nextacademy",
+    },
+  },
+  {
+    id: "co-founder",
+    name: "",
+    role: "Co-founder",
+    photo: "/team/co-founder.jpg",
+    socials: {
+      facebook: "https://facebook.com/nextacademy",
+      instagram: "https://instagram.com/nextacademy",
+      linkedin: "https://linkedin.com/company/nextacademy",
+      twitter: "https://x.com/nextacademy",
+    },
+  },
+  {
+    id: "teacher-1",
+    name: "",
+    role: "Teacher",
+    photo: image("photo-1580489944761-15a19d654956", 480),
+    socials: {
+      facebook: "https://facebook.com/nextacademy",
+      instagram: "https://instagram.com/nextacademy",
+      linkedin: "https://linkedin.com/company/nextacademy",
+      twitter: "https://x.com/nextacademy",
+    },
+  },
+  {
+    id: "teacher-2",
+    name: "",
+    role: "Teacher",
+    photo: image("photo-1531384441138-2736e62e0919", 480),
+    socials: {
+      facebook: "https://facebook.com/nextacademy",
+      instagram: "https://instagram.com/nextacademy",
+      linkedin: "https://linkedin.com/company/nextacademy",
+      twitter: "https://x.com/nextacademy",
+    },
+  },
+  {
+    id: "teacher-3",
+    name: "",
+    role: "Teacher",
+    photo: image("photo-1573497019940-1c28c88b4f3e", 480),
+    socials: {
+      facebook: "https://facebook.com/nextacademy",
+      instagram: "https://instagram.com/nextacademy",
+      linkedin: "https://linkedin.com/company/nextacademy",
+      twitter: "https://x.com/nextacademy",
+    },
   },
 ];
 
@@ -268,6 +343,115 @@ function Reveal({ children, index = 0, className, as = "div", ...rest }) {
     >
       {children}
     </Component>
+  );
+}
+
+// Minimal inline social glyphs for the "Our Team" cards — the installed
+// lucide-react version (1.43) ships no brand/logo icons (removed upstream
+// over trademark concerns), so these small hand-drawn 20x20 outlines stand
+// in without adding a new dependency. `currentColor` throughout so each
+// link's own text color (set via className, incl. the hover state) drives
+// the icon color — no separate fill prop needed at call sites.
+function FacebookGlyph(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true" {...props}>
+      <path d="M14 9h2.5V5.5h-2.5C11.5 5.5 10 7 10 9.3V11H8v3.5h2V21h3.5v-6.5H16l.5-3.5h-3V9.6c0-.4.2-.6.5-.6Z" fill="currentColor" />
+    </svg>
+  );
+}
+function InstagramGlyph(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true" {...props}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" />
+    </svg>
+  );
+}
+function LinkedinGlyph(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true" {...props}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="3" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M7.5 10v6.5M7.5 7.6v.01M11.5 16.5V10M11.5 12.8c0-1.5 1-2.8 2.5-2.8s2.5 1 2.5 2.8v3.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+function XGlyph(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true" {...props}>
+      <path d="M5 5l14 14M19 5 5 19" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+const SOCIAL_LINKS = [
+  { key: "facebook", label: "Facebook", Icon: FacebookGlyph },
+  { key: "instagram", label: "Instagram", Icon: InstagramGlyph },
+  { key: "linkedin", label: "LinkedIn", Icon: LinkedinGlyph },
+  { key: "twitter", label: "X (Twitter)", Icon: XGlyph },
+];
+
+// One "Our Team" card. Owns its own broken-image fallback (a plain
+// initials avatar, same idea as the ID card's) so a not-yet-uploaded
+// /team/*.jpg never shows a broken-image icon — the moment a real file
+// lands at that path, it just appears.
+function TeamCard({ member, index }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  // Falls back to the role's initial (e.g. "F" for Founder) whenever a
+  // name hasn't been filled in yet, so the placeholder avatar never shows
+  // blank — same idea as the photo fallback just below.
+  const initialsSource = member.name || member.role || "?";
+  const initials = initialsSource
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const activeSocials = SOCIAL_LINKS.filter(({ key }) => member.socials?.[key]);
+
+  return (
+    <Reveal
+      as="article"
+      index={index}
+      className="group rounded-2xl border border-[#E5E7EB] bg-white p-6 text-center shadow-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+    >
+      <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border-4 border-[#FAFAF7] shadow-sm ring-1 ring-[#E5E7EB] transition duration-300 group-hover:ring-[#E53935]/40">
+        {imgFailed ? (
+          <span className="grid h-full w-full place-items-center bg-[#FAFAF7] text-lg font-black text-[#B91C1C]">
+            {initials}
+          </span>
+        ) : (
+          <img
+            src={member.photo}
+            alt={member.name || member.role}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+            onError={() => setImgFailed(true)}
+          />
+        )}
+      </div>
+      {member.name && (
+        <h3 className="mt-4 text-base font-bold text-[#111827]">{member.name}</h3>
+      )}
+      <p className={`${member.name ? "mt-1" : "mt-4"} text-xs font-bold uppercase tracking-widest text-[#E53935]`}>
+        {member.role}
+      </p>
+      {activeSocials.length > 0 && (
+        <div className="mt-4 flex items-center justify-center gap-3">
+          {activeSocials.map(({ key, label, Icon }) => (
+            <a
+              key={key}
+              href={member.socials[key]}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${member.name || member.role} on ${label}`}
+              className="grid h-8 w-8 place-items-center rounded-full bg-[#FAFAF7] text-[#6B7280] transition duration-200 hover:scale-110 hover:bg-[#E53935] hover:text-white"
+            >
+              <Icon />
+            </a>
+          ))}
+        </div>
+      )}
+    </Reveal>
   );
 }
 
@@ -594,6 +778,12 @@ export default function PublicSite() {
               Training
             </a>
             <a
+              href="#team"
+              className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
+            >
+              Team
+            </a>
+            <a
               href="#events"
               className="block py-2 text-sm font-medium text-white/70 transition hover:text-white"
             >
@@ -744,7 +934,7 @@ export default function PublicSite() {
               <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[#ff2d2d]/15 blur-[100px]" />
               <HeroParticleSphere
                 words={HERO_WORDMARK}
-                className="w-full max-w-[460px] lg:max-w-[560px]"
+                className="w-full max-w-[480px] lg:max-w-[600px]"
               />
             </div>
           </div>
@@ -795,6 +985,26 @@ export default function PublicSite() {
               the world around them.
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* OUR TEAM */}
+      <section id="team" className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
+        <Reveal className="text-center">
+          <Eyebrow className="justify-center">Our Team</Eyebrow>
+          <h2 className={`${displayFont.className} mt-3 text-4xl font-black tracking-[-.03em] text-[#111827] md:text-5xl`}>
+            The people behind Next Academy.
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6B7280]">
+            Founders and teachers building practical, human-centered learning
+            for every student who walks through our doors.
+          </p>
+        </Reveal>
+
+        <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+          {TEAM_MEMBERS.map((member, index) => (
+            <TeamCard key={member.id} member={member} index={index} />
+          ))}
         </div>
       </section>
 
@@ -1072,6 +1282,9 @@ export default function PublicSite() {
               </a>
               <a href="#training" className="transition hover:text-white">
                 Training
+              </a>
+              <a href="#team" className="transition hover:text-white">
+                Team
               </a>
               <a href="#events" className="transition hover:text-white">
                 Events

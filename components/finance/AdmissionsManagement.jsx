@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BadgeCheck, CircleAlert, CircleDollarSign, Receipt, Users, Wallet } from "lucide-react";
 import { loadAdmissions } from "../../lib/services/payment-service";
+import { downloadInvoicePdf } from "../../lib/services/finance-service";
 import { PaymentStatusBadge, formatDate, formatMoney } from "../training/PaymentHistoryTable";
 import StatCard from "./StatCard";
 import DataTable from "../data-table/DataTable";
@@ -35,7 +36,26 @@ export default function AdmissionsManagement() {
     };
   }, []);
 
+  const [downloadingId, setDownloadingId] = useState("");
+  const [downloadError, setDownloadError] = useState("");
+
+  async function downloadInvoice(item) {
+    setDownloadingId(item.enrollmentId);
+    setDownloadError("");
+    try {
+      const blob = await downloadInvoicePdf(item.enrollmentId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      setDownloadError(err.message || "Unable to download this invoice.");
+    } finally {
+      setDownloadingId("");
+    }
+  }
+
   const columns = useMemo(() => [
+    { key: "invoiceNumber", header: "Invoice", sortable: true, accessor: (a) => a.invoiceNumber || "", render: (a) => <span className="font-mono text-xs text-muted">{a.invoiceNumber}</span> },
     { key: "studentName", header: "Student", sortable: true, accessor: (a) => `${a.studentName || ""} ${a.userId || ""}`, render: (a) => <span><b className="block text-ink">{a.studentName}</b><span className="text-[11px] text-muted">{a.userId}</span></span>, exportValue: (a) => a.studentName || "" },
     { key: "courseTitle", header: "Training", sortable: true, filter: {}, accessor: (a) => a.courseTitle || "", render: (a) => <span><b className="block text-ink">{a.courseTitle}</b><span className="font-mono text-[11px] text-muted">{a.courseCode}</span></span> },
     { key: "trainingFee", header: "Total Fee", align: "right", sortable: true, accessor: (a) => Number(a.trainingFee || 0), render: (a) => <span className="text-xs text-muted">{formatMoney(a.trainingFee)}</span>, exportValue: (a) => Number(a.trainingFee || 0) },
@@ -80,6 +100,7 @@ export default function AdmissionsManagement() {
 
       <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
         {error && <p className="mb-3 rounded-xl bg-active p-3 text-xs text-primary">{error}</p>}
+        {downloadError && <p className="mb-3 rounded-xl bg-active p-3 text-xs text-primary">{downloadError}</p>}
         <DataTable
           title="admissions"
           name="admissions-outstanding-due"
@@ -91,7 +112,17 @@ export default function AdmissionsManagement() {
           pageSize={10}
           emptyLabel="No admissions recorded yet."
           rowActions={(item) => (
-            <Link href={`/dashboard/training/${item.courseId}`} className="rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90">View</Link>
+            <>
+              <Link href={`/dashboard/training/${item.courseId}`} className="rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90">View</Link>
+              <button
+                type="button"
+                onClick={() => downloadInvoice(item)}
+                disabled={downloadingId === item.enrollmentId}
+                className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-page disabled:opacity-60"
+              >
+                {downloadingId === item.enrollmentId ? "Preparing…" : "Invoice"}
+              </button>
+            </>
           )}
         />
       </section>

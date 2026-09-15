@@ -22,6 +22,7 @@ const SOURCES = [
   "Grant",
   "Event Income",
   "Workshop Income",
+  "Training",
   "Room / Facility Rental",
   "Material / Book Sales",
   "Membership",

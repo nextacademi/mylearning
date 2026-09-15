@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { downloadReceiptPdf } from "../../lib/services/finance-service";
 
 // Currency is fixed to SGD project-wide — no lookup table needed.
 export const formatMoney = (value) => `S$${Number(value || 0).toLocaleString()}`;
@@ -16,6 +17,24 @@ export const formatDate = (value) => {
 // Exported so the system-wide Finance "Income / Payments" tab can reuse the
 // exact same receipt rendering instead of a second copy.
 export function Receipt({ payment, studentName, courseTitle, courseCode, close }) {
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
+
+  async function download() {
+    setDownloading(true);
+    setDownloadError("");
+    try {
+      const blob = await downloadReceiptPdf(payment.id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      setDownloadError(err.message || "Unable to download this receipt.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
       <style>{`@media print { .no-print { display: none !important; } body * { visibility: hidden; } #payment-receipt, #payment-receipt * { visibility: visible; } #payment-receipt { position: fixed; inset: 0; margin: auto; } }`}</style>
@@ -42,8 +61,17 @@ export function Receipt({ payment, studentName, courseTitle, courseCode, close }
             </dl>
           </div>
         </div>
+        {downloadError && <p className="no-print mt-3 rounded-xl bg-active px-3 py-2 text-xs text-primary">{downloadError}</p>}
         <div className="no-print mt-4 flex justify-end gap-2">
           <button type="button" onClick={close} className="px-4 py-2 text-sm font-bold text-muted">Close</button>
+          <button
+            type="button"
+            onClick={download}
+            disabled={downloading}
+            className="rounded-xl border border-border-subtle px-4 py-2 text-sm font-bold text-ink disabled:opacity-60"
+          >
+            {downloading ? "Preparing…" : "Download PDF"}
+          </button>
           <button type="button" onClick={() => window.print()} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white">
             Print
           </button>

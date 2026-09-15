@@ -9,7 +9,7 @@ import DataTable, { StatusBadge } from "../data-table/DataTable";
 
 const assignableRoles = ["Student", "Teacher", "Admin", "Director"];
 const dash = "—";
-const ROLE_TONE = { Director: "purple", Admin: "red", Teacher: "blue", Student: "green" };
+const ROLE_TONE = { Director: "purple", Admin: "red", Teacher: "blue", Student: "green", Guest: "orange" };
 
 function Dialog({ title, children, onClose }) {
   return (
@@ -100,7 +100,7 @@ export default function UserManagement({ role, currentUserId }) {
 
   useEffect(() => { void Promise.resolve().then(load); }, []);
 
-  const counts = useMemo(() => Object.fromEntries(["Director", "Admin", "Teacher", "Student"].map((item) => [item, users.filter((user) => user.role === item).length])), [users]);
+  const counts = useMemo(() => Object.fromEntries(["Director", "Admin", "Teacher", "Student", "Guest"].map((item) => [item, users.filter((user) => user.role === item).length])), [users]);
   const canChange = (user) => user.uid !== currentUserId && !(role !== "Director" && user.role === "Director");
 
   const columns = useMemo(() => [
@@ -159,7 +159,7 @@ export default function UserManagement({ role, currentUserId }) {
     </section>
     {notice && <p className="rounded-xl bg-success-soft px-4 py-3 text-sm text-success">{notice}</p>}
     {error && !changing && <div className="rounded-xl bg-active px-4 py-3 text-sm text-primary"><b>Unable to load users. Please try again.</b><p>{error}</p></div>}
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p><p className="mt-2 text-2xl font-extrabold text-ink">{loading ? dash : value}</p></article>)}</section>
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student], ["Guests", counts.Guest]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p><p className="mt-2 text-2xl font-extrabold text-ink">{loading ? dash : value}</p></article>)}</section>
     <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
       <div className="mb-4"><h3 className="font-bold text-ink">All Users</h3><p className="mt-1 text-xs text-muted">Search by user ID, name, email, or phone · filter by role or status · export the current view.</p></div>
       <DataTable

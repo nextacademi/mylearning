@@ -12,13 +12,12 @@ const MAX_PARTICLES = 360;
 
 // One loop: settle as the wordmark -> burst apart -> re-form as a rotating
 // 3D sphere of tiny people -> hold & spin -> burst apart -> re-form as the
-// wordmark again. Deliberately sphere-dominant (long hold) with only a
-// brief pass through the wordmark — the opposite emphasis of LogoReveal
-// (where the wordmark IS the payoff) — so this reads as its own ambient
-// "orbiting" mark rather than a repeat of the intro. `text` is held longer
-// than the original 900ms so the wordmark is actually readable, not just
-// glimpsed mid-transition.
-const PHASE_MS = { text: 1500, toSphere: 950, sphere: 7200, toText: 950 };
+// wordmark again. Sphere-dominant (longer hold) with a brief pass through
+// the wordmark — the opposite emphasis of LogoReveal (where the wordmark
+// IS the payoff) — so this reads as its own ambient "orbiting" mark rather
+// than a repeat of the intro. Tuned for a snappier overall pace: shorter
+// transitions and a shorter sphere hold than the original cut.
+const PHASE_MS = { text: 1200, toSphere: 450, sphere: 1900, toText: 450 };
 const NEXT_PHASE = { text: "toSphere", toSphere: "sphere", sphere: "toText", toText: "text" };
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -52,10 +51,15 @@ function PersonGlyph() {
 
 function SpherePartial({ textX, textY, sphereX, sphereY, sphereZ, color, opacity, iconSize, delayFrac, phase }) {
   const resolving = phase === "sphere" || phase === "toSphere";
-  const target = resolving
-    ? { x: sphereX, y: sphereY, z: sphereZ, opacity, scale: 1, filter: "blur(0px)" }
-    : { x: textX, y: textY, z: 0, opacity, scale: 1, filter: "blur(0px)" };
   const moving = phase === "toSphere" || phase === "toText";
+  // No per-particle `filter` animation — animating blur() on ~360 elements
+  // at once was heavy enough to visibly lag on slower devices, which read
+  // as sluggish/janky rather than "premium." Plain position/opacity moves
+  // instead, which Framer Motion (and the browser compositor) handle for
+  // free.
+  const target = resolving
+    ? { x: sphereX, y: sphereY, z: sphereZ, opacity, scale: 1 }
+    : { x: textX, y: textY, z: 0, opacity, scale: 1 };
   return (
     <motion.span
       className="absolute left-1/2 top-1/2 will-change-transform"
@@ -66,7 +70,7 @@ function SpherePartial({ textX, textY, sphereX, sphereY, sphereZ, color, opacity
       // animates normally via the `animate` prop below.
       initial={false}
       animate={target}
-      transition={{ duration: moving ? 0.75 : 0.7, delay: moving ? delayFrac * 0.2 : 0, ease: EASE }}
+      transition={{ duration: moving ? 0.4 : 0.6, delay: moving ? delayFrac * 0.08 : 0, ease: EASE }}
     >
       <PersonGlyph />
     </motion.span>
@@ -162,7 +166,7 @@ export default function HeroParticleSphere({ words, className = "" }) {
   useAnimationFrame((_, delta) => {
     if (!groupRef.current) return;
     if (phase === "sphere" && inViewRef.current && !reducedMotion) {
-      rotationRef.current += delta * 0.018;
+      rotationRef.current += delta * 0.055;
     } else if (rotationResetRef.current) {
       const reset = rotationResetRef.current;
       reset.elapsed += delta;
@@ -192,14 +196,14 @@ export default function HeroParticleSphere({ words, className = "" }) {
     const sphereRadius = Math.min(size.width, size.height) * 0.36;
     const spherePoints = fibonacciSpherePoints(count, sphereRadius);
     return points.map((point, i) => {
-      // A warmer, more red-forward mix than LogoReveal's crisp white
-      // wordmark, plus a dimmer "gray" third tone for depth variety —
-      // matching the layered look of the crowd/sphere reference stills.
-      // Majority now follows the letter's actual color (was 42%, is 65%)
-      // so the wordmark reads as clean letterforms instead of a speckled
-      // blob — the red/gray flecks are an accent, not the dominant tone.
+      // A spectrum of the site's own red tones (bright/deep/soft) instead
+      // of the old flat red+steel-gray mix — ties the crowd's palette to
+      // the rest of the brand (matches RED_BRIGHT/RED_DEEP/the Eyebrow's
+      // light-red in components/PublicSite.js) rather than an arbitrary
+      // accent color. Majority still follows the letter's actual color
+      // (58%) so the wordmark reads as clean letterforms, not a blob.
       const roll = rand();
-      const color = roll < 0.2 ? "#ff3b3b" : roll < 0.35 ? "#9aa0a6" : point.word.color;
+      const color = roll < 0.16 ? "#F04438" : roll < 0.3 ? "#B91C1C" : roll < 0.42 ? "#FCA5A5" : point.word.color;
       return {
         textX: point.x - centerX,
         textY: point.y - centerY,
@@ -209,7 +213,7 @@ export default function HeroParticleSphere({ words, className = "" }) {
         color,
         opacity: 0.75 + rand() * 0.25,
         delayFrac: rand(),
-        iconSize: 10 + rand() * 5,
+        iconSize: 9 + rand() * 4,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,11 +235,44 @@ export default function HeroParticleSphere({ words, className = "" }) {
 
   return (
     <div ref={containerRef} className={`relative aspect-square ${className}`} style={{ perspective: 1000 }} aria-hidden="true">
-      <div ref={groupRef} className="absolute inset-0" style={{ transformStyle: "preserve-3d" }}>
-        {particles.map((p, i) => (
-          <SpherePartial key={i} {...p} phase={phase} />
-        ))}
-      </div>
+      {!reducedMotion && (
+        <>
+          <motion.div
+            className="pointer-events-none absolute inset-[12%] -z-10 rounded-full bg-[#ff2d2d]/25 blur-3xl"
+            animate={{ opacity: [0.35, 0.7, 0.35], scale: [0.92, 1.05, 0.92] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Two slow-spinning dashed orbit rings (opposite directions,
+              offset sizes) — a cheap, single-element-each decorative
+              accent that reads as "tech/orbit" framing around the crowd
+              without touching any of the 360 individual particles. */}
+          <motion.div
+            className="pointer-events-none absolute inset-[6%] -z-10 rounded-full border border-dashed border-[#F04438]/25"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+          />
+          <motion.div
+            className="pointer-events-none absolute inset-[-2%] -z-10 rounded-full border border-dashed border-white/10"
+            animate={{ rotate: -360 }}
+            transition={{ duration: 26, repeat: Infinity, ease: "linear" }}
+          />
+        </>
+      )}
+      {/* Gentle continuous zoom in/out "breathing" — a separate wrapper
+          from groupRef, since groupRef's own transform is written directly
+          every frame by the rAF rotation loop below; animating scale on
+          the SAME element would fight that and get overwritten. */}
+      <motion.div
+        className="absolute inset-0"
+        animate={reducedMotion ? {} : { scale: [1, 1.07, 1] }}
+        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <div ref={groupRef} className="absolute inset-0" style={{ transformStyle: "preserve-3d" }}>
+          {particles.map((p, i) => (
+            <SpherePartial key={i} {...p} phase={phase} />
+          ))}
+        </div>
+      </motion.div>
       <span className="sr-only">{label}</span>
     </div>
   );

@@ -106,8 +106,8 @@ export function sampleGlyphPoints({ width, height, words, fontWeight, fontFamily
   // once more if the actual measured text still overflows.
   let fontSize = stacked ? Math.max(16, (height / words.length) * 0.62) : Math.max(20, height * 0.72);
   let layout = layoutWords(ctx, words, fontSize, fontWeight, fontFamily, stacked);
-  const maxWidth = width * 0.94;
-  const maxHeight = height * 0.94;
+  const maxWidth = width * 0.98;
+  const maxHeight = height * 0.98;
   const overflow = Math.max(layout.totalWidth / maxWidth, layout.totalHeight / maxHeight);
   if (overflow > 1) {
     fontSize = Math.max(12, fontSize / overflow);

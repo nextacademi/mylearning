@@ -22,6 +22,14 @@ const qrPop = {
   hidden: { opacity: 0, scale: 0.92 },
   show: { opacity: 1, scale: 1, transition: { duration: 0.35, ease: EASE, delay: 0.2 } },
 };
+const staggerList = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.15 } },
+};
+const staggerItem = {
+  hidden: { opacity: 0, x: -8 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.3, ease: EASE } },
+};
 
 // The Digital Membership / D Card. Every value here is real: `userId`
 // comes from the authenticated subject's own Firestore doc (see
@@ -245,6 +253,8 @@ export default function IdCardPrint({
           initial="hidden"
           animate="show"
           variants={cardScale}
+          whileHover={{ y: -4, boxShadow: "0 20px 40px -12px rgba(0,0,0,0.18)" }}
+          transition={{ type: "spring", stiffness: 300, damping: 24 }}
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -268,11 +278,23 @@ export default function IdCardPrint({
           <div className="mt-4 flex items-center gap-4">
             {resolvedPhoto ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={resolvedPhoto} alt={name} className="h-[72px] w-[72px] shrink-0 rounded-full border-2 border-red-line object-cover" />
+              <motion.img
+                src={resolvedPhoto}
+                alt={name}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.35, ease: EASE, delay: 0.15 }}
+                className="h-[72px] w-[72px] shrink-0 rounded-full border-2 border-red-line object-cover"
+              />
             ) : (
-              <span className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full border-2 border-red-line bg-page text-xl font-bold text-subtle">
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.35, ease: EASE, delay: 0.15 }}
+                className="grid h-[72px] w-[72px] shrink-0 place-items-center rounded-full border-2 border-red-line bg-page text-xl font-bold text-subtle"
+              >
                 {name?.[0]?.toUpperCase() || "?"}
-              </span>
+              </motion.span>
             )}
             <div className="min-w-0">
               <b className="block truncate text-base text-ink">{name}</b>
@@ -345,27 +367,37 @@ export default function IdCardPrint({
         variants={panelReveal}
       >
         <b className="text-base text-ink">How to use</b>
-        <ul className="mt-4 space-y-3 text-sm font-semibold leading-6 text-ink">
-          <li>Open this page before you reach the check-in desk.</li>
-          <li>Turn screen brightness up so the QR scans easily.</li>
-          <li>First scan checks you in; scan again when you leave to record your session.</li>
-          <li>The scanner will show your name — make sure it matches you.</li>
-          <li>Your QR is tied to your account; do not share screenshots.</li>
-        </ul>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-page p-3">
+        <motion.ul
+          className="mt-4 space-y-3 text-sm font-semibold leading-6 text-ink"
+          initial="hidden"
+          animate="show"
+          variants={staggerList}
+        >
+          <motion.li variants={staggerItem}>Open this page before you reach the check-in desk.</motion.li>
+          <motion.li variants={staggerItem}>Turn screen brightness up so the QR scans easily.</motion.li>
+          <motion.li variants={staggerItem}>First scan checks you in; scan again when you leave to record your session.</motion.li>
+          <motion.li variants={staggerItem}>The scanner will show your name — make sure it matches you.</motion.li>
+          <motion.li variants={staggerItem}>Your QR is tied to your account; do not share screenshots.</motion.li>
+        </motion.ul>
+        <motion.div
+          className="mt-4 grid grid-cols-2 gap-3"
+          initial="hidden"
+          animate="show"
+          variants={staggerList}
+        >
+          <motion.div variants={staggerItem} whileHover={{ y: -2 }} className="rounded-xl bg-page p-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">Role</p>
             <p className="mt-1 text-sm font-semibold text-ink">{roleLabel}</p>
-          </div>
-          <div className="rounded-xl bg-page p-3">
+          </motion.div>
+          <motion.div variants={staggerItem} whileHover={{ y: -2 }} className="rounded-xl bg-page p-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">Student ID</p>
             <p className="mt-1 font-mono text-sm font-semibold text-ink">{userId}</p>
-          </div>
-          <div className="col-span-2 rounded-xl bg-page p-3">
+          </motion.div>
+          <motion.div variants={staggerItem} whileHover={{ y: -2 }} className="col-span-2 rounded-xl bg-page p-3">
             <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">Account</p>
             <p className="mt-1 text-sm font-semibold text-ink">{statusLabel}</p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
         {mode !== "student" && onEditProfile && (
           <motion.button
             type="button"

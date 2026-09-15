@@ -13,7 +13,7 @@ import PaymentHistoryTable, { PaymentStatusBadge, formatMoney } from "./PaymentH
 import { useConfirm } from "../ui/ConfirmDialog";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : "—");
-const paymentMethods = ["Cash", "Bank Transfer", "Card", "Other"];
+const paymentMethods = ["Cash", "Bank Transfer", "bKash", "Rocket", "Card", "Other"];
 
 function CapacityBar({ enrolledCount, capacity }) {
   const full = isFull(enrolledCount, capacity);
@@ -105,7 +105,12 @@ function EnrollStudentModal({ allStudents, capacityFull, onEnroll, close }) {
           filtered.map((student) => (
             <div key={student.id} className="flex items-center justify-between rounded-xl bg-page p-3 text-xs">
               <div className="min-w-0">
-                <b className="block truncate">{student.displayName || "Unnamed student"}</b>
+                <b className="flex items-center gap-1.5 truncate">
+                  {student.displayName || "Unnamed student"}
+                  {student.role === "Guest" && (
+                    <span className="shrink-0 rounded-full bg-info-soft px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-info">Guest</span>
+                  )}
+                </b>
                 <span className="text-muted">{student.userId} · {student.email}</span>
               </div>
               {student.alreadyEnrolled ? (
@@ -301,7 +306,7 @@ function CollectPaymentModal({ student, courseTitle, onCollected, close }) {
           </button>
           {due > 0 && (
             <button disabled={saving || Boolean(amountError)} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">
-              {saving ? "Saving..." : "Save Payment"}
+              {saving ? "Saving..." : "Pay Now"}
             </button>
           )}
         </div>

@@ -30,13 +30,23 @@ import StudentAchievements from "../../../components/achievement/StudentAchievem
 import StudentAttendance from "../../../components/students/StudentAttendance";
 import StudentExams from "../../../components/exams/StudentExams";
 import TeacherExams from "../../../components/exams/TeacherExams";
-import QrAttendanceScanner from "../../../components/students/QrAttendanceScanner";
 import StudentDashboardHome from "../../../components/students/StudentDashboardHome";
 import AdminQrScanner from "../../../components/attendance/AdminQrScanner";
 import RoomBooking from "../../../components/room-booking/RoomBooking";
 import DocumentsModule from "../../../components/documents/DocumentsModule";
 
 export const roleConfig = {
+  // Every self-registered account lands here first (see createProfile in
+  // lib/auth-context.js) — full access immediately, no approval wait, but
+  // deliberately read-only/browse-only until they're enrolled in a
+  // training (which auto-promotes them to Student — see
+  // lib/server/enrollment-core.js) or a Director/Admin promotes them by
+  // hand from the Users screen.
+  Guest: {
+    greeting: "Explore our trainings and events — enroll in one to unlock your full student dashboard.",
+    modules: ["Dashboard", "Training", "Events", "Chat", "Settings"],
+    stats: [],
+  },
   Student: {
     greeting: "Continue building your future with focused, practical learning.",
     modules: [
@@ -49,8 +59,8 @@ export const roleConfig = {
       "Certificates",
       "Model Test",
       "My Shop",
+      "ID Card",
       "Chat",
-      "QR Scanner",
       "Settings",
     ],
   },
@@ -188,6 +198,18 @@ function DirectorDashboard({ profile, user }) {
   const [active, setActive] = useState(
     requestedTab && config.modules.includes(requestedTab) ? requestedTab : "Dashboard",
   );
+  // Keeps `?tab=` in sync with whatever tab is actually showing, not just
+  // on the way in — without this, clicking around the sidebar never
+  // touches the URL, so refreshing on (say) Settings silently dropped back
+  // to Dashboard on reload. `history.replaceState` (not router.replace)
+  // deliberately avoids any Next.js navigation/refetch — this is a pure
+  // URL bookmark update, nothing here should re-render or re-fetch data.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("tab") === active) return;
+    url.searchParams.set("tab", active);
+    window.history.replaceState(null, "", url);
+  }, [active]);
   const name =
     profile.displayName ||
     user.displayName ||
@@ -285,6 +307,16 @@ function DashboardContent({ role, profile, user }) {
   const [active, setActive] = useState(
     requestedTab && config.modules.includes(requestedTab) ? requestedTab : "Dashboard",
   );
+  // See DirectorDashboard's identical effect for why: keeps `?tab=` synced
+  // to whatever tab is actually active so a refresh (e.g. on Settings)
+  // doesn't silently drop back to Dashboard. Pure URL bookmark update via
+  // history.replaceState — no Next.js navigation/refetch triggered.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("tab") === active) return;
+    url.searchParams.set("tab", active);
+    window.history.replaceState(null, "", url);
+  }, [active]);
   const [teacherProfile, setTeacherProfile] = useState(profile);
   const [teacherProfileError, setTeacherProfileError] = useState("");
   const name =
@@ -384,8 +416,6 @@ function DashboardContent({ role, profile, user }) {
               <StudentExams uid={user.uid} />
             ) : role === "Student" && active === "Attendance" ? (
               <StudentAttendance />
-            ) : role === "Student" && active === "QR Scanner" ? (
-              <QrAttendanceScanner />
             ) : role === "Student" && active === "Dashboard" ? (
               <StudentDashboardHome
                 uid={user.uid}
@@ -395,6 +425,26 @@ function DashboardContent({ role, profile, user }) {
                 activeModule={active}
                 onNavigate={selectModule}
               />
+            ) : active === "ID Card" ? (
+              <section className="rounded-3xl border border-border-subtle/70 bg-card p-5 shadow-sm md:p-8">
+                <div className="mb-6 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[.2em] text-primary">Digital Membership</p>
+                  <h2 className="mt-1 text-2xl font-black text-ink sm:text-3xl">Your ID Card</h2>
+                  <p className="mx-auto mt-2 max-w-md text-xs text-muted sm:text-sm">
+                    Keep this ready at events and training — first scan checks you in, second scan checks you out and credits your hours.
+                  </p>
+                </div>
+                <IdCardPrint
+                  mode="self"
+                  roleLabel={role}
+                  fallbackName={name}
+                  fallbackEmail={user.email}
+                  photoURL={profile?.photoURL}
+                  active={profile?.active}
+                  status={profile?.status}
+                  onEditProfile={() => selectModule("Settings")}
+                />
+              </section>
             ) : active === "Chat" ? (
               <ChatWorkspace currentUserId={user.uid} currentUserRole={role} currentUserName={name} />
             ) : active === "Settings" ? (
@@ -419,13 +469,7 @@ function DashboardContent({ role, profile, user }) {
                   View programs
                 </button>
                 <button
-                  onClick={() =>
-                    selectModule(
-                      config.modules.includes("QR Scanner")
-                        ? "QR Scanner"
-                        : config.modules[0],
-                    )
-                  }
+                  onClick={() => selectModule(config.modules[0])}
                   className="rounded-xl border border-border-subtle px-4 py-3 text-xs font-bold text-ink transition hover:bg-active"
                 >
                   Quick action
@@ -636,13 +680,14 @@ export default function RoleDashboardPage() {
     );
   }
 
-  // Central approval gate — a Student whose registration hasn't been
-  // approved (or was rejected) never reaches DashboardContent, so every
-  // tab it renders (Dashboard, My Training, Events, Settings, etc.) is
-  // blocked in this one place rather than needing its own check.
-  const isBlockedStudent =
-    profileRole === "Student" && (profile?.status === "pending" || profile?.status === "rejected");
-  if (isBlockedStudent) {
+  // Central approval gate — new self-registrations land as Guest+"active"
+  // (see createProfile in lib/auth-context.js) and are never blocked here.
+  // This only fires when a Director/Admin has explicitly set someone's
+  // status to "pending"/"rejected" by hand (any role, not just Student),
+  // so every tab DashboardContent renders is blocked in this one place
+  // rather than needing its own check.
+  const isBlockedUser = profile?.status === "pending" || profile?.status === "rejected";
+  if (isBlockedUser) {
     return <AccountPendingScreen status={profile.status} onLogout={logout} />;
   }
 

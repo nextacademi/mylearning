@@ -83,7 +83,14 @@ export default function MyPaymentSummary() {
         setEnrollments(rows);
         setLoading(false);
       },
-      () => setError("Unable to load your training records."),
+      () => {
+        // Without this the page got stuck on "Loading..." forever on any
+        // query error — the error branch below was unreachable because the
+        // `if (loading)` check always ran first and `loading` never
+        // flipped back to false.
+        setError("Unable to load your training records.");
+        setLoading(false);
+      },
     );
     const unsubPayments = subscribeMyPayments(user.uid, setPayments, () => {});
     return () => {

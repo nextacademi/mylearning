@@ -551,14 +551,14 @@ export default function SettingsPage() {
                 My Certificates
               </b>
               {certificates.length ? (
-                <div className="mt-3 space-y-2">
+                <motion.div initial="hidden" animate="show" variants={staggerContainer} className="mt-3 space-y-2">
                   {certificates.map((cert) => (
-                    <div key={cert.id} className="rounded-xl border border-border-subtle p-3 text-xs">
+                    <motion.div key={cert.id} variants={fadeSlideUp} whileHover={{ x: 2 }} className="rounded-xl border border-border-subtle p-3 text-xs">
                       <b className="block text-ink">{cert.title || "Certificate"}</b>
                       <span className="text-muted">{cert.status || "Issued"}</span>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               ) : (
                 <p className="mt-2 text-xs text-muted">
                   No certificates yet. Complete events or trainings to earn certificates.
@@ -566,11 +566,11 @@ export default function SettingsPage() {
               )}
             </motion.div>
 
-            {/* ID Card / check-in QR is Teacher and Director only —
-                Students never had a real attendance QR use case for it,
-                and it's dropped from every other role's own sidebar (see
-                roleConfig in app/dashboard/[role]/page.jsx). */}
-            {["Teacher", "Director"].includes(profile?.role) && (
+            {/* ID Card / check-in QR: Student, Teacher, and Director — every
+                Student needs their own check-in QR for events/training
+                attendance. Dropped only for Volunteer/Admin (see roleConfig
+                in app/dashboard/[role]/page.jsx). */}
+            {["Student", "Teacher", "Director"].includes(profile?.role) && (
               isBlocked ? (
                 <motion.div variants={liftCard} className="rounded-2xl border border-border-subtle bg-page p-5">
                   <b className="block text-sm text-ink">ID Card</b>
@@ -634,14 +634,15 @@ export default function SettingsPage() {
                     Show unread badges for your notifications
                   </p>
                 </div>
-                <button
+                <motion.button
                   type="button"
                   onClick={toggleNotifications}
                   disabled={notifSaving}
+                  whileTap={{ scale: 0.94 }}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-60 ${notificationsEnabled ? "border-info bg-info-soft text-info" : "border-border-subtle text-muted"}`}
                 >
                   {notificationsEnabled ? "Enabled" : "Disabled"}
-                </button>
+                </motion.button>
               </div>
 
               <div className="mt-4">
