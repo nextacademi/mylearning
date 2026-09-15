@@ -197,6 +197,21 @@ function DirectorDashboard({ profile, user }) {
   const [active, setActive] = useState(
     requestedTab && config.modules.includes(requestedTab) ? requestedTab : "Dashboard",
   );
+  // Keeps `?tab=` in sync with whatever tab is actually showing, not just
+  // on the way in — without this, clicking around the sidebar never
+  // touches the URL, so refreshing on (say) Settings silently dropped back
+  // to Dashboard on reload. `history.replaceState` (not router.replace)
+  // deliberately avoids any Next.js navigation/refetch — a pure URL
+  // bookmark update, no measurable perf cost (confirmed: reverted this
+  // once to A/B against perceived slowness, restored since it fixes a
+  // real bug for effectively zero cost — the slowness was unrelated,
+  // local dev-mode compile overhead).
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("tab") === active) return;
+    url.searchParams.set("tab", active);
+    window.history.replaceState(null, "", url);
+  }, [active]);
   const name =
     profile.displayName ||
     user.displayName ||
@@ -294,6 +309,13 @@ function DashboardContent({ role, profile, user }) {
   const [active, setActive] = useState(
     requestedTab && config.modules.includes(requestedTab) ? requestedTab : "Dashboard",
   );
+  // See DirectorDashboard's identical effect for why.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("tab") === active) return;
+    url.searchParams.set("tab", active);
+    window.history.replaceState(null, "", url);
+  }, [active]);
   const [teacherProfile, setTeacherProfile] = useState(profile);
   const [teacherProfileError, setTeacherProfileError] = useState("");
   const name =
