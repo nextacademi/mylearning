@@ -16,6 +16,36 @@ import { loadMyParticipation } from "../../lib/events-client";
 import { loadUsers } from "../../lib/services/user-service";
 import { computeEventStatus, isRegistrationOpen } from "../../lib/events-shared";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { SkeletonBar, SkeletonList } from "../ui/Skeleton";
+
+// Perceived-speed only — mirrors the real header + tab nav + Overview
+// panel shape below so there's no layout jump once the real event data
+// resolves.
+function EventDetailsSkeleton() {
+  return (
+    <div className="mt-6">
+      <div className="overflow-hidden rounded-3xl border border-border-subtle bg-card shadow-sm">
+        <div className="p-6">
+          <SkeletonBar className="h-5 w-24 rounded-full" />
+          <SkeletonBar className="mt-3 h-9 w-2/3" />
+          <SkeletonBar className="mt-3 h-4 w-1/2" />
+        </div>
+      </div>
+      <div className="my-5 h-12 animate-pulse rounded-2xl border border-border-subtle bg-card" />
+      <div className="rounded-3xl border border-border-subtle bg-card p-7 shadow-sm">
+        <SkeletonBar className="mb-5 h-5 w-32" />
+        <div className="grid gap-x-12 gap-y-6 sm:grid-cols-3">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <SkeletonBar className="h-2.5 w-20" />
+              <SkeletonBar className="h-4 w-28" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const managerModules = ["Dashboard", "Students", "Teacher", "Training", "Event", "Finance", "Documents", "My Shop", "User", "Chat", "Achievement", "ID Card", "Scan QR Code"];
 
@@ -117,7 +147,7 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
       )}
       {error && <p className="mb-3 rounded-xl bg-active px-3 py-2 text-xs text-primary">{error}</p>}
       {loading ? (
-        <p className="py-8 text-center text-sm text-muted">Loading participants...</p>
+        <SkeletonList count={5} />
       ) : participants.length ? (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
@@ -214,7 +244,7 @@ function AttendanceTab({ eventId, onNotice }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_.9fr]">
       <Panel title={`Manual attendance (${present}/${participants.length} present)`}>
-        {loading ? <p className="py-8 text-center text-sm text-muted">Loading...</p> : participants.length ? (
+        {loading ? <SkeletonList count={4} /> : participants.length ? (
           <div className="space-y-2">
             {participants.map((p) => (
               <div key={p.userId} className="flex items-center justify-between rounded-xl bg-page p-3 text-xs">
@@ -368,7 +398,7 @@ export default function EventDetailsPage() {
     <div className="px-2">
       <button type="button" onClick={goBack} className="mb-6 inline-block text-xs font-semibold text-primary hover:underline">← Back to Events</button>
       {authLoading || loading ? (
-        <Empty>Loading event...</Empty>
+        <EventDetailsSkeleton />
       ) : error ? (
         <Empty>{error}</Empty>
       ) : !event ? (

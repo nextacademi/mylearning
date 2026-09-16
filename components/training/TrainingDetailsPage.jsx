@@ -38,7 +38,7 @@ import { TeacherShell } from "../TeacherWorkspacePage";
 import DirectorShell from "../dashboard/DirectorShell";
 import AdminShell from "../dashboard/AdminShell";
 import WorkspaceShell from "../dashboard/WorkspaceShell";
-import Spinner from "../ui/Spinner";
+import { SkeletonBar } from "../ui/Skeleton";
 import EnrollmentManager from "./EnrollmentManager";
 import DocumentsModule from "../documents/DocumentsModule";
 import DataTable, { StatusBadge as TableBadge } from "../data-table/DataTable";
@@ -133,6 +133,35 @@ const friendlyError = (err) =>
   err?.code === "permission-denied"
     ? "You do not have access to this training."
     : err?.message || "Unable to load this training.";
+
+// Perceived-speed only — mirrors the real header + tab nav + Overview
+// panel shape below so there's no layout jump once the real course/
+// enrollment data resolves. Reused for both the initial page load and the
+// brief "checking your enrollment" moment, since both render at the same
+// spot in the same parent.
+function TrainingDetailsSkeleton() {
+  return (
+    <div className="mt-6">
+      <div className="rounded-3xl border border-border-subtle bg-card p-6 shadow-sm">
+        <SkeletonBar className="h-2.5 w-40" />
+        <SkeletonBar className="mt-3 h-9 w-2/3" />
+        <SkeletonBar className="mt-3 h-4 w-1/2" />
+      </div>
+      <div className="my-5 h-12 animate-pulse rounded-2xl border border-border-subtle bg-card" />
+      <div className="rounded-3xl border border-border-subtle bg-card p-7 shadow-sm">
+        <SkeletonBar className="mb-5 h-5 w-32" />
+        <div className="grid gap-x-12 gap-y-6 sm:grid-cols-3">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <SkeletonBar className="h-2.5 w-20" />
+              <SkeletonBar className="h-4 w-28" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function TrainingDetailsPage() {
   const { user, profile, loading: authLoading, logout } = useAuth();
@@ -299,7 +328,7 @@ export default function TrainingDetailsPage() {
         ← Back to Training
       </Link>
       {authLoading || loading ? (
-        <Spinner label="Loading training..." className="mt-6" />
+        <TrainingDetailsSkeleton />
       ) : error ? (
         <div className="mt-6">
           <Empty>{error}</Empty>
@@ -309,7 +338,7 @@ export default function TrainingDetailsPage() {
           <Empty>Training not found</Empty>
         </div>
       ) : !allowed && profile?.role === "Student" && studentEnrolled === null ? (
-        <Spinner label="Checking your enrollment..." className="mt-6" />
+        <TrainingDetailsSkeleton />
       ) : !allowed && profile?.role === "Student" && studentEnrolled ? (
         <div className="mt-6">
           <header className="rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
@@ -643,12 +672,12 @@ function TeachersTab({ course }) {
   }, [course.primaryTeacherId, course.assistantTeacherId]);
   const nameFor = (id) => {
     const teacher = teacherRows.find((item) => item.id === id);
-    return (
-      teacher?.displayName ||
-      teacher?.email ||
-      (id ? "Loading..." : "Not assigned")
-    );
+    return teacher?.displayName || teacher?.email || "Not assigned";
   };
+  // Pure render-time derivation (not new state) — teacherRows starts empty
+  // and fills in once loadUsersByIds resolves above, so "has an id but no
+  // rows yet" is exactly "still loading" for this small inline lookup.
+  const isLoadingName = (id) => Boolean(id) && teacherRows.length === 0;
   return (
     <Panel title="Teachers">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -657,7 +686,7 @@ function TeachersTab({ course }) {
             Primary Teacher
           </p>
           <p className="mt-1 text-sm font-semibold">
-            {nameFor(course.primaryTeacherId)}
+            {isLoadingName(course.primaryTeacherId) ? <SkeletonBar className="h-4 w-32" /> : nameFor(course.primaryTeacherId)}
           </p>
         </div>
         <div className="rounded-2xl bg-page p-4">
@@ -666,7 +695,7 @@ function TeachersTab({ course }) {
           </p>
           <p className="mt-1 text-sm font-semibold">
             {course.assistantTeacherId
-              ? nameFor(course.assistantTeacherId)
+              ? (isLoadingName(course.assistantTeacherId) ? <SkeletonBar className="h-4 w-32" /> : nameFor(course.assistantTeacherId))
               : "None"}
           </p>
         </div>

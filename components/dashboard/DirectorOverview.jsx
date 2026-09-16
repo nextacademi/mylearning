@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, PieChart, Pie, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BookOpen, GraduationCap, Layers, Presentation, RefreshCw, UserCheck, Wallet } from "lucide-react";
-import { studentApi } from "../../lib/services/student-service";
-import { loadTeacherAssignmentData } from "../../lib/services/teacher-assignment-service";
-import { loadFinanceOverview } from "../../lib/services/finance-service";
+import { loadStudentDirectoryCached } from "../../lib/services/student-service";
+import { loadTeacherAssignmentDataCached } from "../../lib/services/teacher-assignment-service";
+import { loadFinanceOverviewCached } from "../../lib/services/finance-service";
 import { loadTraining } from "../../lib/services/training-service";
 import { countWithdrawnEnrollments, loadRecentActivities, loadUpcomingEvents } from "../../lib/director-analytics";
 import { formatMoney } from "../training/PaymentHistoryTable";
@@ -34,14 +34,17 @@ function topSlices(rows) {
   return [...top, { name: "Other", count: otherCount }];
 }
 
-// Unchanged from before this task — still the sole source for the 6 KPI
-// cards and the two existing charts. Nothing new shares this Promise, so a
-// failure in any of the NEW analytics below can never break these.
-async function fetchOverviewData() {
+// Still the sole source for the 6 KPI cards and the two existing charts —
+// a failure in any of the NEW analytics below can never break these.
+// Reuses the SAME cached promises the Students/Teacher/Finance tabs (and
+// their own prefetch calls from app/dashboard/[role]/page.jsx) use — this
+// Dashboard tab was previously firing its own uncached duplicate fetch of
+// all three on every mount, wasting the very prefetch meant to speed it up.
+async function fetchOverviewData(force = false) {
   const [studentsRes, teacherRes, financeRes] = await Promise.all([
-    studentApi(),
-    loadTeacherAssignmentData(),
-    loadFinanceOverview(),
+    loadStudentDirectoryCached({ force }),
+    loadTeacherAssignmentDataCached({ force }),
+    loadFinanceOverviewCached({ force }),
   ]);
   return {
     students: studentsRes.students || [],
@@ -88,7 +91,7 @@ export default function DirectorOverview({ onNavigate }) {
   const [extra, setExtra] = useState(null);
   const [extraLoading, setExtraLoading] = useState(true);
 
-  const load = useCallback(() => fetchOverviewData(), []);
+  const load = useCallback((force = false) => fetchOverviewData(force), []);
   const loadExtra = useCallback(() => fetchExtraAnalytics(), []);
 
   useEffect(() => {
@@ -132,7 +135,7 @@ export default function DirectorOverview({ onNavigate }) {
   function handleRefresh() {
     setRefreshing(true);
     setError("");
-    load()
+    load(true)
       .then(setData)
       .catch((err) => setError(err.message || "Unable to refresh dashboard analytics."))
       .finally(() => setRefreshing(false));

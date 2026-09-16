@@ -11,6 +11,40 @@ import { uploadCourseThumbnail } from "../../lib/teacher-training";
 
 const COURSE_STATUS_TONE = { Active: "green", Upcoming: "blue", Draft: "orange", Completed: "gray", Archived: "gray", Cancelled: "red" };
 
+// Perceived-speed only — the real fetch (loadTraining) takes exactly as
+// long either way. Shaped like the real AdminTrainingCard/TrainingTable
+// rows (same image height, same line count) so there's no layout jump
+// when the real content swaps in, and a shimmering block reads as "this
+// is coming" much faster than a bare "Loading..." string does.
+function TrainingCardSkeleton() {
+  return (
+    <div className="animate-pulse overflow-hidden rounded-3xl border border-border-subtle bg-card shadow-sm">
+      <div className="aspect-[4/3] w-full bg-page" />
+      <div className="space-y-3 p-4">
+        <div className="flex items-center justify-between">
+          <div className="h-3 w-16 rounded bg-page" />
+          <div className="h-5 w-14 rounded-full bg-page" />
+        </div>
+        <div className="h-4 w-3/4 rounded bg-page" />
+        <div className="h-3 w-1/2 rounded bg-page" />
+        <div className="h-3 w-2/3 rounded bg-page" />
+        <div className="mt-2 h-9 w-full rounded-xl bg-page" />
+      </div>
+    </div>
+  );
+}
+function TrainingRowSkeleton() {
+  return (
+    <div className="flex animate-pulse items-center gap-4 border-b border-border-subtle p-3">
+      <div className="h-3.5 w-1/4 rounded bg-page" />
+      <div className="h-3.5 w-1/6 rounded bg-page" />
+      <div className="h-3.5 w-1/6 rounded bg-page" />
+      <div className="h-3.5 w-1/6 rounded bg-page" />
+      <div className="ml-auto h-3.5 w-16 rounded-full bg-page" />
+    </div>
+  );
+}
+
 function TrainingTable({ courses, canManage, onEdit }) {
   const columns = [
     { key: "courseCode", header: "Course Code", sortable: true, accessor: (c) => c.courseCode || "", render: (c) => <b className="font-mono text-xs text-ink">{c.courseCode || "—"}</b> },
@@ -164,18 +198,23 @@ function Badge({ value }) {
 // (uploadCourseThumbnail), so thumbnailPath alone never needs a separate
 // resolution step here.
 function TrainingThumbnail({ course }) {
+  // A fixed 200px height looked fine at 3-4 columns, but stayed exactly
+  // 200px even as the grid went to 5 columns (narrower cards) — a fixed
+  // pixel height on a shrinking width reads as "too tall". aspect-[4/3]
+  // scales the image with the card instead, same fix already applied to
+  // the Events grid's EventThumbnail.
   if (course.thumbnailUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={course.thumbnailUrl}
         alt={course.title || "Training thumbnail"}
-        className="h-[200px] w-full rounded-t-3xl object-cover"
+        className="aspect-[4/3] w-full rounded-t-3xl object-cover"
       />
     );
   }
   return (
-    <div className="grid h-[200px] w-full place-items-center rounded-t-3xl border-b border-border-subtle bg-page text-sm font-semibold text-subtle">
+    <div className="grid aspect-[4/3] w-full place-items-center rounded-t-3xl border-b border-border-subtle bg-page text-sm font-semibold text-subtle">
       No Image
     </div>
   );
@@ -184,21 +223,20 @@ function AdminTrainingCard({ course, canManage, onEdit }) {
   return (
     <article className="flex flex-col overflow-hidden rounded-3xl border border-border-subtle bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <TrainingThumbnail course={course} />
-      <div className="flex flex-1 flex-col gap-3 p-5">
+      <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-subtle">{course.courseCode || course.id}</span>
           <Badge value={course.status} />
         </div>
-        <h3 className="text-lg font-bold text-ink">{course.title || "Untitled training"}</h3>
+        <h3 className="text-base font-bold text-ink">{course.title || "Untitled training"}</h3>
         <p className="flex items-center gap-1.5 text-xs text-muted">
           <User className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden="true" />
           {course.teachers?.length ? course.teachers.map((item) => item.displayName || item.email || item.id).join(", ") : "Not assigned"}
         </p>
-        <div className="text-xs text-muted">
-          <p>{formatDate(course.startDate)} – {formatDate(course.endDate)}</p>
-          {course.duration && <p className="mt-0.5">{course.duration}</p>}
-        </div>
-        <div className="mt-1 flex items-center gap-4 text-xs font-semibold text-ink">
+        <p className="text-xs text-muted">
+          {formatDate(course.startDate)} – {formatDate(course.endDate)}{course.duration ? ` · ${course.duration}` : ""}
+        </p>
+        <div className="flex items-center gap-4 text-xs font-semibold text-ink">
           <span className="flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5 text-subtle" aria-hidden="true" />
             {course.enrolled} Enrolled
@@ -209,7 +247,7 @@ function AdminTrainingCard({ course, canManage, onEdit }) {
           </span>
         </div>
         <PriceLine course={course} />
-        <div className="mt-auto flex gap-2 pt-3">
+        <div className="mt-auto flex gap-2 pt-2">
           <Link
             href={`/dashboard/training/${course.id}`}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary-hover"
@@ -249,10 +287,10 @@ export default function TrainingManagement({ role }) {
   const [wordOpen, setWordOpen] = useState(false);
   const isTeacher = role === "Teacher";
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     setLoading(true);
     try {
-      const result = await loadTraining();
+      const result = await loadTraining({ force });
       setData(result);
       setError("");
     } catch (loadError) {
@@ -386,7 +424,7 @@ export default function TrainingManagement({ role }) {
         .join(", ") || "Not assigned";
       setNotice(created ? `Training Created Successfully — ${created.title} (Training ID: ${created.courseCode || created.id}; Teacher: ${teacherNames})` : "Training updated successfully.");
       closeForm();
-      await load();
+      await load(true);
     } catch (saveError) {
       setError(saveError.message || "Unable to save training.");
     } finally {
@@ -398,7 +436,7 @@ export default function TrainingManagement({ role }) {
     <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl"><div><h2 className="text-3xl font-black">Training</h2><p className="mt-2 text-sm text-muted">{isTeacher ? "Your assigned offline classroom trainings." : "Manage offline classroom trainings, teachers, batches, and enrolled students."}</p></div>{data.canManage && <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setWordOpen(true)} className="rounded-xl border border-border-subtle bg-card px-4 py-3 text-xs font-bold text-ink">Import from Word</button><button type="button" onClick={() => open(null)} className="rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white">Add Training</button></div>}</section>
     {notice && <p className="rounded-xl bg-success-soft p-4 text-sm text-success">{notice}</p>}
     {error && !editing && !adding && <p className="rounded-xl bg-active p-4 text-sm text-primary">{error}</p>}
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[["Total Training", counts.total], ["Active", counts.active], ["Upcoming", counts.upcoming], ["Total Enrolled", counts.enrolled]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p><p className="mt-2 text-2xl font-extrabold">{loading ? "—" : value}</p></article>)}</section>
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[["Total Training", counts.total], ["Active", counts.active], ["Upcoming", counts.upcoming], ["Total Enrolled", counts.enrolled]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>{loading ? <div className="mt-2 h-7 w-12 animate-pulse rounded bg-page" /> : <p className="mt-2 text-2xl font-extrabold">{value}</p>}</article>)}</section>
     {!isTeacher && (
       <div className="flex justify-end">
         <div className="inline-flex overflow-hidden rounded-xl border border-border-subtle">
@@ -410,12 +448,18 @@ export default function TrainingManagement({ role }) {
 
     {!isTeacher && viewMode === "table" ? (
       <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
-        {loading ? <p className="py-10 text-center text-sm text-muted">Loading training...</p> : <TrainingTable courses={data.courses} canManage={data.canManage} onEdit={open} />}
+        {loading ? (
+          <div className="overflow-hidden rounded-xl border border-border-subtle">
+            {Array.from({ length: 6 }).map((_, i) => <TrainingRowSkeleton key={i} />)}
+          </div>
+        ) : <TrainingTable courses={data.courses} canManage={data.canManage} onEdit={open} />}
       </section>
     ) : (
       <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6"><div className="mb-5 flex flex-wrap gap-3"><label className="relative min-w-56 flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-subtle"/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search training, ID, or teacher" className="w-full rounded-xl border border-border-subtle bg-page py-2 pl-9 pr-3 text-sm"/></label><select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-xl border border-border-subtle px-3 py-2 text-sm">{statuses.map((item) => <option key={item}>{item}</option>)}</select>{data.canManage && <select value={teacher} onChange={(event) => setTeacher(event.target.value)} className="rounded-xl border border-border-subtle px-3 py-2 text-sm"><option value="All">All teachers</option>{data.teachers.map((item) => <option value={item.id} key={item.id}>{item.displayName || item.email || item.id}</option>)}</select>}</div>
         {loading ? (
-          <p className="py-10 text-center text-sm text-muted">{isTeacher ? "Loading assigned trainings..." : "Loading training..."}</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {Array.from({ length: 10 }).map((_, i) => <TrainingCardSkeleton key={i} />)}
+          </div>
         ) : courses.length ? (
           isTeacher ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">

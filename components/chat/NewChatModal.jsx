@@ -3,9 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, UsersRound, X } from "lucide-react";
 import { loadChatDirectory } from "../../lib/chat-directory";
+import { SkeletonBar, SkeletonCircle } from "../ui/Skeleton";
 
 function initials(name) {
   return (name || "?").trim().slice(0, 2).toUpperCase();
+}
+
+// Matches one real user row (avatar circle + name/email/role lines).
+function UserRowSkeleton() {
+  return (
+    <div className="flex items-center gap-2.5 border-b border-border-subtle px-4 py-2.5">
+      <SkeletonCircle className="h-8 w-8 shrink-0" />
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <SkeletonBar className="h-3 w-24" />
+        <SkeletonBar className="h-2.5 w-32" />
+      </div>
+    </div>
+  );
 }
 
 // The full "New Chat" picker — every active registered LMS user (via
@@ -76,7 +90,7 @@ export default function NewChatModal({ onClose, onSelectUser, onCreateGroup, can
         )}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <p className="px-4 py-8 text-center text-xs text-muted">Loading users...</p>
+            <div>{Array.from({ length: 6 }).map((_, i) => <UserRowSkeleton key={i} />)}</div>
           ) : error ? (
             <p className="px-4 py-8 text-center text-xs text-primary">{error}</p>
           ) : filtered.length ? (

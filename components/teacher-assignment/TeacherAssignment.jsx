@@ -7,8 +7,9 @@ import {
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
 import DataTable from "../data-table/DataTable";
+import { SkeletonList } from "../ui/Skeleton";
 import {
-  assignTeacher, loadTeacherAssignmentData, removeTeacher, saveTeacherAssignment,
+  assignTeacher, loadTeacherAssignmentDataCached, removeTeacher, saveTeacherAssignment,
 } from "../../lib/services/teacher-assignment-service";
 
 // ---------------------------------------------------------------------------
@@ -236,7 +237,7 @@ function DirectoryTab({ data, loading, onView, onNavigate }) {
     },
   ], []);
 
-  if (loading) return <p className="py-12 text-center text-sm text-muted">Loading teacher accounts…</p>;
+  if (loading) return <SkeletonList count={6} />;
 
   if (!data.teachers.length) {
     return (
@@ -468,8 +469,8 @@ export default function TeacherAssignment({ onNavigate }) {
   const mounted = useRef(true);
 
   const reload = useCallback(
-    () =>
-      loadTeacherAssignmentData()
+    ({ force = false } = {}) =>
+      loadTeacherAssignmentDataCached({ force })
         .then((result) => { if (mounted.current) { setData(result); setError(""); } })
         .catch((loadError) => { if (mounted.current) setError(loadError.message || "Unable to load teacher assignments."); })
         .finally(() => { if (mounted.current) setLoading(false); }),
@@ -487,7 +488,7 @@ export default function TeacherAssignment({ onNavigate }) {
     try {
       await fn();
       if (okMessage) toast.success(okMessage);
-      await reload();
+      await reload({ force: true });
       return true;
     } catch (actionError) {
       toast.error(actionError.message || "Something went wrong.");
@@ -578,10 +579,10 @@ export default function TeacherAssignment({ onNavigate }) {
 
       {tab === "directory" && <DirectoryTab data={data} loading={loading} onView={setViewing} onNavigate={onNavigate} />}
       {tab === "courses" && (loading
-        ? <p className="py-12 text-center text-sm text-muted">Loading…</p>
+        ? <SkeletonList count={4} />
         : <CoursesTab data={data} busy={busy} onAssign={assign} onRemove={remove} />)}
       {tab === "classes" && (loading
-        ? <p className="py-12 text-center text-sm text-muted">Loading…</p>
+        ? <SkeletonList count={4} />
         : <ClassesTab
             data={data}
             busy={busy}

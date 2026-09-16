@@ -3,9 +3,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { loadChatDirectory } from "../../lib/chat-directory";
+import { SkeletonBar, SkeletonCircle } from "../ui/Skeleton";
 
 function initials(name) {
   return (name || "?").trim().slice(0, 2).toUpperCase();
+}
+
+// Matches one real selectable user row (checkbox + avatar circle + name/
+// role lines).
+function UserRowSkeleton() {
+  return (
+    <div className="flex items-center gap-2.5 border-b border-border-subtle px-3 py-2 last:border-b-0">
+      <SkeletonBar className="h-4 w-4 shrink-0 rounded" />
+      <SkeletonCircle className="h-7 w-7 shrink-0" />
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <SkeletonBar className="h-3 w-20" />
+        <SkeletonBar className="h-2.5 w-14" />
+      </div>
+    </div>
+  );
 }
 
 export default function CreateGroupModal({ onClose, onCreate, creating, error }) {
@@ -89,7 +105,7 @@ export default function CreateGroupModal({ onClose, onCreate, creating, error })
           </div>
           <div className="max-h-56 overflow-y-auto rounded-lg border border-border-subtle">
             {loading ? (
-              <p className="px-3 py-6 text-center text-xs text-muted">Loading users...</p>
+              <div>{Array.from({ length: 5 }).map((_, i) => <UserRowSkeleton key={i} />)}</div>
             ) : filtered.length ? (
               filtered.map((user) => {
                 const isChecked = selected.some((item) => item.uid === user.uid);

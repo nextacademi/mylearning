@@ -107,7 +107,7 @@ export default function LessonContentViewer({ courseId, moduleId, lesson }) {
 
   // Uploaded video, pdf, or document — all served via the authenticated blob.
   if (showLoading) {
-    return <div className="grid aspect-video place-items-center rounded-2xl border border-border-subtle bg-card"><p className="text-xs text-muted">Loading content...</p></div>;
+    return <div className="aspect-video w-full animate-pulse rounded-2xl border border-border-subtle bg-page" />;
   }
   if (blob.error) {
     return <div className="grid aspect-video place-items-center rounded-2xl border border-dashed border-red-line bg-card"><p className="px-6 text-center text-sm text-primary">{blob.error}</p></div>;

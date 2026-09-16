@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState, useEffect } from "react";
 import { GraduationCap, UserCheck, UserMinus, UserX, Users } from "lucide-react";
-import { createStudent, loadStudentDirectory, updateStudent } from "../lib/services/student-service";
+import { createStudent, loadStudentDirectoryCached, updateStudent } from "../lib/services/student-service";
 import StatCard from "./finance/StatCard";
 import StudentTable from "./students/StudentTable";
 import StudentForm from "./students/StudentForm";
@@ -9,6 +9,7 @@ import StudentDetails from "./students/StudentDetails";
 import WordImportModal from "./word-import/WordImportModal";
 import { useToast } from "./ui/Toast";
 import { useConfirm } from "./ui/ConfirmDialog";
+import { SkeletonBar, SkeletonList, SkeletonStats } from "./ui/Skeleton";
 
 const genPassword = () => `${Math.random().toString(36).slice(2, 8)}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 const blank = { displayName: "", email: "", phone: "", courseId: "", password: "", confirmPassword: "" };
@@ -30,18 +31,10 @@ function Dialog({ title, children, onClose, wide }) {
 
 function DirectorySkeleton() {
   return (
-    <div className="animate-pulse space-y-6">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-[84px] rounded-2xl border border-border-subtle bg-card" />
-        ))}
-      </div>
-      <div className="h-10 w-72 rounded-xl bg-card" />
-      <div className="space-y-2 rounded-2xl border border-border-subtle bg-card p-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-12 rounded-xl bg-page" />
-        ))}
-      </div>
+    <div className="space-y-6">
+      <SkeletonStats count={4} className="grid grid-cols-2 gap-4 md:grid-cols-4" />
+      <SkeletonBar className="h-10 w-72" />
+      <SkeletonList count={6} />
     </div>
   );
 }
@@ -64,10 +57,10 @@ export default function StudentManagement({ role }) {
   const toast = useToast();
   const confirm = useConfirm();
 
-  async function load() {
+  async function load({ force = false } = {}) {
     setLoading(true);
     try {
-      const data = await loadStudentDirectory();
+      const data = await loadStudentDirectoryCached({ force });
       setStudents(data.students);
       setCourses(data.courses);
       setError("");
@@ -92,7 +85,7 @@ export default function StudentManagement({ role }) {
       else await createStudent(form);
       close();
       setNotice(editing ? "Student profile updated." : "Student account and enrollment created.");
-      await load();
+      await load({ force: true });
     } catch (e) {
       setError(e.message || "Unable to save student.");
     } finally {
@@ -107,7 +100,7 @@ export default function StudentManagement({ role }) {
       message: `Deactivate ${who}? They will no longer be able to sign in.`,
       tone: "danger",
       confirmLabel: "Deactivate",
-      onConfirm: async () => { await updateStudent({ uid: student.id, active: false }); toast.success("Student deactivated successfully"); await load(); },
+      onConfirm: async () => { await updateStudent({ uid: student.id, active: false }); toast.success("Student deactivated successfully"); await load({ force: true }); },
     });
   }
   function reactivate(student) {
@@ -117,7 +110,7 @@ export default function StudentManagement({ role }) {
       message: `Reactivate ${who}? They will be able to sign in again.`,
       tone: "success",
       confirmLabel: "Reactivate",
-      onConfirm: async () => { await updateStudent({ uid: student.id, active: true }); toast.success("Student reactivated successfully"); await load(); },
+      onConfirm: async () => { await updateStudent({ uid: student.id, active: true }); toast.success("Student reactivated successfully"); await load({ force: true }); },
     });
   }
   function approve(student) {
@@ -127,7 +120,7 @@ export default function StudentManagement({ role }) {
       message: `Approve ${who}'s registration? They will be able to sign in and use the Student Dashboard.`,
       tone: "success",
       confirmLabel: "Approve",
-      onConfirm: async () => { await updateStudent({ uid: student.id, status: "active" }); toast.success("Student approved successfully"); await load(); },
+      onConfirm: async () => { await updateStudent({ uid: student.id, status: "active" }); toast.success("Student approved successfully"); await load({ force: true }); },
     });
   }
   function reject(student) {
@@ -138,7 +131,7 @@ export default function StudentManagement({ role }) {
       tone: "danger",
       confirmLabel: "Reject",
       input: { label: "Reason (optional, shown to the student)", multiline: true, placeholder: "Add an optional note…" },
-      onConfirm: async (rejectionReason) => { await updateStudent({ uid: student.id, status: "rejected", rejectionReason }); toast.success("Student rejected successfully"); await load(); },
+      onConfirm: async (rejectionReason) => { await updateStudent({ uid: student.id, status: "rejected", rejectionReason }); toast.success("Student rejected successfully"); await load({ force: true }); },
     });
   }
 
@@ -296,7 +289,7 @@ export default function StudentManagement({ role }) {
               failed.push({ row: i + 1, message: e.message || "Failed to create" });
             }
           }
-          await load();
+          await load({ force: true });
           return { imported, failed, credentials };
         }}
       />

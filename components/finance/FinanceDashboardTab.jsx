@@ -4,6 +4,7 @@ import { CircleDollarSign, Receipt, TrendingDown, Wallet } from "lucide-react";
 import { PaymentStatusBadge, formatDate, formatMoney } from "../training/PaymentHistoryTable";
 import AnimatedNumber from "./AnimatedNumber";
 import StatCard from "./StatCard";
+import { SkeletonList, SkeletonStats } from "../ui/Skeleton";
 
 // No monthly trend chart: the project has no charting library installed
 // (checked package.json), and the task only asks for one "if existing
@@ -11,7 +12,17 @@ import StatCard from "./StatCard";
 // alone would be its own architectural decision, out of scope here.
 export default function FinanceDashboardTab({ overview, loading }) {
   if (loading || !overview) {
-    return <p className="py-10 text-center text-sm text-muted">Loading finance overview...</p>;
+    return (
+      <div className="space-y-6">
+        <SkeletonStats count={4} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" />
+        <SkeletonStats count={3} className="grid gap-4 sm:grid-cols-3" />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <SkeletonList count={4} />
+          <SkeletonList count={4} />
+          <SkeletonList count={4} />
+        </div>
+      </div>
+    );
   }
   const { totals, payments, expenses, income = [] } = overview;
 

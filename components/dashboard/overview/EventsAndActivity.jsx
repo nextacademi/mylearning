@@ -2,6 +2,22 @@
 
 import { Activity, Award, CalendarDays, ScanQrCode } from "lucide-react";
 import { ErrorChartState } from "./ChartCard";
+import { SkeletonBar } from "../../ui/Skeleton";
+
+// Matches one real row in either list below — an icon-in-square, two
+// lines, and (for Upcoming Events) a trailing pill badge — so there's no
+// layout jump when the real rows swap in.
+function FeedRowSkeleton() {
+  return (
+    <div className="flex items-start gap-3 rounded-xl bg-page p-3">
+      <div className="h-9 w-9 shrink-0 animate-pulse rounded-lg bg-card" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <SkeletonBar className="h-3 w-2/3" />
+        <SkeletonBar className="h-2.5 w-1/2" />
+      </div>
+    </div>
+  );
+}
 
 const ACTIVITY_META = {
   "event.created": { icon: CalendarDays, bg: "bg-purple-soft", color: "text-purple" },
@@ -53,7 +69,7 @@ export default function EventsAndActivity({ events, eventsLoading, eventsError, 
           </div>
         </div>
         {eventsLoading ? (
-          <p className="py-8 text-center text-sm text-muted">Loading events...</p>
+          <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <FeedRowSkeleton key={i} />)}</div>
         ) : eventsError ? (
           <ErrorChartState message="Unable to load upcoming events" onRetry={onRetryEvents} />
         ) : events?.length ? (
@@ -93,7 +109,7 @@ export default function EventsAndActivity({ events, eventsLoading, eventsError, 
           </div>
         </div>
         {activitiesLoading ? (
-          <p className="py-8 text-center text-sm text-muted">Loading activity...</p>
+          <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <FeedRowSkeleton key={i} />)}</div>
         ) : activitiesError ? (
           <ErrorChartState message="Unable to load recent activity" onRetry={onRetryActivities} />
         ) : activities?.length ? (

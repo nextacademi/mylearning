@@ -45,21 +45,38 @@ export async function GET(request, context) {
       return NextResponse.json({ message: "You do not have access to this receipt." }, { status: 403 });
     }
 
-    const [courseSnap, studentSnap, enrollmentSnap] = await Promise.all([
-      a.db.collection("courses").doc(payment.courseId).get(),
+    // A payment carries either an enrollmentId (course fee) or an
+    // invoiceId (manual invoice — Registration/Material/Exam Fee etc.),
+    // never both. Only the enrollment branch existed before manual
+    // invoices; this is purely additive — enrollment-payment receipts are
+    // unaffected.
+    const [studentSnap, courseSnap, enrollmentSnap, invoiceSnap] = await Promise.all([
       a.db.collection("users").doc(payment.studentId).get(),
-      a.db.collection("enrollments").doc(payment.enrollmentId).get(),
+      payment.courseId ? a.db.collection("courses").doc(payment.courseId).get() : Promise.resolve(null),
+      payment.enrollmentId ? a.db.collection("enrollments").doc(payment.enrollmentId).get() : Promise.resolve(null),
+      payment.invoiceId ? a.db.collection("invoices").doc(payment.invoiceId).get() : Promise.resolve(null),
     ]);
-    const course = courseSnap.exists ? courseSnap.data() : {};
     const student = studentSnap.exists ? studentSnap.data() : {};
-    const enrollment = enrollmentSnap.exists ? enrollmentSnap.data() : {};
-    const invoiceNumber = enrollmentSnap.exists
-      ? await ensureInvoiceNumber(a.db, enrollmentSnap.ref, enrollment)
-      : "—";
+    const enrollment = enrollmentSnap?.exists ? enrollmentSnap.data() : null;
+    const manualInvoice = invoiceSnap?.exists ? invoiceSnap.data() : null;
+
+    let course, finalFee, invoiceNumber;
+    if (enrollment) {
+      course = courseSnap?.exists ? courseSnap.data() : {};
+      finalFee = Number(enrollment.finalFee) || 0;
+      invoiceNumber = await ensureInvoiceNumber(a.db, enrollmentSnap.ref, enrollment);
+    } else if (manualInvoice) {
+      course = { title: manualInvoice.description || manualInvoice.invoiceType, batchName: manualInvoice.batchName || "" };
+      finalFee = Number(manualInvoice.totalAmount) || 0;
+      invoiceNumber = manualInvoice.invoiceNumber || "—";
+    } else {
+      course = {};
+      finalFee = 0;
+      invoiceNumber = "—";
+    }
 
     const previousPaid = Number(payment.previousPaid) || 0;
     const amount = Number(payment.amount) || 0;
-    const finalFee = Number(enrollment.finalFee) || 0;
     const totalPaidAfter = previousPaid + amount;
     const dueAfter = Math.max(0, finalFee - totalPaidAfter);
 

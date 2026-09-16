@@ -17,6 +17,7 @@ import { subscribePublishedEvents } from "../../lib/events-client";
 import { computeEventStatus, FILTER_STATUSES } from "../../lib/events-shared";
 import { useAuth } from "../../lib/auth-context";
 import { db } from "../../lib/firebase";
+import { SkeletonBar, SkeletonGrid } from "../ui/Skeleton";
 
 // Same aggregate shape app/api/admin/events/route.js's buildStats() computes
 // server-side for Director/Admin — mirrored here so Teacher/Student (who
@@ -515,7 +516,7 @@ export default function EventManagement() {
         {statCards.map(([label, value]) => (
           <article key={label} className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>
-            <p className="mt-2 text-2xl font-extrabold text-ink">{statsLoading ? "—" : (value ?? 0)}</p>
+            {statsLoading ? <SkeletonBar className="mt-2 h-7 w-14" /> : <p className="mt-2 text-2xl font-extrabold text-ink">{value ?? 0}</p>}
           </article>
         ))}
       </section>
@@ -591,7 +592,7 @@ export default function EventManagement() {
           </div>
 
           {liveLoading ? (
-            <p className="py-10 text-center text-sm text-muted">Loading events...</p>
+            <SkeletonGrid count={10} mediaHeight="aspect-[4/3]" className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5" />
           ) : events.length ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {events.map((event) => (
@@ -607,7 +608,7 @@ export default function EventManagement() {
       {isDirector && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <ChartCard title="Events by Month" subtitle="Scheduled events across the year" icon={CalendarDays}>
-            {loading ? <EmptyChartState message="Loading..." /> : byMonth.length ? (
+            {loading ? <div className="h-70 w-full animate-pulse rounded-xl bg-page" /> : byMonth.length ? (
               <div className="h-70 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={byMonth} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
@@ -622,7 +623,7 @@ export default function EventManagement() {
             ) : <EmptyChartState message="No events yet" />}
           </ChartCard>
           <ChartCard title="Events by Type" subtitle="Breakdown across categories" icon={Users}>
-            {loading ? <EmptyChartState message="Loading..." /> : byType.length ? (
+            {loading ? <div className="h-70 w-full animate-pulse rounded-xl bg-page" /> : byType.length ? (
               <div className="h-70 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

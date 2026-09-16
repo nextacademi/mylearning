@@ -66,6 +66,18 @@ service cloud.firestore {
     match /finance_income/{incomeId} {
       allow read, write: if admin();
     }
+    // Manual (non-enrollment) invoices — Registration/Material/Exam Fee
+    // etc. Course-fee invoices are NOT stored here at all; the enrollment
+    // doc itself is that invoice (see the `enrollments` block above), so
+    // this collection only ever holds invoices with no backing enrollment.
+    // Every mutation happens server-side via /api/admin/invoices (Admin
+    // SDK); this block only governs direct client access. The invoice's
+    // own student may read (never write) their own, same as `enrollments`
+    // and `payments` above.
+    match /invoices/{invoiceId} {
+      allow read: if admin() || (signedIn() && resource.data.studentId == request.auth.uid);
+      allow write: if admin();
+    }
     // Asset register (Finance → Assets) — what the academy owns and its
     // value (furniture, equipment, deposits, renovation). Same
     // admin-only, server-SDK-only pattern as expenses/finance_income

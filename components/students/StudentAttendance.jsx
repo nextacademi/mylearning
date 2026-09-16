@@ -7,6 +7,29 @@ import { useAuth } from "../../lib/auth-context";
 import { subscribeMyAttendance, subscribeMyEnrollments } from "../../lib/student-data";
 import { attendanceSummary } from "../../lib/attendance";
 import { ChartCard, EmptyChartState } from "../dashboard/overview/ChartCard";
+import { SkeletonBar, SkeletonList, SkeletonStats } from "../ui/Skeleton";
+
+// Perceived-speed only — mirrors the real page's header + summary stats +
+// chart + calendar + history table shape below, so there's no layout jump
+// once the real attendance records resolve.
+function AttendanceSkeleton() {
+  return (
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-border-subtle bg-card p-6 shadow-sm">
+        <SkeletonBar className="h-2.5 w-24" />
+        <SkeletonBar className="mt-3 h-8 w-56" />
+        <SkeletonBar className="mt-3 h-4 w-80 max-w-full" />
+      </section>
+      <SkeletonStats count={4} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" />
+      <div className="h-70 w-full animate-pulse rounded-xl border border-border-subtle bg-card" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="h-70 w-full animate-pulse rounded-xl border border-border-subtle bg-card" />
+        <div className="h-70 w-full animate-pulse rounded-xl border border-border-subtle bg-card" />
+      </div>
+      <SkeletonList count={6} />
+    </div>
+  );
+}
 
 // Real data only, throughout this file — every number and every chart
 // series below is derived from `attendance` records this student actually
@@ -195,7 +218,7 @@ export default function StudentAttendance() {
   }, [filtered]);
 
   if (loading) {
-    return <p className="py-10 text-center text-sm text-muted">Loading your attendance...</p>;
+    return <AttendanceSkeleton />;
   }
   if (error) {
     return <p className="rounded-xl bg-active p-4 text-sm text-primary">{error}</p>;

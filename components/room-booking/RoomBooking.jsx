@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
+import { SkeletonList } from "../ui/Skeleton";
 import {
   activeRooms as filterActiveRooms,
   BAR_COLORS,
@@ -28,6 +29,9 @@ import {
   datesOverlap,
   deleteRoom,
   findConflict,
+  getCachedBookings,
+  getCachedBookingsMeta,
+  getCachedRooms,
   setRoomStatus,
   SLOT_KEYS,
   SLOT_STATUS_DEFAULT,
@@ -1525,11 +1529,15 @@ export default function RoomBooking({ role }) {
   const canManage = MANAGER_ROLES.has(role);
   const online = useOnlineStatus();
   const { profile, user } = useAuth();
-  const [rooms, setRooms] = useState([]);
-  const [roomsLoaded, setRoomsLoaded] = useState(false);
-  const [bookings, setBookings] = useState([]);
-  const [meta, setMeta] = useState({ fromCache: false, pendingWrites: false });
-  const [loaded, setLoaded] = useState(false);
+  // Lazy initializers seed from prefetchRoomBooking's cache (fired at
+  // dashboard mount — see lib/room-booking-data.js) so this starts already
+  // populated when that warmup already delivered data; the subscriptions
+  // below still run as normal to keep it live.
+  const [rooms, setRooms] = useState(() => getCachedRooms() || []);
+  const [roomsLoaded, setRoomsLoaded] = useState(() => getCachedRooms() !== null);
+  const [bookings, setBookings] = useState(() => getCachedBookings() || []);
+  const [meta, setMeta] = useState(() => getCachedBookingsMeta() || { fromCache: false, pendingWrites: false });
+  const [loaded, setLoaded] = useState(() => getCachedBookings() !== null);
   const [courses, setCourses] = useState([]);
   const [classes, setClasses] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -1945,9 +1953,7 @@ export default function RoomBooking({ role }) {
           </div>
 
           {!loaded ? (
-            <p className="py-12 text-center text-sm text-muted">
-              Syncing Database...
-            </p>
+            <SkeletonList count={8} />
           ) : (
             <>
               {view === "calendar" && (

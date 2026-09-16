@@ -6,11 +6,12 @@ import { subscribeTeacherCourses } from "../../lib/teacher-data";
 import { subscribeCourses } from "../../lib/room-booking-data";
 import { subscribeModules } from "../../lib/course-modules-data";
 import {
-  createQuiz, deleteQuiz, loadQuizAnswerKey, setQuizStatus, subscribeAllQuizzes,
+  createQuiz, deleteQuiz, getCachedManagerQuizzes, loadQuizAnswerKey, setQuizStatus, subscribeAllQuizzes,
   subscribeQuizAttemptsForQuiz, subscribeQuizAttemptsForTeacher, subscribeTeacherQuizzes, updateQuiz,
 } from "../../lib/exam-data";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { SkeletonGrid } from "../ui/Skeleton";
 
 const LABEL = "grid gap-1 text-xs font-bold text-muted";
 const FIELD = "rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
@@ -213,7 +214,12 @@ function ResultsPanel({ quiz, teacherId, isManager, onClose }) {
 
 export default function TeacherExams({ teacherId, isManager = false }) {
   const [courses, setCourses] = useState([]);
-  const [quizzes, setQuizzes] = useState([]);
+  // Lazy initializer seeds from prefetchManagerExams's cache (fired at
+  // dashboard mount for Admin/Director — see lib/exam-data.js) so this
+  // starts already populated when that warmup already delivered data; the
+  // subscription below still runs as normal to keep it live.
+  const [quizzes, setQuizzes] = useState(() => (isManager && getCachedManagerQuizzes()) || []);
+  const [loading, setLoading] = useState(() => !(isManager && getCachedManagerQuizzes() !== null));
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewingResults, setViewingResults] = useState(null);
@@ -227,8 +233,15 @@ export default function TeacherExams({ teacherId, isManager = false }) {
     return subscribeTeacherCourses(teacherId, setCourses, () => {});
   }, [teacherId, isManager]);
   useEffect(() => {
-    if (isManager) return subscribeAllQuizzes(setQuizzes, () => {});
-    return subscribeTeacherQuizzes(teacherId, setQuizzes, () => {});
+    function onQuizzes(rows) {
+      setQuizzes(rows);
+      setLoading(false);
+    }
+    function onQuizzesError() {
+      setLoading(false);
+    }
+    if (isManager) return subscribeAllQuizzes(onQuizzes, onQuizzesError);
+    return subscribeTeacherQuizzes(teacherId, onQuizzes, onQuizzesError);
   }, [teacherId, isManager]);
 
   const courseMap = useMemo(() => new Map(courses.map((c) => [c.id, c.title])), [courses]);
@@ -319,7 +332,9 @@ export default function TeacherExams({ teacherId, isManager = false }) {
         <p className="rounded-xl bg-warning-soft px-4 py-3 text-sm font-semibold text-warning">You have no assigned courses yet — an exam must belong to one of your courses.</p>
       )}
 
-      {!quizzes.length ? (
+      {loading ? (
+        <SkeletonGrid count={6} mediaHeight="h-0" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" />
+      ) : !quizzes.length ? (
         <div className="rounded-3xl border border-dashed border-border-subtle bg-card py-16 text-center">
           <p className="font-bold text-ink">No exams yet.</p>
           <p className="mt-1 text-sm text-muted">Create your first exam to start testing students on a course.</p>

@@ -1,30 +1,35 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Award, BadgeCheck, FileCheck2, LayoutTemplate, ShieldCheck } from "lucide-react";
+import { Award, BadgeCheck, FileCheck2, LayoutTemplate, ShieldCheck, Trophy } from "lucide-react";
 import StatCard from "../finance/StatCard";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
 import {
+  createAward,
   createTemplate,
   deleteTemplate,
-  loadGeneratedCertificates,
-  loadTemplates,
+  downloadCertificatePdf,
+  loadAchievementOverview,
   reissueGeneratedCertificate,
+  revokeAward,
   revokeGeneratedCertificate,
+  updateAward,
   updateTemplate,
   uploadTemplateBackground,
 } from "../../lib/achievement-data";
-import { CERTIFICATE_TYPES } from "../../lib/achievement-shared";
+import { loadStudentDirectoryCached } from "../../lib/services/student-service";
+import { AWARD_TYPES, CERTIFICATE_TYPES } from "../../lib/achievement-shared";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { SkeletonGrid, SkeletonList } from "../ui/Skeleton";
 // (ACHIEVEMENT_TYPES also lives in achievement-shared.js — used by
 // TeacherWorkspacePage.js's Award-achievement form.)
 
 // One sidebar entry ("Achievement" for Director/Admin), one shell, tabs
-// inside — same convention as Finance/Training. Everything certificate- and
-// achievement-related lives in this single module; there is no separate
-// Certificate dashboard anywhere else in the app.
-const tabs = ["Overview", "Templates", "Generated Certificates", "Achievements", "Verification"];
+// inside — same convention as Finance/Training. Everything certificate-,
+// achievement- and award-related lives in this single module; there is no
+// separate Certificate or Awards dashboard anywhere else in the app.
+const tabs = ["Overview", "Templates", "Generated Certificates", "Achievements", "Awards", "Verification"];
 
 const DYNAMIC_VARIABLES = [
   "{{student_name}}", "{{course_name}}", "{{course_title}}", "{{student_id}}",
@@ -36,15 +41,17 @@ export default function AchievementManagement() {
   const [tab, setTab] = useState("Overview");
   const [templates, setTemplates] = useState([]);
   const [certificates, setCertificates] = useState([]);
+  const [awards, setAwards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const load = useCallback(() => {
+  const load = useCallback(({ force = false } = {}) => {
     setLoading(true);
-    Promise.all([loadTemplates(), loadGeneratedCertificates()])
-      .then(([t, c]) => {
+    loadAchievementOverview({ force })
+      .then(([t, c, a]) => {
         setTemplates(t.templates || []);
         setCertificates(c.certificates || []);
+        setAwards(a.awards || []);
         setError("");
       })
       .catch((err) => setError(err.message || "Unable to load Achievement data."))
@@ -71,8 +78,9 @@ export default function AchievementManagement() {
       certificatesThisMonth: thisMonth.length,
       totalAchievements: certificates.length,
       studentsWithCertificates: studentsWithCerts,
+      totalAwards: awards.filter((item) => item.status !== "revoked").length,
     };
-  }, [templates, certificates]);
+  }, [templates, certificates, awards]);
 
   return (
     <div className="space-y-6">
@@ -107,12 +115,14 @@ export default function AchievementManagement() {
           <StatCard label="Certificates This Month" value={stats.certificatesThisMonth} icon={FileCheck2} iconBg="bg-warning-soft" iconColor="text-warning" loading={loading} />
           <StatCard label="Total Achievements" value={stats.totalAchievements} icon={Award} iconBg="bg-active" iconColor="text-primary" loading={loading} />
           <StatCard label="Students With Certificates" value={stats.studentsWithCertificates} icon={ShieldCheck} iconBg="bg-success-soft" iconColor="text-success" loading={loading} />
+          <StatCard label="Total Awards" value={stats.totalAwards} icon={Trophy} iconBg="bg-warning-soft" iconColor="text-warning" loading={loading} />
         </section>
       )}
 
-      {tab === "Templates" && <TemplatesTab templates={templates} onChanged={load} />}
-      {tab === "Generated Certificates" && <CertificatesTab certificates={certificates} onChanged={load} />}
-      {tab === "Achievements" && <AchievementsTab certificates={certificates} />}
+      {tab === "Templates" && <TemplatesTab templates={templates} loading={loading} onChanged={() => load({ force: true })} />}
+      {tab === "Generated Certificates" && <CertificatesTab certificates={certificates} loading={loading} onChanged={() => load({ force: true })} />}
+      {tab === "Achievements" && <AchievementsTab certificates={certificates} loading={loading} />}
+      {tab === "Awards" && <AwardsTab awards={awards} templates={templates} loading={loading} onChanged={() => load({ force: true })} />}
       {tab === "Verification" && <VerificationTab />}
     </div>
   );
@@ -120,7 +130,7 @@ export default function AchievementManagement() {
 
 const blankTemplate = { name: "", description: "", templateCode: "", type: CERTIFICATE_TYPES[0] };
 
-function TemplatesTab({ templates, onChanged }) {
+function TemplatesTab({ templates, loading, onChanged }) {
   const toast = useToast();
   const confirm = useConfirm();
   const [editing, setEditing] = useState(null);
@@ -210,6 +220,9 @@ function TemplatesTab({ templates, onChanged }) {
 
       {message && !editing && <p className="text-xs text-muted">{message}</p>}
 
+      {loading ? (
+        <SkeletonGrid count={6} mediaHeight="aspect-video" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" />
+      ) : (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {templates.map((template) => (
           <article key={template.id} className="overflow-hidden rounded-2xl border border-border-subtle bg-card shadow-sm">
@@ -243,6 +256,7 @@ function TemplatesTab({ templates, onChanged }) {
         ))}
         {!templates.length && <p className="text-sm text-muted">No certificate templates yet — create one to enable certificates on a course.</p>}
       </div>
+      )}
 
       {editing && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
@@ -292,10 +306,30 @@ function TemplatesTab({ templates, onChanged }) {
 
 const certIssueDate = (cert) => cert.issueDate?.toDate?.().toLocaleDateString?.() || cert.metadata?.completionDate || "";
 
-function CertificatesTab({ certificates, onChanged }) {
+function CertificatesTab({ certificates, loading, onChanged }) {
   const toast = useToast();
   const confirm = useConfirm();
   const [busyId, setBusyId] = useState("");
+  const [viewingId, setViewingId] = useState("");
+
+  // Plain <a href="/api/certificates/.../pdf"> browser navigation sends no
+  // Authorization header, so the route (auth-gated, since it's not a
+  // public verify link) 401s and the browser just shows "Sign in to
+  // continue." — same fetch+blob+window.open pattern already used by
+  // StudentAchievements.jsx's own certificate download.
+  async function view(cert) {
+    setViewingId(cert.id);
+    try {
+      const blob = await downloadCertificatePdf(cert.id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      toast.error(error.message || "Unable to open this certificate.");
+    } finally {
+      setViewingId("");
+    }
+  }
 
   const columns = [
     { key: "studentName", header: "Student", sortable: true, accessor: (c) => `${c.studentName || ""} ${c.studentUserId || ""}`, render: (c) => <span><b className="block text-ink">{c.studentName || "—"}</b><span className="text-[11px] text-subtle">{c.studentUserId}</span></span>, exportValue: (c) => c.studentName || "" },
@@ -340,6 +374,9 @@ function CertificatesTab({ certificates, onChanged }) {
 
   return (
     <section className="space-y-4">
+      {loading ? (
+        <SkeletonList count={6} />
+      ) : (
       <DataTable
         title="certificates"
         name="certificates"
@@ -350,7 +387,7 @@ function CertificatesTab({ certificates, onChanged }) {
         emptyLabel="No certificates issued yet."
         rowActions={(cert) => (
           <>
-            <a href={`/api/certificates/${cert.id}/pdf`} target="_blank" rel="noreferrer" className="rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90">View</a>
+            <button type="button" disabled={viewingId === cert.id} onClick={() => view(cert)} className="rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90 disabled:opacity-50">{viewingId === cert.id ? "Opening…" : "View"}</button>
             <a href={`/verify/${encodeURIComponent(cert.certificateCode || cert.id)}`} target="_blank" rel="noreferrer" className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-page">Verify</a>
             {cert.status !== "revoked" ? (
               <button type="button" disabled={busyId === cert.id} onClick={() => revoke(cert)} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page disabled:opacity-50">Revoke</button>
@@ -360,11 +397,12 @@ function CertificatesTab({ certificates, onChanged }) {
           </>
         )}
       />
+      )}
     </section>
   );
 }
 
-function AchievementsTab({ certificates }) {
+function AchievementsTab({ certificates, loading }) {
   // Achievements are the underlying "award" every issued certificate is
   // linked to (see certificate-core.js) — this view gives the admin the
   // same list from the achievement angle without a second data source.
@@ -379,7 +417,318 @@ function AchievementsTab({ certificates }) {
   return (
     <section className="space-y-3">
       <h3 className="text-sm font-bold text-ink">Certificates issued (linked achievements)</h3>
-      <DataTable title="achievements" name="achievements" columns={columns} rows={certificates} initialSort={{ key: "issueDate", dir: "desc" }} pageSize={10} emptyLabel="No achievements recorded yet." />
+      {loading ? (
+        <SkeletonList count={6} />
+      ) : (
+        <DataTable title="achievements" name="achievements" columns={columns} rows={certificates} initialSort={{ key: "issueDate", dir: "desc" }} pageSize={10} emptyLabel="No achievements recorded yet." />
+      )}
+    </section>
+  );
+}
+
+const blankAward = { studentId: "", title: "", type: AWARD_TYPES[0], description: "", courseId: "", icon: "🏆", awardDate: new Date().toISOString().slice(0, 10), generateCertificate: false, templateId: "" };
+const awardDate = (award) => award.awardDate || award.awardedAt?.toDate?.().toLocaleDateString?.() || "";
+const studentLabel = (s) => `${s.displayName || s.email || "Unnamed student"}${s.role === "Guest" ? " (Guest)" : ""}`;
+
+// A single searchable combobox (one input, one dropdown) replacing what
+// used to be a separate search box stacked on top of a raw multi-row
+// <select> — that pairing read as visually duplicated in a narrow modal.
+// Typing here only filters the dropdown; it never clears `selected` (the
+// actual stored studentId) — only clicking an option does, per spec.
+function StudentCombobox({ students, loading, selected, onSelect }) {
+  const [query, setQuery] = useState(selected ? studentLabel(selected) : "");
+  const [open, setOpen] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const pool = !q ? students : students.filter((s) => (s.displayName || "").toLowerCase().includes(q) || (s.email || "").toLowerCase().includes(q));
+    return pool.slice(0, 50);
+  }, [students, query]);
+
+  function pick(student) {
+    setQuery(studentLabel(student));
+    onSelect(student);
+    setOpen(false);
+  }
+
+  return (
+    <div className="relative">
+      <input
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={loading ? "Loading students…" : "Search by student name or email…"}
+        disabled={loading}
+        className="w-full rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal disabled:opacity-60"
+      />
+      {selected && <p className="mt-1 text-[11px] font-normal text-success">Selected: {studentLabel(selected)}</p>}
+      {open && !loading && (
+        <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-border-subtle bg-card p-1 shadow-xl">
+          {filtered.length ? (
+            filtered.map((s) => (
+              <button
+                type="button"
+                key={s.id}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pick(s)}
+                className={`block w-full rounded-lg px-3 py-2 text-left text-xs font-normal hover:bg-active ${selected?.id === s.id ? "bg-active font-bold text-ink" : "text-ink"}`}
+              >
+                <span className="block">{s.displayName || "Unnamed student"}{s.role === "Guest" ? " (Guest)" : ""}</span>
+                {s.email && <span className="block text-[11px] text-subtle">{s.email}</span>}
+              </button>
+            ))
+          ) : (
+            <p className="px-3 py-2 text-xs text-subtle">No students found.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Awards are a distinct concept from Achievements above (a manually-issued
+// honor an Admin/Director grants, per the spec) even though both are
+// stored in the same `achievements` collection server-side — see
+// award-core.js's header for why that's safe. This tab is the only place
+// in the app that writes `kind: "award"` records.
+function AwardsTab({ awards, templates, loading, onChanged }) {
+  const toast = useToast();
+  const confirm = useConfirm();
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(blankAward);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [busyId, setBusyId] = useState("");
+  const [viewingId, setViewingId] = useState("");
+  const [students, setStudents] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(true);
+
+  useEffect(() => {
+    loadStudentDirectoryCached()
+      .then(({ students: s, courses: c }) => {
+        setStudents(s || []);
+        setCourses(c || []);
+      })
+      .catch(() => {})
+      .finally(() => setStudentsLoading(false));
+  }, []);
+
+  const activeTemplates = useMemo(() => templates.filter((item) => item.status === "active"), [templates]);
+  const selectedStudent = useMemo(() => students.find((s) => s.id === form.studentId) || null, [students, form.studentId]);
+
+  const columns = [
+    { key: "awardId", header: "Award ID", accessor: (a) => a.awardId || a.id, render: (a) => <span className="font-mono text-[11px]">{a.awardId || a.id}</span> },
+    { key: "studentName", header: "Student", sortable: true, accessor: (a) => a.studentName || a.studentId || "", render: (a) => <span><b className="block text-ink">{a.studentName || "—"}</b><span className="text-[11px] text-subtle">{a.studentUserId}</span></span> },
+    { key: "title", header: "Award", sortable: true, accessor: (a) => a.title || "", render: (a) => <span>{a.icon || "🏆"} {a.title}</span> },
+    { key: "type", header: "Type", sortable: true, filter: {}, accessor: (a) => a.type || "" },
+    { key: "courseName", header: "Training / Course", sortable: true, filter: {}, accessor: (a) => a.courseName || "" },
+    { key: "awardDate", header: "Award Date", sortable: true, accessor: (a) => awardDate(a) },
+    { key: "certificateId", header: "Certificate", accessor: (a) => (a.certificateId ? "Generated" : "—"), render: (a) => (a.certificateId ? <StatusBadge tone="green">Generated</StatusBadge> : <span className="text-xs text-subtle">—</span>) },
+    { key: "status", header: "Status", sortable: true, filter: {}, accessor: (a) => (a.status === "revoked" ? "Revoked" : "Active"), render: (a) => <StatusBadge tone={a.status === "revoked" ? "red" : "green"}>{a.status === "revoked" ? "Revoked" : "Active"}</StatusBadge> },
+  ];
+
+  function openNew() {
+    setEditing("new");
+    setForm(blankAward);
+    setMessage("");
+  }
+  function openEdit(award) {
+    setEditing(award.id);
+    setForm({
+      studentId: award.studentId,
+      title: award.title || "",
+      type: award.type || AWARD_TYPES[0],
+      description: award.description || "",
+      courseId: award.courseId || "",
+      icon: award.icon || "🏆",
+      awardDate: award.awardDate || new Date().toISOString().slice(0, 10),
+      generateCertificate: false,
+      templateId: "",
+    });
+    setMessage("");
+  }
+  function close() {
+    setEditing(null);
+  }
+
+  async function save() {
+    if (!form.title.trim() || (editing === "new" && !form.studentId)) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      if (editing === "new") {
+        await createAward(form);
+        toast.success("Award issued successfully");
+      } else {
+        await updateAward({ id: editing, ...form });
+        toast.success("Award updated successfully");
+      }
+      close();
+      onChanged();
+    } catch (error) {
+      setMessage(error.message || "Unable to save the award.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function viewCertificate(award) {
+    setViewingId(award.id);
+    try {
+      const blob = await downloadCertificatePdf(award.certificateId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      toast.error(error.message || "Unable to open this certificate.");
+    } finally {
+      setViewingId("");
+    }
+  }
+
+  function revoke(award) {
+    return confirm({
+      title: "Revoke award",
+      message: `Revoke the award "${award.title}" for ${award.studentName || "this student"}? It will remain on record as revoked.`,
+      tone: "danger",
+      confirmLabel: "Revoke",
+      onConfirm: async () => {
+        setBusyId(award.id);
+        try {
+          await revokeAward(award.id);
+          toast.success("Award revoked successfully");
+          onChanged();
+        } finally {
+          setBusyId("");
+        }
+      },
+    });
+  }
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-ink">Awards</h3>
+        <button onClick={openNew} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">+ Give Award</button>
+      </div>
+
+      {loading ? (
+        <SkeletonList count={6} />
+      ) : (
+        <DataTable
+          title="awards"
+          name="awards"
+          columns={columns}
+          rows={awards}
+          initialSort={{ key: "awardDate", dir: "desc" }}
+          pageSize={10}
+          emptyLabel="No awards given yet."
+          rowActions={(award) => (
+            <>
+              <button type="button" onClick={() => openEdit(award)} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-page">Edit</button>
+              {award.certificateId && (
+                <button type="button" disabled={viewingId === award.id} onClick={() => viewCertificate(award)} className="rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90 disabled:opacity-50">{viewingId === award.id ? "Opening…" : "Certificate"}</button>
+              )}
+              {award.status !== "revoked" && (
+                <button type="button" disabled={busyId === award.id} onClick={() => revoke(award)} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page disabled:opacity-50">Revoke</button>
+              )}
+            </>
+          )}
+        />
+      )}
+
+      {editing && (
+        // items-start (not place-items-center) + py-8 on the overlay: a
+        // vertically-centered flex/grid container can't be scrolled to
+        // reach content that overflows above the fold once this form grew
+        // past a couple of fields — flowing top-down fixes that while
+        // still reading as centered on anything tall enough to fit it.
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-8">
+          <div className="w-full max-w-lg space-y-4 rounded-2xl bg-card p-6 shadow-xl">
+            <h4 className="text-sm font-bold text-ink">{editing === "new" ? "Give a New Award" : "Edit Award"}</h4>
+
+            {editing === "new" ? (
+              <div className="grid gap-1 text-xs font-bold text-muted">
+                Student
+                <StudentCombobox
+                  students={students}
+                  loading={studentsLoading}
+                  selected={selectedStudent}
+                  onSelect={(student) => setForm({ ...form, studentId: student.id })}
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-muted">Student: <b className="text-ink">{awards.find((a) => a.id === editing)?.studentName || form.studentId}</b> (not editable — revoke and re-issue to change the student)</p>
+            )}
+
+            <label className="grid gap-1 text-xs font-bold text-muted">
+              Award Title
+              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Best Student of the Batch" className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal" />
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="grid gap-1 text-xs font-bold text-muted">
+                Award Type
+                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal">
+                  {AWARD_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                </select>
+              </label>
+              <label className="grid gap-1 text-xs font-bold text-muted">
+                Award Date
+                <input type="date" value={form.awardDate} onChange={(e) => setForm({ ...form, awardDate: e.target.value })} className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal" />
+              </label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="grid gap-1 text-xs font-bold text-muted">
+                Training / Course (optional)
+                <select value={form.courseId} onChange={(e) => setForm({ ...form, courseId: e.target.value })} className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal">
+                  <option value="">None</option>
+                  {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+                </select>
+              </label>
+              <label className="grid gap-1 text-xs font-bold text-muted">
+                Badge / Icon
+                <input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} placeholder="🏆" maxLength={4} className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal" />
+              </label>
+            </div>
+
+            <label className="grid gap-1 text-xs font-bold text-muted">
+              Description
+              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal" />
+            </label>
+
+            {editing === "new" && (
+              <div className="space-y-2 rounded-xl border border-dashed border-border-subtle p-3">
+                <label className="flex items-center gap-2 text-xs font-bold text-muted">
+                  <input type="checkbox" className="h-4 w-4 shrink-0 accent-primary" checked={form.generateCertificate} onChange={(e) => setForm({ ...form, generateCertificate: e.target.checked, templateId: e.target.checked ? form.templateId : "" })} />
+                  Generate Certificate for this award
+                </label>
+                {form.generateCertificate && (
+                  <select value={form.templateId} onChange={(e) => setForm({ ...form, templateId: e.target.value })} className="w-full rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal">
+                    <option value="">Choose a certificate template…</option>
+                    {activeTemplates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {message && <p className="text-xs text-primary">{message}</p>}
+            <div className="flex justify-end gap-3">
+              <button onClick={close} disabled={saving} className="px-4 py-2 text-sm font-bold text-muted">Cancel</button>
+              <button
+                onClick={save}
+                disabled={saving || !form.title.trim() || (editing === "new" && (!form.studentId || (form.generateCertificate && !form.templateId)))}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+              >
+                {saving ? "Saving..." : editing === "new" ? "Give Award" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

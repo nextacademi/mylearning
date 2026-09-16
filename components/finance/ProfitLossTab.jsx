@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { loadFinanceOverview } from "../../lib/services/finance-service";
 import { formatMoney } from "../training/PaymentHistoryTable";
+import { SkeletonStats } from "../ui/Skeleton";
 
 function isoDate(date) {
   return date.toISOString().slice(0, 10);
@@ -85,7 +86,7 @@ export default function ProfitLossTab() {
         {error && <p className="mb-3 rounded-xl bg-active p-3 text-xs text-primary">{error}</p>}
 
         {loading ? (
-          <p className="py-10 text-center text-sm text-muted">Loading profit &amp; loss...</p>
+          <SkeletonStats count={3} className="grid gap-4 sm:grid-cols-3" />
         ) : (
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-2xl bg-page p-5 text-center">

@@ -7,7 +7,7 @@ import {
   createProduct, updateProduct, deleteProduct, uploadProductImage, updateOrderStatus, updateOrderCollection,
   createCategory, updateCategory, deleteCategory, uploadCategoryImage,
 } from "../../lib/shop-data";
-import Spinner from "../ui/Spinner";
+import { SkeletonGrid, SkeletonList } from "../ui/Skeleton";
 import ProductOrderModal from "./ProductOrderModal";
 import CartCheckoutModal from "./CartCheckoutModal";
 import DataTable from "../data-table/DataTable";
@@ -628,7 +628,7 @@ export default function Shop({ role, uid }) {
             </div>
 
             {!productsLoaded ? (
-              <Spinner label="Loading products..." />
+              <SkeletonGrid count={10} mediaHeight="aspect-square" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5" />
             ) : !visibleProducts.length ? (
               <div className="rounded-3xl border border-dashed border-border-subtle bg-card py-16 text-center">
                 {search || categoryFilter !== "all" ? (
@@ -820,7 +820,7 @@ export default function Shop({ role, uid }) {
             <button type="button" onClick={openAddCategory} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">+ Add Category</button>
           </div>
           {!categoriesLoaded ? (
-            <Spinner label="Loading categories..." />
+            <SkeletonList count={5} />
           ) : !categories.length ? (
             <p className="py-10 text-center text-sm text-muted">No categories yet. Click &quot;Add Category&quot; to create the first one.</p>
           ) : (

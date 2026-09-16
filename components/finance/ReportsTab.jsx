@@ -2,13 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { loadFinanceOverview } from "../../lib/services/finance-service";
+import { loadInvoices } from "../../lib/services/invoice-service";
 import { formatDate, formatMoney } from "../training/PaymentHistoryTable";
 import ExportMenu from "../data-table/ExportMenu";
+import { SkeletonList } from "../ui/Skeleton";
 
 const reportTypes = [
   "Income Report",
   "Expense Report",
   "Outstanding Due Report",
+  "Invoices Report",
   "Profit & Loss Report",
   "Student Payment Report",
   "Training Revenue Report",
@@ -33,14 +36,16 @@ export default function ReportsTab() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [overview, setOverview] = useState(null);
+  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
-    loadFinanceOverview({ from: from || undefined, to: to || undefined })
-      .then((result) => {
-        setOverview(result);
+    Promise.all([loadFinanceOverview({ from: from || undefined, to: to || undefined }), loadInvoices()])
+      .then(([overviewResult, invoicesResult]) => {
+        setOverview(overviewResult);
+        setInvoices(invoicesResult.invoices || []);
         setError("");
       })
       .catch((err) => setError(err.message || "Unable to load report data."))
@@ -50,6 +55,13 @@ export default function ReportsTab() {
   useEffect(() => {
     void Promise.resolve().then(load);
   }, [load]);
+
+  // /api/admin/invoices has no server-side date-range filter — same
+  // client-side range filter the rest of this tab already applies.
+  const dateFilteredInvoices = useMemo(
+    () => invoices.filter((item) => (!from || (item.issueDate || "") >= from) && (!to || (item.issueDate || "") <= to)),
+    [invoices, from, to],
+  );
 
   const payments = useMemo(() => overview?.payments || [], [overview]);
   const expenses = useMemo(() => overview?.expenses || [], [overview]);
@@ -131,6 +143,19 @@ export default function ReportsTab() {
         { key: "st", exportHeader: "Status", accessor: (a) => a.paymentStatus || "" },
       ],
     },
+    "Invoices Report": {
+      rows: dateFilteredInvoices,
+      columns: [
+        { key: "d", exportHeader: "Date", accessor: (i) => i.issueDate || "" },
+        { key: "n", exportHeader: "Invoice Number", accessor: (i) => i.invoiceNumber || "" },
+        { key: "s", exportHeader: "Student", accessor: (i) => i.studentName || "" },
+        { key: "desc", exportHeader: "Description", accessor: (i) => i.courseName || i.description || "" },
+        { key: "t", exportHeader: "Total", accessor: (i) => Number(i.totalAmount || 0) },
+        { key: "p", exportHeader: "Paid", accessor: (i) => Number(i.paidAmount || 0) },
+        { key: "due", exportHeader: "Due", accessor: (i) => Number(i.dueAmount || 0) },
+        { key: "st", exportHeader: "Status", accessor: (i) => i.status || "" },
+      ],
+    },
     "Student Payment Report": {
       rows: studentSummary,
       columns: [
@@ -156,7 +181,7 @@ export default function ReportsTab() {
         { key: "n", exportHeader: "Net", accessor: (r) => Number(r.net || 0) },
       ],
     },
-  }), [payments, expenses, admissions, studentSummary, trainingSummary, monthlySummary]);
+  }), [payments, expenses, admissions, dateFilteredInvoices, studentSummary, trainingSummary, monthlySummary]);
   const currentExport = exportConfig[reportType];
 
   return (
@@ -179,7 +204,7 @@ export default function ReportsTab() {
         {error && <p className="mb-3 rounded-xl bg-active p-3 text-xs text-primary">{error}</p>}
 
         {loading ? (
-          <p className="py-10 text-center text-sm text-muted">Loading report...</p>
+          <SkeletonList count={8} />
         ) : (
           <div className="overflow-x-auto">
             {reportType === "Income Report" && (
@@ -233,6 +258,27 @@ export default function ReportsTab() {
                     </tr>
                   ))}
                 </tbody>
+              </table>
+            )}
+
+            {reportType === "Invoices Report" && (
+              <table className="w-full min-w-[800px] text-left text-sm">
+                <thead className="border-b text-[10px] uppercase tracking-wider text-subtle"><tr>{["Date", "Invoice Number", "Student", "Description", "Total", "Paid", "Due", "Status"].map((l) => <th key={l} className="p-3">{l}</th>)}</tr></thead>
+                <tbody>
+                  {dateFilteredInvoices.map((i) => (
+                    <tr key={i.id} className="border-b border-border-subtle">
+                      <td className="p-3 text-xs">{formatDate(i.issueDate)}</td>
+                      <td className="p-3 font-mono text-xs text-muted">{i.invoiceNumber}</td>
+                      <td className="p-3 text-xs">{i.studentName}</td>
+                      <td className="p-3 text-xs">{i.courseName || i.description}</td>
+                      <td className="p-3 text-xs font-bold">{formatMoney(i.totalAmount)}</td>
+                      <td className="p-3 text-xs text-success">{formatMoney(i.paidAmount)}</td>
+                      <td className="p-3 text-xs font-bold text-primary">{formatMoney(i.dueAmount)}</td>
+                      <td className="p-3 text-xs">{i.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot><tr><td colSpan={4} className="p-3 text-right text-xs font-bold">Total</td><td className="p-3 text-xs font-bold">{formatMoney(dateFilteredInvoices.reduce((s, i) => s + (Number(i.totalAmount) || 0), 0))}</td><td className="p-3 text-xs font-bold text-success">{formatMoney(dateFilteredInvoices.reduce((s, i) => s + (Number(i.paidAmount) || 0), 0))}</td><td className="p-3 text-xs font-bold text-primary">{formatMoney(dateFilteredInvoices.reduce((s, i) => s + (Number(i.dueAmount) || 0), 0))}</td><td /></tr></tfoot>
               </table>
             )}
 

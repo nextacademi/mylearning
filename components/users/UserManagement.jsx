@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, MoreVertical, ShieldCheck, Trash2 } from "lucide-react";
-import { changeUserRole, deleteUserAccount, loadUsers } from "../../lib/services/user-service";
+import { changeUserRole, deleteUserAccount, loadUsersCached } from "../../lib/services/user-service";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
+import { SkeletonBar, SkeletonList } from "../ui/Skeleton";
 
 const assignableRoles = ["Student", "Teacher", "Admin", "Director"];
 const dash = "—";
@@ -84,10 +85,10 @@ export default function UserManagement({ role, currentUserId }) {
   const confirm = useConfirm();
   const toast = useToast();
 
-  async function load() {
+  async function load({ force = false } = {}) {
     setLoading(true);
     try {
-      const data = await loadUsers();
+      const data = await loadUsersCached({ force });
       setUsers(data.users || []);
       setError("");
     } catch (loadError) {
@@ -125,7 +126,7 @@ export default function UserManagement({ role, currentUserId }) {
         if ((typed || "").trim() !== label) throw new Error(`Type "${label}" exactly to confirm deletion.`);
         await deleteUserAccount(user.uid);
         toast.success("User account deleted.");
-        await load();
+        await load({ force: true });
       },
     });
   }
@@ -144,7 +145,7 @@ export default function UserManagement({ role, currentUserId }) {
       await changeUserRole(changing.uid, nextRole);
       setChanging(null);
       setNotice("User role updated successfully.");
-      await load();
+      await load({ force: true });
     } catch (updateError) {
       setError(updateError.message || "Unable to update the user role.");
     } finally {
@@ -159,26 +160,30 @@ export default function UserManagement({ role, currentUserId }) {
     </section>
     {notice && <p className="rounded-xl bg-success-soft px-4 py-3 text-sm text-success">{notice}</p>}
     {error && !changing && <div className="rounded-xl bg-active px-4 py-3 text-sm text-primary"><b>Unable to load users. Please try again.</b><p>{error}</p></div>}
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student], ["Guests", counts.Guest]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p><p className="mt-2 text-2xl font-extrabold text-ink">{loading ? dash : value}</p></article>)}</section>
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student], ["Guests", counts.Guest]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>{loading ? <SkeletonBar className="mt-2 h-7 w-12" /> : <p className="mt-2 text-2xl font-extrabold text-ink">{value}</p>}</article>)}</section>
     <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
       <div className="mb-4"><h3 className="font-bold text-ink">All Users</h3><p className="mt-1 text-xs text-muted">Search by user ID, name, email, or phone · filter by role or status · export the current view.</p></div>
-      <DataTable
-        title="users"
-        name="users"
-        columns={columns}
-        rows={users}
-        loading={loading}
-        initialSort={{ key: "createdAt", dir: "desc" }}
-        pageSize={10}
-        emptyLabel="No users found."
-        rowActions={(user) => (
-          <>
-            <button type="button" onClick={() => setViewing(user)} className="inline-flex items-center gap-1 rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90"><Eye className="h-3.5 w-3.5" /> View</button>
-            {canChange(user) && <button type="button" onClick={() => { setChanging(user); setNextRole(user.role); setError(""); }} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page">Change role</button>}
-            {canChange(user) && <RowMenu onDelete={() => deleteUser(user)} />}
-          </>
-        )}
-      />
+      {loading ? (
+        <SkeletonList count={8} />
+      ) : (
+        <DataTable
+          title="users"
+          name="users"
+          columns={columns}
+          rows={users}
+          loading={loading}
+          initialSort={{ key: "createdAt", dir: "desc" }}
+          pageSize={10}
+          emptyLabel="No users found."
+          rowActions={(user) => (
+            <>
+              <button type="button" onClick={() => setViewing(user)} className="inline-flex items-center gap-1 rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90"><Eye className="h-3.5 w-3.5" /> View</button>
+              {canChange(user) && <button type="button" onClick={() => { setChanging(user); setNextRole(user.role); setError(""); }} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page">Change role</button>}
+              {canChange(user) && <RowMenu onDelete={() => deleteUser(user)} />}
+            </>
+          )}
+        />
+      )}
     </section>
     {viewing && <Dialog title="User details" onClose={() => setViewing(null)}><UserDetails user={viewing} /></Dialog>}
     {changing && <Dialog title="Change user role" onClose={() => !saving && setChanging(null)}><form onSubmit={updateRole} className="space-y-5"><p className="text-sm text-muted">Change the role for <b>{changing.displayName || changing.email || changing.uid}</b>. This takes effect immediately after confirmation.</p><label className="block text-sm font-semibold text-muted">Role<select value={nextRole} onChange={(event) => setNextRole(event.target.value)} className="mt-2 w-full rounded-xl border border-border-subtle bg-card px-3 py-2.5 font-normal outline-none focus:ring-2 focus:ring-primary">{assignableRoles.filter((item) => role === "Director" || item !== "Director").map((item) => <option key={item} value={item}>{item}</option>)}</select></label>{error && <p className="rounded-xl bg-active px-3 py-2 text-sm text-primary">{error}</p>}<div className="flex justify-end gap-3"><button type="button" onClick={() => setChanging(null)} disabled={saving} className="rounded-xl px-4 py-2 text-sm font-bold text-muted">Cancel</button><button disabled={saving || !canChange(changing)} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Updating role..." : "Confirm role change"}</button></div></form></Dialog>}

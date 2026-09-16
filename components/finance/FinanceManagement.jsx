@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { loadFinanceOverview } from "../../lib/services/finance-service";
+import { loadFinanceOverviewCached } from "../../lib/services/finance-service";
 import AdmissionsManagement from "./AdmissionsManagement";
+import InvoicesTab from "./InvoicesTab";
 import FinanceDashboardTab from "./FinanceDashboardTab";
 import IncomeTab from "./IncomeTab";
 import IncomeManagementTab from "./IncomeManagementTab";
@@ -16,7 +17,7 @@ import ReportsTab from "./ReportsTab";
 // this dashboard (Training, Users, etc. are also single sidebar items with
 // their own internal tabs, e.g. Training Details' Overview/Classes/...).
 // No second dashboard shell, no new sidebar items.
-const tabs = ["Dashboard", "Income", "Income / Payments", "Outstanding Due", "Expenses", "Assets", "Transactions", "Profit & Loss", "Reports"];
+const tabs = ["Dashboard", "Invoices", "Income", "Income / Payments", "Outstanding Due", "Expenses", "Assets", "Transactions", "Profit & Loss", "Reports"];
 
 export default function FinanceManagement() {
   const [tab, setTab] = useState("Dashboard");
@@ -24,9 +25,9 @@ export default function FinanceManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const load = useCallback(() => {
+  const load = useCallback((force = false) => {
     setLoading(true);
-    loadFinanceOverview()
+    loadFinanceOverviewCached({ force })
       .then((result) => {
         setOverview(result);
         setError("");
@@ -34,6 +35,10 @@ export default function FinanceManagement() {
       .catch((err) => setError(err.message || "Unable to load finance data."))
       .finally(() => setLoading(false));
   }, []);
+  // onChanged reloads (after create/update/delete in Income/Expenses/etc.)
+  // must never show stale cached data — the mount effect below is the
+  // only caller that's allowed to use the cache as-is.
+  const reload = useCallback(() => load(true), [load]);
 
   useEffect(() => {
     void Promise.resolve().then(load);
@@ -65,10 +70,11 @@ export default function FinanceManagement() {
       {error && <p className="rounded-xl bg-active p-4 text-sm text-primary">{error}</p>}
 
       {tab === "Dashboard" && <FinanceDashboardTab overview={overview} loading={loading} />}
-      {tab === "Income" && <IncomeManagementTab income={overview?.income || []} loading={loading} onChanged={load} />}
+      {tab === "Invoices" && <InvoicesTab />}
+      {tab === "Income" && <IncomeManagementTab income={overview?.income || []} loading={loading} onChanged={reload} />}
       {tab === "Income / Payments" && <IncomeTab payments={overview?.payments || []} loading={loading} />}
       {tab === "Outstanding Due" && <AdmissionsManagement />}
-      {tab === "Expenses" && <ExpensesTab expenses={overview?.expenses || []} loading={loading} onChanged={load} />}
+      {tab === "Expenses" && <ExpensesTab expenses={overview?.expenses || []} loading={loading} onChanged={reload} />}
       {tab === "Assets" && <AssetsTab />}
       {tab === "Transactions" && <TransactionsTab payments={overview?.payments || []} expenses={overview?.expenses || []} income={overview?.income || []} loading={loading} />}
       {tab === "Profit & Loss" && <ProfitLossTab />}

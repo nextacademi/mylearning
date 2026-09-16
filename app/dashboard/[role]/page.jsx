@@ -5,6 +5,17 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useAuth } from "../../../lib/auth-context";
 import { db } from "../../../lib/firebase";
+import { prefetchTraining } from "../../../lib/services/training-service";
+import { prefetchMyTraining } from "../../../lib/student-data";
+import { prefetchStudentDirectory } from "../../../lib/services/student-service";
+import { prefetchTeacherAssignments } from "../../../lib/services/teacher-assignment-service";
+import { prefetchRoomBooking } from "../../../lib/room-booking-data";
+import { prefetchDocuments } from "../../../lib/documents-data";
+import { prefetchUsers } from "../../../lib/services/user-service";
+import { prefetchAchievements } from "../../../lib/achievement-data";
+import { prefetchManagerExams } from "../../../lib/exam-data";
+import { prefetchFinanceOverview } from "../../../lib/services/finance-service";
+import { prefetchInvoices } from "../../../lib/services/invoice-service";
 import StudentManagement from "../../../components/StudentManagement";
 import TeacherAssignment from "../../../components/teacher-assignment/TeacherAssignment";
 import EventManagement from "../../../components/events/EventManagement";
@@ -212,6 +223,21 @@ function DirectorDashboard({ profile, user }) {
     url.searchParams.set("tab", active);
     window.history.replaceState(null, "", url);
   }, [active]);
+  // Perceived-speed only — see DashboardContent's identical effect. Director
+  // sees every one of these sidebar items unconditionally, so all fire
+  // together the moment the dashboard mounts, before any tab is clicked.
+  useEffect(() => {
+    prefetchTraining();
+    prefetchStudentDirectory();
+    prefetchTeacherAssignments();
+    prefetchRoomBooking();
+    prefetchDocuments();
+    prefetchUsers();
+    prefetchAchievements();
+    prefetchManagerExams();
+    prefetchFinanceOverview();
+    prefetchInvoices();
+  }, []);
   const name =
     profile.displayName ||
     user.displayName ||
@@ -329,6 +355,47 @@ function DashboardContent({ role, profile, user }) {
   useEffect(() => {
     if (role === "Teacher") router.replace("/teacher/dashboard");
   }, [role, router]);
+
+  // Perceived-speed only: fires the Training tab's data fetch the moment
+  // the dashboard itself finishes loading, not only once the user clicks
+  // into "Training" — loadTraining's own cache (lib/services/
+  // training-service.js) means TrainingManagement's later mount-time call
+  // reuses this same in-flight/completed request instead of firing twice.
+  // Skipped for Student (their "My Training" tab is MyPaymentSummary, a
+  // completely different component/endpoint — this fetch would be wasted)
+  // and Teacher (redirected away above, to their own workspace).
+  useEffect(() => {
+    if (role && role !== "Teacher" && role !== "Student") prefetchTraining();
+  }, [role]);
+  // Student's own equivalent of the prefetch above — see
+  // lib/student-data.js's prefetchMyTraining for why this needs a
+  // separate (listener-based) mechanism instead of reusing
+  // prefetchTraining's plain promise cache.
+  useEffect(() => {
+    if (role === "Student" && user?.uid) prefetchMyTraining(user.uid);
+  }, [role, user?.uid]);
+  // Perceived-speed only, for the remaining Admin/Director-only sidebar
+  // modules (Students, Teacher, Room Booking, User, Achievement, Model
+  // Test) — gated to the roles whose roleConfig.modules actually renders
+  // each of these components (see the role checks in the JSX below).
+  // Documents is separate: Student/Facilitator/Admin/Director all render
+  // DocumentsModule from their "Documents" tab (Director's own identical
+  // effect above covers Director).
+  useEffect(() => {
+    if (role === "Admin") {
+      prefetchStudentDirectory();
+      prefetchTeacherAssignments();
+      prefetchRoomBooking();
+      prefetchUsers();
+      prefetchAchievements();
+      prefetchManagerExams();
+      prefetchFinanceOverview();
+      prefetchInvoices();
+    }
+    if (role === "Student" || role === "Facilitator" || role === "Admin") {
+      prefetchDocuments();
+    }
+  }, [role]);
 
   useEffect(() => {
     if (role !== "Teacher" || !db || !user?.uid) return undefined;

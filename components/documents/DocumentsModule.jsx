@@ -22,9 +22,10 @@ const DOC_EXPORT_COLUMNS = [
 ];
 import {
   AUDIENCE_LABELS, createDocument, createFolder, deleteDocument, deleteFolder,
-  fetchDocumentBlobUrl, fileKind, formatDocDate, formatFileSize, loadDocuments,
+  fetchDocumentBlobUrl, fileKind, formatDocDate, formatFileSize, loadDocumentsCached,
   renameFolder, updateDocument,
 } from "../../lib/documents-data";
+import { SkeletonBar, SkeletonList } from "../ui/Skeleton";
 
 const MANAGER_AUDIENCES = ["all_students", "course", "class", "student", "teachers", "facilitators", "staff"];
 const TEACHER_AUDIENCES = ["course", "class"];
@@ -485,7 +486,7 @@ function LearnerView({ heading, subheading, documents, loading, error, search, o
       {error && <p className="rounded-xl bg-active p-4 text-sm text-primary">{error}</p>}
 
       {loading ? (
-        <p className="py-12 text-center text-sm text-muted">Loading your documents…</p>
+        <SkeletonList count={6} />
       ) : !documents.length ? (
         <div className="rounded-3xl border border-dashed border-border-subtle bg-card py-16 text-center">
           <FileText className="mx-auto h-8 w-8 text-subtle" aria-hidden="true" />
@@ -577,7 +578,7 @@ function ManagerView({ payload, loading, error, reload, canManagerControls, cour
     try {
       await fn();
       toast.success(successMessage);
-      await reload();
+      await reload({ force: true });
     } catch (mutateError) {
       toast.error(mutateError.message || "Something went wrong.");
     } finally {
@@ -655,10 +656,10 @@ function ManagerView({ payload, loading, error, reload, canManagerControls, cour
 
       {canManagerControls && (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Total Documents" value={loading ? "—" : counts.total} />
-          <StatCard label="Published" value={loading ? "—" : counts.published} />
-          <StatCard label="Draft" value={loading ? "—" : counts.draft} />
-          <StatCard label="Archived" value={loading ? "—" : counts.archived} />
+          <StatCard label="Total Documents" value={loading ? <SkeletonBar className="mt-1 h-7 w-10" /> : counts.total} />
+          <StatCard label="Published" value={loading ? <SkeletonBar className="mt-1 h-7 w-10" /> : counts.published} />
+          <StatCard label="Draft" value={loading ? <SkeletonBar className="mt-1 h-7 w-10" /> : counts.draft} />
+          <StatCard label="Archived" value={loading ? <SkeletonBar className="mt-1 h-7 w-10" /> : counts.archived} />
         </section>
       )}
 
@@ -721,7 +722,7 @@ function ManagerView({ payload, loading, error, reload, canManagerControls, cour
         </div>
 
         {loading ? (
-          <p className="py-12 text-center text-sm text-muted">Loading documents…</p>
+          <SkeletonList count={6} />
         ) : !filtered.length ? (
           <p className="py-12 text-center text-sm text-muted">
             {documents.length ? "No documents match your filters." : "No documents yet. Click “Upload Document” to add the first learning material."}
@@ -782,7 +783,7 @@ function ManagerView({ payload, loading, error, reload, canManagerControls, cour
             canManagerControls={canManagerControls}
             lockedCourseId={scoped && !formState.editing ? courseId : ""}
             onClose={() => setFormState(null)}
-            onSaved={async (message) => { setFormState(null); toast.success(message); await reload(); }}
+            onSaved={async (message) => { setFormState(null); toast.success(message); await reload({ force: true }); }}
           />
         </Modal>
       )}
@@ -822,8 +823,8 @@ export default function DocumentsModule({ role, courseId = "", courseName = "" }
   // Promise-chain (not async/await) so every setState lives in a
   // .then/.catch continuation, never synchronously in the effect body.
   const reload = useCallback(
-    () =>
-      loadDocuments()
+    ({ force = false } = {}) =>
+      loadDocumentsCached({ force })
         .then((result) => {
           if (mounted.current) {
             setPayload(result);

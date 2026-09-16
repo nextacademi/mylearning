@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { ErrorChartState } from "./ChartCard";
+import { SkeletonList } from "../../ui/Skeleton";
 
 const FILTERS = ["All", "Active", "Upcoming", "Completed"];
 
@@ -50,7 +51,7 @@ export default function TrainingPerformance({ courses, loading, error, onRetry, 
       </div>
 
       {loading ? (
-        <p className="py-10 text-center text-sm text-muted">Loading training performance...</p>
+        <SkeletonList count={6} />
       ) : error ? (
         <ErrorChartState message="Unable to load training performance" onRetry={onRetry} />
       ) : rows.length ? (

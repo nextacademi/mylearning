@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Inbox, Mail } from "lucide-react";
 import { subscribeInquiries, updateInquiryStatus } from "../../lib/contact-inquiries-data";
+import { SkeletonList } from "../ui/Skeleton";
 
 const dash = "—";
 const FILTERS = ["All", "New", "Read", "Replied", "Closed"];
@@ -168,7 +169,7 @@ export default function ContactInquiries() {
         </div>
 
         {loading ? (
-          <p className="py-10 text-center text-sm text-muted">Loading inquiries...</p>
+          <SkeletonList count={6} />
         ) : !visible.length ? (
           <div className="flex flex-col items-center gap-3 py-14 text-center">
             <Inbox className="h-10 w-10 text-subtle" aria-hidden="true" />

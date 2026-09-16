@@ -12,6 +12,27 @@ import {
 import SidebarIcon from "../dashboard/SidebarIcon";
 import { ChartCard, EmptyChartState } from "../dashboard/overview/ChartCard";
 import { useStudentDashboardData } from "../../lib/student-dashboard-data";
+import { SkeletonBar } from "../ui/Skeleton";
+
+// Perceived-speed only — matches the h-70 area the real chart fills once
+// data.loading resolves, so there's no layout jump when it swaps in.
+function ChartSkeleton() {
+  return <div className="h-70 w-full animate-pulse rounded-xl bg-page" />;
+}
+
+// Matches one real "Upcoming Schedule" / "Recent Activity" row (an
+// icon-in-square, two lines of text).
+function FeedRowSkeleton() {
+  return (
+    <div className="flex items-center gap-4 border-b border-border-subtle py-3 last:border-0">
+      <div className="h-11 w-11 shrink-0 animate-pulse rounded-xl bg-page" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <SkeletonBar className="h-3 w-2/3" />
+        <SkeletonBar className="h-2.5 w-1/2" />
+      </div>
+    </div>
+  );
+}
 
 const STATUS_COLORS = { present: "#22C55E", late: "#F59E0B", absent: "#FF2D2D" };
 
@@ -135,7 +156,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ChartCard title="Learning Progress" subtitle={d.learningProgressTrend.metric === "score" ? "Your average assessment score over the last 14 days" : "Your attendance rate over the last 14 days"} icon={TrendingUp}>
           {d.loading ? (
-            <EmptyChartState message="Loading your progress..." />
+            <ChartSkeleton />
           ) : hasProgressData ? (
             <div className="h-70 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -161,7 +182,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
 
         <ChartCard title="Weekly Learning Activity" subtitle="Classes attended this week" icon={Activity}>
           {d.loading ? (
-            <EmptyChartState message="Loading activity..." />
+            <ChartSkeleton />
           ) : hasWeeklyActivity ? (
             <div className="h-70 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -184,7 +205,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ChartCard title="Course Progress" subtitle="Your average score per enrolled training" icon={BookOpen}>
           {d.loading ? (
-            <EmptyChartState message="Loading courses..." />
+            <ChartSkeleton />
           ) : !d.courseProgress.length ? (
             <EmptyChartState message="No active courses." />
           ) : (
@@ -206,7 +227,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
 
         <ChartCard title="Attendance Overview" subtitle="Present, Late and Absent — real records" icon={CheckCircle2}>
           {d.loading ? (
-            <EmptyChartState message="Loading attendance..." />
+            <ChartSkeleton />
           ) : attendanceBreakdown.length ? (
             <div className="h-70 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -238,7 +259,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
               ["Not Started", d.courseStatusSummary.notStarted, "text-muted"],
             ].map(([label, value, tone]) => (
               <div key={label} className="rounded-xl bg-page p-3">
-                <p className={`text-xl font-extrabold ${tone}`}>{d.loading ? "—" : value}</p>
+                {d.loading ? <SkeletonBar className="mx-auto h-6 w-10" /> : <p className={`text-xl font-extrabold ${tone}`}>{value}</p>}
                 <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>
               </div>
             ))}
@@ -336,7 +357,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
             </button>
           </div>
           {d.loading ? (
-            <p className="py-8 text-center text-sm text-muted">Loading schedule...</p>
+            <div>{Array.from({ length: 3 }).map((_, i) => <FeedRowSkeleton key={i} />)}</div>
           ) : !d.upcomingEvents.length ? (
             <p className="py-8 text-center text-sm text-muted">No upcoming events.</p>
           ) : (
@@ -365,7 +386,7 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
         <section className="rounded-3xl border border-border-subtle/70 bg-card p-6 shadow-sm">
           <h2 className="mb-4 font-bold text-ink">Recent Activity</h2>
           {d.loading ? (
-            <p className="py-8 text-center text-sm text-muted">Loading activity...</p>
+            <div>{Array.from({ length: 3 }).map((_, i) => <FeedRowSkeleton key={i} />)}</div>
           ) : !d.recentActivity.length ? (
             <p className="py-8 text-center text-sm text-muted">No recent activity.</p>
           ) : (
