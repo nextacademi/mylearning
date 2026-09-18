@@ -32,7 +32,7 @@ export default function AuthPage({ mode = "login" }) {
   const [resetMode, setResetMode] = useState(false);
 
   useEffect(() => {
-    if (!auth.loading && auth.user?.emailVerified && auth.profile?.role) {
+    if (!auth.loading && auth.user && auth.profile?.role) {
       router.replace(`/dashboard/${auth.profile.role.toLowerCase()}`);
     }
   }, [auth.loading, auth.profile?.role, auth.user, router]);
@@ -47,15 +47,13 @@ export default function AuthPage({ mode = "login" }) {
         await auth.resetPassword(email);
         setNotice("Password reset email sent. Check your inbox.");
       } else if (mode === "register") {
-        // register() already sends the Firebase verification link email —
-        // the dedicated /verify-email page is where the user waits for it
-        // and confirms once they've clicked it (see requirements: a real
-        // route, not a popup/modal, and no 6-digit code anywhere).
+        // register() still sends the Firebase verification link email in
+        // the background (best-effort) — see /verify-email, which is still
+        // reachable to confirm the link later — but new accounts are no
+        // longer blocked from the dashboard while it's unverified.
         await auth.register(email, password, name);
-        router.push("/verify-email");
       } else {
-        const result = await auth.login(email, password);
-        if (result.requiresVerification) router.push("/verify-email");
+        await auth.login(email, password);
       }
     } catch {
       // Auth context provides the user-facing message.

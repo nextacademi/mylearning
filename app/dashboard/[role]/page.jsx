@@ -31,7 +31,6 @@ import MyPaymentSummary from "../../../components/students/MyPaymentSummary";
 import LoadingScreen from "../../../components/dashboard/LoadingScreen";
 import ChatWorkspace from "../../../components/chat/ChatWorkspace";
 import SettingsPage from "../../../components/settings/SettingsPage";
-import AccountPendingScreen from "../../../components/dashboard/AccountPendingScreen";
 import ContactInquiries from "../../../components/dashboard/ContactInquiries";
 import { useNewInquiryCount } from "../../../lib/contact-inquiries-data";
 import IdCardPrint from "../../../components/teacher/IdCardPrint";
@@ -720,41 +719,24 @@ export default function RoleDashboardPage() {
   const requestedRole = roleConfig[formattedRole] ? formattedRole : "Student";
   const profileRole = roleConfig[profile?.role] ? profile.role : null;
 
-  const requiresVerification = Boolean(
-    user?.providerData?.some(
-      (provider) => provider.providerId === "password",
-    ) && !user.emailVerified,
-  );
-
   const [splashDone, setSplashDone] = useState(false);
 
   useEffect(() => {
-    if (!loading && (!user || requiresVerification || !profileRole || requestedRole !== profileRole)) {
+    if (!loading && (!user || !profileRole || requestedRole !== profileRole)) {
       router.replace("/login");
     }
-  }, [loading, profileRole, requestedRole, requiresVerification, router, user]);
+  }, [loading, profileRole, requestedRole, router, user]);
 
   if (loading || !splashDone) {
     return <LoadingScreen ready={!loading} onFinished={() => setSplashDone(true)} />;
   }
 
-  if (!user || requiresVerification || !profileRole || requestedRole !== profileRole) {
+  if (!user || !profileRole || requestedRole !== profileRole) {
     return (
       <div className="grid min-h-screen place-items-center bg-page text-sm text-muted">
         Redirecting to login...
       </div>
     );
-  }
-
-  // Central approval gate — new self-registrations land as Guest+"active"
-  // (see createProfile in lib/auth-context.js) and are never blocked here.
-  // This only fires when a Director/Admin has explicitly set someone's
-  // status to "pending"/"rejected" by hand (any role, not just Student),
-  // so every tab DashboardContent renders is blocked in this one place
-  // rather than needing its own check.
-  const isBlockedUser = profile?.status === "pending" || profile?.status === "rejected";
-  if (isBlockedUser) {
-    return <AccountPendingScreen status={profile.status} onLogout={logout} />;
   }
 
   return (

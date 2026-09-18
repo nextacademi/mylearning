@@ -7,17 +7,12 @@ import { useRouter } from "next/navigation";
 export default function AuthGate({ children }) {
   const { user, profile, loading, firebaseConfigured } = useAuth();
   const router = useRouter();
-  const requiresVerification = Boolean(
-    user?.providerData?.some(
-      (provider) => provider.providerId === "password",
-    ) && !user.emailVerified,
-  );
 
   useEffect(() => {
-    if (firebaseConfigured && !loading && (!user || requiresVerification)) {
+    if (firebaseConfigured && !loading && !user) {
       router.replace("/login");
     }
-  }, [firebaseConfigured, loading, requiresVerification, router, user]);
+  }, [firebaseConfigured, loading, router, user]);
 
   if (loading)
     return (
@@ -26,7 +21,7 @@ export default function AuthGate({ children }) {
       </div>
     );
   if (!firebaseConfigured) return children;
-  if (!user || requiresVerification)
+  if (!user)
     return (
       <div className="grid min-h-screen place-items-center bg-[#f6f8f5] text-sm text-[#77817d]">
         Redirecting to login...

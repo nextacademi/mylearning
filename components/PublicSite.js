@@ -703,12 +703,7 @@ export default function PublicSite() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [events, setEvents] = useState([]);
   const [eventsLoaded, setEventsLoaded] = useState(false);
-  const verifiedUser =
-    user &&
-    (user.emailVerified ||
-      user.providerData?.some(
-        (provider) => provider.providerId !== "password",
-      ));
+  const verifiedUser = Boolean(user);
 
   function goToLearning() {
     router.push(

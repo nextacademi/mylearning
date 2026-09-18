@@ -134,12 +134,6 @@ export default function UserManagement({ role, currentUserId }) {
   async function updateRole(event) {
     event.preventDefault();
     if (!changing || !assignableRoles.includes(nextRole)) return;
-    if (!(await confirm({
-      title: "Change user role",
-      message: `Change ${changing.displayName || changing.email || changing.uid} to ${nextRole}?`,
-      tone: "neutral",
-      confirmLabel: "Change role",
-    }))) return;
     setSaving(true);
     try {
       await changeUserRole(changing.uid, nextRole);
