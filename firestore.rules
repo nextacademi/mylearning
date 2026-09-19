@@ -20,7 +20,7 @@ service cloud.firestore {
       // SDK, never by a client write: a self-registering client may not
       // set it on create, and nobody (not even the account owner) may
       // change it afterward, same as `uid`/`role`.
-      allow create: if admin() || (signedIn() && request.auth.uid == userId && request.resource.data.uid == userId && request.resource.data.role == 'Guest' && !('userId' in request.resource.data) && (!('status' in request.resource.data) || request.resource.data.status == 'active'));
+      allow create: if admin() || (signedIn() && request.auth.uid == userId && request.resource.data.uid == userId && request.resource.data.role == 'Student' && !('userId' in request.resource.data) && (!('status' in request.resource.data) || request.resource.data.status == 'active'));
       allow read: if signedIn() && (request.auth.uid == userId || admin() || (resource.data.role == 'Student' && resource.data.teacherIds.hasAny([request.auth.uid])));
       allow update: if admin() || (signedIn() && request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid', 'role', 'teacherIds', 'active', 'qrVersion', 'status', 'userId']));
       allow delete: if admin();
