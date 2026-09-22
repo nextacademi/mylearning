@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../../lib/auth-context";
+import { markAllNotificationsRead, useUnreadNotificationsByType } from "../../lib/notification-data";
 import { loadFinanceOverviewCached } from "../../lib/services/finance-service";
 import AdmissionsManagement from "./AdmissionsManagement";
 import InvoicesTab from "./InvoicesTab";
@@ -25,10 +27,18 @@ import AppointmentScheduler from "../appointments/AppointmentScheduler";
 const tabs = ["Dashboard", "Invoices", "Income", "Income / Payments", "Outstanding Due", "Expenses", "Assets", "Transactions", "Profit & Loss", "Appointments", "Reports"];
 
 export default function FinanceManagement() {
+  const { user } = useAuth();
   const [tab, setTab] = useState("Dashboard");
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const newAppointments = useUnreadNotificationsByType(user?.uid, "appointment");
+
+  // Opening the tab is the "I've seen it" signal — same idea as Contact
+  // Inquiries' unread badge clearing once the list is opened.
+  useEffect(() => {
+    if (tab === "Appointments" && newAppointments.length) markAllNotificationsRead(newAppointments);
+  }, [tab, newAppointments]);
 
   const load = useCallback((force = false) => {
     setLoading(true);
@@ -65,9 +75,14 @@ export default function FinanceManagement() {
             key={item}
             type="button"
             onClick={() => setTab(item)}
-            className={`shrink-0 rounded-xl px-4 py-2 text-xs font-bold ${tab === item ? "bg-primary text-white" : "text-muted hover:bg-active"}`}
+            className={`relative shrink-0 rounded-xl px-4 py-2 text-xs font-bold ${tab === item ? "bg-primary text-white" : "text-muted hover:bg-active"}`}
           >
             {item}
+            {item === "Appointments" && newAppointments.length > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold text-white">
+                {newAppointments.length}
+              </span>
+            )}
           </button>
         ))}
       </nav>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, BellRing, CircleDollarSign, MessageCircle, UserCheck, CheckCheck, UserX } from "lucide-react";
+import { Bell, BellRing, CalendarClock, CircleDollarSign, MessageCircle, UserCheck, CheckCheck, UserX } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import { subscribeMyNotifications, markAllNotificationsRead, markNotificationRead } from "../../lib/notification-data";
 
@@ -10,6 +10,7 @@ const typeIcon = {
   payment: { Icon: CircleDollarSign, bg: "bg-success-soft", color: "text-success" },
   enrollment: { Icon: UserCheck, bg: "bg-purple-soft", color: "text-purple" },
   attendance: { Icon: CheckCheck, bg: "bg-warning-soft", color: "text-warning" },
+  appointment: { Icon: CalendarClock, bg: "bg-info-soft", color: "text-info" },
   "account.approved": { Icon: UserCheck, bg: "bg-success-soft", color: "text-success" },
   "account.rejected": { Icon: UserX, bg: "bg-active", color: "text-primary" },
 };
