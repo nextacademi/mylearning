@@ -1,6 +1,13 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { Space_Grotesk } from "next/font/google";
+
+// Same config as PublicSite.js's displayFont — Next.js dedupes identical
+// next/font/google configs at build time, so this doesn't load the font
+// twice; it just lets this component style its wordmark without importing
+// the whole page file.
+const displayFont = Space_Grotesk({ subsets: ["latin"], weight: ["700"] });
 
 // Replaces the earlier particle-sphere hero graphic with the site's own
 // visual: a handful of large, blurred, brand-red blobs drifting and
@@ -60,6 +67,28 @@ export default function HeroGradientMesh({ className = "" }) {
         className="absolute inset-0 rounded-full"
         style={{ background: "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06), transparent 60%)" }}
       />
+
+      {/* News-lower-third-style wordmark reveal: hidden most of the loop,
+          slides in from the right on a red accent bar, holds, slides back
+          out. This is the one moment the mesh actually says the brand
+          name, instead of staying purely abstract. */}
+      {!reduceMotion && (
+        <motion.div
+          className="absolute inset-x-0 bottom-[8%] flex justify-center"
+          initial={{ opacity: 0, x: 28 }}
+          animate={{ opacity: [0, 0, 1, 1, 0], x: [28, 28, 0, 0, 28] }}
+          transition={{ duration: 8, times: [0, 0.5, 0.6, 0.85, 0.95], repeat: Infinity, ease: "easeOut" }}
+        >
+          <div
+            className="flex items-center gap-2.5 rounded-md border-l-4 px-3 py-1.5 backdrop-blur-sm"
+            style={{ borderColor: "#F04438", background: "rgba(11,13,16,0.55)" }}
+          >
+            <span className={`${displayFont.className} text-sm font-bold uppercase tracking-[.14em] text-white md:text-base`}>
+              Next <span style={{ color: "#F04438" }}>Academy</span>
+            </span>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

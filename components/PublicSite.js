@@ -920,14 +920,14 @@ export default function PublicSite() {
               </div>
             </div>
 
-            {/* Decorative only — hidden on mobile so the hero stays lean
-                  and text-first on small screens; shows from md: up where
-                  there's actually room for it to breathe. The section-level
-                  glow above already lights this area, so this is just a
-                  tight highlight right behind the gradient mesh itself. */}
-            <div className="relative hidden justify-center md:flex md:justify-end">
+            {/* Decorative — shown on every screen size (was md:-only) so
+                  it's never just blank space on mobile; sized down there
+                  via max-w so it still stays out of the text's way. The
+                  section-level glow above already lights this area, so
+                  this is just a tight highlight right behind the mesh. */}
+            <div className="relative mt-6 flex justify-center md:mt-0 md:justify-end">
               <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[#ff2d2d]/15 blur-[100px]" />
-              <HeroGradientMesh className="aspect-square w-full max-w-[480px] lg:max-w-[600px]" />
+              <HeroGradientMesh className="aspect-square w-full max-w-[300px] md:max-w-[480px] lg:max-w-[600px]" />
             </div>
           </div>
 
