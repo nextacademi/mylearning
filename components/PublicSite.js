@@ -131,12 +131,6 @@ const galleryItems = [
     category: "Community",
     title: "Group Activities",
   },
-  { src: "/tranning195.jpeg", category: "Community", title: "Team Building" },
-  {
-    src: "/WhatsApp Image 2026-09-09 at 11.15.10 PM.jpeg",
-    category: "Highlights",
-    title: "Recent Moments",
-  },
 ];
 
 // "Our Team" section data — edit names/roles/photo/socials here only, the
@@ -1171,7 +1165,7 @@ export default function PublicSite() {
       </section>
 
       {/* GALLERY */}
-      <section className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
+      <section className="mx-auto max-w-7xl px-5 py-3 md:px-10 md:py-4">
         <Reveal className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <Eyebrow>Activities / gallery</Eyebrow>
