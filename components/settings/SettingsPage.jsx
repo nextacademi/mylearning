@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
-import { Award, Camera, Check, Contact, Download, Moon, Sun, X } from "lucide-react";
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import { Award, Camera, Check, Contact, Download, KeyRound, Moon, Sun, X } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import { useTheme } from "../../lib/theme-context";
+import { auth } from "../../lib/firebase";
 import {
   deleteMyAccount,
   subscribeMyCertificates,
@@ -261,6 +263,61 @@ export default function SettingsPage() {
     } catch (err) {
       setDeleteError(err.message || "Unable to delete your account.");
       setDeleting(false);
+    }
+  }
+
+  // ---- Change password (email/password accounts only — Google/Facebook
+  // sign-in has no password to change here) ----
+  const hasPasswordProvider = user?.providerData?.some((p) => p.providerId === "password");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+
+  function closePasswordModal() {
+    setChangingPassword(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError("");
+  }
+
+  async function handleChangePassword(event) {
+    event.preventDefault();
+    if (passwordSaving) return;
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password and confirmation don't match.");
+      return;
+    }
+    setPasswordSaving(true);
+    setPasswordError("");
+    try {
+      // Firebase requires a recent login before updatePassword — re-verify
+      // with the current password first rather than asking the user to
+      // sign out and back in.
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
+      await updatePassword(user, newPassword);
+      closePasswordModal();
+      setToast("🔑 Password updated");
+      setTimeout(() => setToast(""), 2500);
+    } catch (err) {
+      const message =
+        err.code === "auth/wrong-password" || err.code === "auth/invalid-credential"
+          ? "Current password is incorrect."
+          : err.code === "auth/weak-password"
+            ? "New password is too weak."
+            : err.code === "auth/too-many-requests"
+              ? "Too many attempts. Please try again later."
+              : err.message || "Unable to change your password.";
+      setPasswordError(message);
+    } finally {
+      setPasswordSaving(false);
     }
   }
 
@@ -703,6 +760,20 @@ export default function SettingsPage() {
                   )}
                   {isBlocked && <p className="mt-1.5 text-[10px] text-muted">Account is not active yet.</p>}
                 </div>
+                {hasPasswordProvider ? (
+                  <button
+                    type="button"
+                    onClick={() => setChangingPassword(true)}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border-subtle py-2.5 text-xs font-bold text-ink transition-colors hover:bg-page"
+                  >
+                    <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
+                    Change password
+                  </button>
+                ) : (
+                  <p className="rounded-xl bg-page p-2.5 text-[10px] text-muted">
+                    You signed in with Google/Facebook — there&apos;s no password to change here.
+                  </p>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -745,6 +816,85 @@ export default function SettingsPage() {
                     {deleting ? "Deleting..." : "Yes, delete my account"}
                   </button>
                 </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {changingPassword && (
+            <motion.div
+              className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              variants={modalBackdrop}
+              onClick={(event) => {
+                if (event.target === event.currentTarget) closePasswordModal();
+              }}
+            >
+              <motion.div variants={modalPanel} className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-2xl">
+                <div className="flex items-center justify-between">
+                  <b className="text-sm text-ink">Change password</b>
+                  <button type="button" onClick={closePasswordModal} className="rounded-lg p-1 text-muted hover:bg-page hover:text-ink" aria-label="Close">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <form onSubmit={handleChangePassword} className="mt-3 space-y-3">
+                  <label className="grid gap-1 text-xs font-bold text-muted">
+                    Current password
+                    <input
+                      type="password"
+                      required
+                      autoComplete="current-password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className={FIELD_CLASS}
+                    />
+                  </label>
+                  <label className="grid gap-1 text-xs font-bold text-muted">
+                    New password
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 6 characters"
+                      className={FIELD_CLASS}
+                    />
+                  </label>
+                  <label className="grid gap-1 text-xs font-bold text-muted">
+                    Confirm new password
+                    <input
+                      type="password"
+                      required
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className={FIELD_CLASS}
+                    />
+                  </label>
+                  {passwordError && <p className="rounded-xl bg-active p-2.5 text-xs font-semibold text-primary">{passwordError}</p>}
+                  <div className="mt-1 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={closePasswordModal}
+                      disabled={passwordSaving}
+                      className="rounded-xl px-4 py-2.5 text-xs font-bold text-muted disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={passwordSaving}
+                      className="rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60"
+                    >
+                      {passwordSaving ? "Updating..." : "Update password"}
+                    </button>
+                  </div>
+                </form>
               </motion.div>
             </motion.div>
           )}
