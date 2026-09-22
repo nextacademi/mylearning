@@ -1233,13 +1233,6 @@ export default function PublicSite() {
               partner with us — our team will get back to you.
             </p>
 
-            <div className="mt-3 space-y-2 text-sm text-[#374151]">
-              <p className="flex items-center gap-2">
-                <span className="text-[#E53935]">✉</span>
-                nextacademi@gmail.com
-              </p>
-            </div>
-
             <div className="mt-5">
               <AppointmentBookingWidget />
             </div>
