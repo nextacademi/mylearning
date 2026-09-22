@@ -296,6 +296,26 @@ function Eyebrow({ children, className = "", light = false, tone = "red" }) {
   );
 }
 
+// A slow gradient sweep across the brand name only — the hero's one
+// deliberate "highlight" beat, timed to loosely match HeroGradientMesh's
+// pulsing core so the two read as one moment rather than two separate
+// animations running side by side.
+function BrandShimmer({ children }) {
+  return (
+    <motion.span
+      className="bg-clip-text text-transparent"
+      style={{
+        backgroundImage: "linear-gradient(90deg, #F04438 0%, #FFE4E1 50%, #F04438 100%)",
+        backgroundSize: "220% 100%",
+      }}
+      animate={{ backgroundPosition: ["0% 50%", "220% 50%"] }}
+      transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
+    >
+      {children}
+    </motion.span>
+  );
+}
+
 // Scroll-in-view reveal — fade + rise-and-settle from a slight scale-down,
 // staggered in groups of 4 by 90ms. This is this site's own recipe (not
 // borrowed from any reference site): the extra scale on top of fade+y is
@@ -867,7 +887,7 @@ export default function PublicSite() {
           <div className="grid items-start gap-8 md:grid-cols-[1.15fr_1fr] md:gap-10">
             <div>
               <Eyebrow light tone="amber" className="text-xs">
-                Next Academy · Learning Platform
+                <BrandShimmer>Next Academy</BrandShimmer> · Learning Platform
               </Eyebrow>
 
               <h1 className={`${displayFont.className} mt-4 max-w-xl text-5xl font-black leading-[1.03] tracking-[-.03em] text-white md:text-6xl lg:text-7xl`}>
