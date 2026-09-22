@@ -375,10 +375,10 @@ function Eyebrow({ children, className = "", light = false, tone = "red" }) {
   );
 }
 
-// A slow gradient sweep across the brand name only — the hero's one
-// deliberate "highlight" beat, timed to loosely match HeroGradientMesh's
-// pulsing core so the two read as one moment rather than two separate
-// animations running side by side.
+// A quick gradient sweep across the brand name only — the hero's one
+// deliberate "highlight" beat, timed to match HeroGradientMesh's pulsing
+// core so the two read as one moment rather than two separate animations
+// running side by side.
 function BrandShimmer({ children }) {
   return (
     <motion.span
@@ -388,7 +388,7 @@ function BrandShimmer({ children }) {
         backgroundSize: "220% 100%",
       }}
       animate={{ backgroundPosition: ["0% 50%", "220% 50%"] }}
-      transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
+      transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }}
     >
       {children}
     </motion.span>
@@ -1006,7 +1006,7 @@ export default function PublicSite() {
                   this is just a tight highlight right behind the mesh. */}
             <div className="relative mt-6 flex justify-center md:mt-0 md:justify-end">
               <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[#ff2d2d]/15 blur-[100px]" />
-              <HeroGradientMesh className="aspect-square w-full max-w-[300px] md:max-w-[480px] lg:max-w-[600px]" />
+              <HeroGradientMesh className="aspect-square w-full max-w-[220px] md:max-w-[340px] lg:max-w-[420px]" />
             </div>
           </div>
 
