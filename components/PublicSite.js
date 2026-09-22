@@ -10,6 +10,7 @@ import { submitContactInquiry } from "../lib/contact-inquiries-data";
 import { subscribePublishedEvents } from "../lib/public-events-data";
 import { computeEventStatus, isRegistrationOpen } from "../lib/events-shared";
 import TestimonialCarousel from "./public/TestimonialCarousel";
+import AppointmentBookingWidget from "./public/AppointmentBookingWidget";
 import PhotoGallery from "./public/PhotoGallery";
 import VideoLibrarySection from "./public/VideoLibrarySection";
 import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
@@ -1242,6 +1243,10 @@ export default function PublicSite() {
                 <span className="text-[#E53935]">📍</span>
                 Singapore
               </p>
+            </div>
+
+            <div className="mt-5">
+              <AppointmentBookingWidget />
             </div>
           </Reveal>
 
