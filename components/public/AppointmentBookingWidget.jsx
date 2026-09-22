@@ -256,79 +256,26 @@ function BookingCard({ onBooked }) {
   );
 }
 
-// Public entry point — a compact CTA button that opens the booking card in
-// a Framer-Motion modal, instead of the card sitting inline (which pushed
-// the rest of the Contact section down). Closes on the X, backdrop click,
-// Escape, or automatically a moment after a successful booking.
+// Public entry point — the calendar + open slots sit directly in the page
+// (no click needed to reveal them), inside one bordered card matching the
+// site's red/white branding — same idea as the reference mockup's inline
+// "Book a Appointment" card.
 export default function AppointmentBookingWidget() {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    function onKeyDown(event) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open]);
-
-  function handleBooked() {
-    setTimeout(() => setOpen(false), 1800);
-  }
-
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-bold transition hover:shadow-md"
-        style={{ borderColor: RED, color: RED, background: "#FFF5F5" }}
-      >
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.3, ease: EASE }}
+      className="max-w-xl rounded-2xl border bg-white p-4 shadow-sm md:p-5"
+      style={{ borderColor: "#F3AAAA" }}
+    >
+      <p className="flex items-center gap-2 text-sm font-bold text-[#111827]">
         <span aria-hidden="true">📅</span> Book an Appointment
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={() => setOpen(false)}
-          >
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-label="Book an appointment"
-              className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl"
-              initial={{ opacity: 0, scale: 0.95, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.97, y: 8 }}
-              transition={{ duration: 0.25, ease: EASE }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-bold text-[#111827]">Book an Appointment</p>
-                  <p className="mt-0.5 text-[11px] text-[#6B7280]">Talk to us before you enroll — pick a free slot.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  aria-label="Close"
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[#9CA3AF] transition hover:bg-[#F3F4F6] hover:text-[#111827]"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="mt-3">
-                <BookingCard onBooked={handleBooked} />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+      </p>
+      <div className="mt-3">
+        <BookingCard />
+      </div>
+    </motion.div>
   );
 }

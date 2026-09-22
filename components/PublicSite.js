@@ -1228,11 +1228,6 @@ export default function PublicSite() {
               Have a question? Send us a message.
             </h2>
 
-            <p className="mt-3 max-w-md text-sm leading-6 text-[#6B7280]">
-              Whether you&apos;re exploring a program, need support, or want to
-              partner with us — our team will get back to you.
-            </p>
-
             <div className="mt-5">
               <AppointmentBookingWidget />
             </div>
