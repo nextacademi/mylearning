@@ -1241,7 +1241,7 @@ export default function PublicSite() {
 
       {/* FOOTER — dark per the reference theme */}
       <footer className="border-t border-white/10 bg-[#0B0D10] text-white">
-        <div className="mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[1.4fr_1fr_1fr] md:gap-6 md:px-10 md:py-8">
+        <div className="mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-6 md:px-10 md:py-8">
           <div>
             <Brand light />
             <p className="mt-3 max-w-xs text-sm leading-6 text-white/50">
@@ -1296,14 +1296,13 @@ export default function PublicSite() {
               </span>
             </div>
           </div>
-        </div>
-        <div className="border-t border-white/10 px-5 py-4 md:px-10">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 text-[11px] text-white/40 sm:flex-row">
-            <span>© 2026 Next Academy. Learning for what comes next.</span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#F04438]" />{" "}
-              Singapore
-            </span>
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
+              Next Academy
+            </p>
+            <p className="mt-4 max-w-xs text-sm leading-6 text-white/50">
+              © 2026 Next Academy. Learning for what comes next.
+            </p>
           </div>
         </div>
       </footer>
