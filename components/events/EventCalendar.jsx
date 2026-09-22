@@ -1,21 +1,26 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import CalendarSubscribeButton from "./CalendarSubscribeButton";
 
-// Category/status chips reuse the app's existing semantic color tokens
-// (success/info/purple/warning/primary) — already saturated enough to read
-// as clear, colorful badges on the calendar's dark card surface below.
-const typeTones = {
-  Workshop: "bg-info-soft text-info", Orientation: "bg-purple-soft text-purple",
-  "Team Building": "bg-success-soft text-success", "CSR Activity": "bg-teal-soft text-teal",
-  Seminar: "bg-active text-primary", Meeting: "bg-page text-ink",
-  Training: "bg-warning-soft text-warning", Other: "bg-page text-muted",
+// Same 3-way grouping EventManagement.jsx's own List view already uses
+// (see listCategory() there) — kept in sync manually since there's no
+// shared module for it yet; "Training" maps to that event type,
+// "Internal" covers the one staff-only type (Meeting), everything else
+// reads as a general "Event". Reuses the app's existing semantic color
+// tokens so this calendar's categories look identical everywhere else
+// they're shown (List view pills, filters, etc).
+const CATEGORY_TONE = {
+  Event: { badge: "bg-info-soft text-info", bar: "bg-info" },
+  Training: { badge: "bg-success-soft text-success", bar: "bg-success" },
+  Internal: { badge: "bg-purple-soft text-purple", bar: "bg-purple" },
 };
-const statusTones = {
-  Upcoming: "bg-info-soft text-info", Ongoing: "bg-success-soft text-success",
-  Completed: "bg-page text-subtle", Cancelled: "bg-active text-primary", Draft: "bg-warning-soft text-warning",
-};
+function listCategory(event) {
+  if (event.type === "Training") return "Training";
+  if (event.type === "Meeting") return "Internal";
+  return "Event";
+}
 
 const iso = (date) => date.toISOString().slice(0, 10);
 const startOfWeek = (date) => { const d = new Date(date); d.setDate(d.getDate() - d.getDay()); return d; };
@@ -30,35 +35,24 @@ function eventsByDate(events) {
   return map;
 }
 
-// Structural (non-accent) classes for the calendar's own dark-navy surface —
-// this is a self-contained skin scoped to just this component (the rest of
-// the Event Organization page — stats/charts/table/tabs — is untouched and
-// stays on the app's normal light theme). Category/status chip colors above
-// are unchanged; only the grid/card/border/text structure below is new.
-const tone = {
-  card: "bg-[#151922]",
-  cardHover: "hover:bg-[#1c212c]",
-  cell: "bg-[#171b24]",
-  border: "border-white/[0.06]",
-  ink: "text-white",
-  muted: "text-slate-300",
-  subtle: "text-slate-400",
-  outOfMonth: "opacity-35",
-  todayCell: "bg-[#1b2130] border-white/10",
-  todayBadge: "bg-red-500 text-white",
-  navBtn: "bg-[#1c212c] text-slate-300 hover:bg-[#252b38] hover:text-white",
-  viewBtnActive: "bg-emerald-500 text-[#06170f]",
-  viewBtnInactive: "bg-[#1c212c] text-slate-400 hover:text-white",
-  emptyText: "text-slate-400",
-};
+function CategoryLegend() {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {Object.entries(CATEGORY_TONE).map(([name, tone]) => (
+        <span key={name} className={`rounded-full px-3 py-1 text-[11px] font-bold ${tone.badge}`}>{name}</span>
+      ))}
+    </div>
+  );
+}
 
 function EventChip({ event, onSelect }) {
+  const tone = CATEGORY_TONE[listCategory(event)];
   return (
     <button
       type="button"
       onClick={() => onSelect(event)}
       title={event.name}
-      className={`block w-full truncate rounded-md px-1 py-0.5 text-left text-[9px] font-bold leading-tight sm:text-[10px] ${typeTones[event.type] || "bg-white/10 text-white"}`}
+      className={`block w-full truncate rounded-md px-1 py-0.5 text-left text-[9px] font-bold leading-tight sm:text-[10px] ${tone.badge}`}
     >
       {event.startTime ? `${event.startTime} ` : ""}{event.name}
     </button>
@@ -81,7 +75,7 @@ function MonthView({ cursor, byDate, onSelect }) {
     <div>
       <div className="grid grid-cols-7 gap-1">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div key={day} className="p-0.5 text-center text-[9px] font-bold uppercase tracking-wider text-slate-400 sm:text-[10px]">{day}</div>
+          <div key={day} className="p-0.5 text-center text-[9px] font-bold uppercase tracking-wider text-subtle sm:text-[10px]">{day}</div>
         ))}
       </div>
       <div className="mt-1 grid grid-cols-7 gap-1 [grid-auto-rows:56px] sm:[grid-auto-rows:70px]">
@@ -93,16 +87,16 @@ function MonthView({ cursor, byDate, onSelect }) {
           return (
             <div
               key={key}
-              className={`space-y-0.5 overflow-hidden rounded-lg border p-1 sm:rounded-xl ${isToday ? tone.todayCell : `${tone.cell} ${tone.border}`} ${inMonth ? "" : tone.outOfMonth}`}
+              className={`space-y-0.5 overflow-hidden rounded-lg border p-1 sm:rounded-xl ${isToday ? "border-primary bg-active/40" : "border-border-subtle bg-card"} ${inMonth ? "" : "opacity-40"}`}
             >
               {isToday ? (
-                <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold sm:h-5 sm:w-5 sm:text-xs ${tone.todayBadge}`}>{date.getDate()}</span>
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white sm:h-5 sm:w-5 sm:text-xs">{date.getDate()}</span>
               ) : (
-                <p className={`text-[10px] font-bold sm:text-xs ${inMonth ? tone.muted : tone.subtle}`}>{date.getDate()}</p>
+                <p className={`text-[10px] font-bold sm:text-xs ${inMonth ? "text-ink" : "text-subtle"}`}>{date.getDate()}</p>
               )}
               <div className="space-y-0.5">
                 {dayEvents.slice(0, 2).map((event) => <EventChip key={event.id} event={event} onSelect={onSelect} />)}
-                {dayEvents.length > 2 && <p className="text-[8px] font-bold text-slate-400 sm:text-[9px]">+{dayEvents.length - 2} more</p>}
+                {dayEvents.length > 2 && <p className="text-[8px] font-bold text-subtle sm:text-[9px]">+{dayEvents.length - 2} more</p>}
               </div>
             </div>
           );
@@ -121,10 +115,10 @@ function WeekView({ cursor, byDate, onSelect }) {
         const key = iso(date);
         const dayEvents = (byDate.get(key) || []).sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
         return (
-          <div key={key} className={`rounded-xl border ${tone.border} ${tone.cell} p-2.5`}>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{date.toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}</p>
+          <div key={key} className="rounded-xl border border-border-subtle bg-card p-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{date.toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}</p>
             <div className="mt-2 space-y-1">
-              {dayEvents.length ? dayEvents.map((event) => <EventChip key={event.id} event={event} onSelect={onSelect} />) : <p className="text-[10px] text-slate-500">No events</p>}
+              {dayEvents.length ? dayEvents.map((event) => <EventChip key={event.id} event={event} onSelect={onSelect} />) : <p className="text-[10px] text-subtle">No events</p>}
             </div>
           </div>
         );
@@ -136,77 +130,153 @@ function WeekView({ cursor, byDate, onSelect }) {
 function DayView({ cursor, byDate, onSelect }) {
   const dayEvents = (byDate.get(iso(cursor)) || []).sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
   return (
-    <div className={`space-y-2 rounded-xl border ${tone.border} ${tone.cell} p-4`}>
-      <p className="text-sm font-bold text-white">{cursor.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+    <div className="space-y-2 rounded-xl border border-border-subtle bg-card p-4">
+      <p className="text-sm font-bold text-ink">{cursor.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
       {dayEvents.length ? (
         <div className="space-y-2">
-          {dayEvents.map((event) => (
-            <button key={event.id} type="button" onClick={() => onSelect(event)} className={`flex w-full items-center justify-between rounded-xl ${tone.card} p-3 text-left text-xs ${tone.cardHover}`}>
-              <span><b className="block text-white">{event.name}</b><span className="text-slate-400">{event.startTime}–{event.endTime} · {event.location || "No location set"}</span></span>
-              <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${typeTones[event.type] || "bg-white/10 text-white"}`}>{event.type}</span>
-            </button>
-          ))}
+          {dayEvents.map((event) => {
+            const tone = CATEGORY_TONE[listCategory(event)];
+            return (
+              <button key={event.id} type="button" onClick={() => onSelect(event)} className="flex w-full items-center justify-between rounded-xl border border-border-subtle bg-page p-3 text-left text-xs hover:bg-active/40">
+                <span><b className="block text-ink">{event.name}</b><span className="text-subtle">{event.startTime}–{event.endTime} · {event.location || "No location set"}</span></span>
+                <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${tone.badge}`}>{listCategory(event)}</span>
+              </button>
+            );
+          })}
         </div>
       ) : (
-        <p className={`py-6 text-center text-sm ${tone.emptyText}`}>No events on this day.</p>
+        <p className="py-6 text-center text-sm text-subtle">No events on this day.</p>
       )}
     </div>
   );
 }
 
-// Flat, chronological list of every event in view — the "at minimum, Month
-// and List must work" requirement. Not date-scoped to the cursor like the
-// other three views (a list is most useful showing everything at once).
-function ListView({ events, onSelect }) {
-  const sorted = useMemo(
-    () => [...events].sort((a, b) => (a.eventDate || "").localeCompare(b.eventDate || "") || (a.startTime || "").localeCompare(b.startTime || "")),
-    [events],
-  );
-  if (!sorted.length) return <p className={`py-10 text-center text-sm ${tone.emptyText}`}>No events to show.</p>;
+function formatTime12(value) {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) return "";
+  const [h, m] = value.split(":").map(Number);
+  const period = h >= 12 ? "pm" : "am";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+}
+const monthLabelFull = (key) => { const [y, m] = key.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" }); };
+
+// Chronological, month-grouped, Upcoming/Past + category-filterable list —
+// the one shared implementation for every "list of events" surface in the
+// app (this calendar's own List mode, and EventManagement's dedicated
+// List tab both render this), so they can never visually drift apart.
+export function EventListView({ events, onSelect }) {
+  const [category, setCategory] = useState("All");
+  const [when, setWhen] = useState("Upcoming");
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const grouped = useMemo(() => {
+    const filtered = events.filter((event) => {
+      if (!event.eventDate) return false;
+      if (category !== "All" && listCategory(event) !== category) return false;
+      return when === "Upcoming" ? event.eventDate >= todayIso : event.eventDate < todayIso;
+    });
+    filtered.sort((a, b) =>
+      when === "Upcoming"
+        ? a.eventDate.localeCompare(b.eventDate) || (a.startTime || "").localeCompare(b.startTime || "")
+        : b.eventDate.localeCompare(a.eventDate) || (b.startTime || "").localeCompare(a.startTime || ""),
+    );
+    const byMonth = new Map();
+    filtered.forEach((event) => {
+      const key = event.eventDate.slice(0, 7);
+      if (!byMonth.has(key)) byMonth.set(key, []);
+      byMonth.get(key).push(event);
+    });
+    return [...byMonth.entries()];
+  }, [events, category, when, todayIso]);
+
   return (
-    <div className={`overflow-hidden rounded-xl border ${tone.border} ${tone.cell}`}>
-      {sorted.map((event) => (
-        <button
-          key={event.id}
-          type="button"
-          onClick={() => onSelect(event)}
-          className={`flex w-full flex-wrap items-center justify-between gap-3 border-b ${tone.border} p-3.5 text-left last:border-0 ${tone.cardHover}`}
-        >
-          <span className="min-w-0">
-            <span className="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              <CalendarDays className="h-3 w-3" />
-              {new Date(`${event.eventDate}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-              {event.startTime && (
-                <>
-                  <Clock className="ml-1.5 h-3 w-3" />
-                  {event.startTime}{event.endTime ? `–${event.endTime}` : ""}
-                </>
-              )}
-            </span>
-            <b className="block truncate text-white">{event.name}</b>
-            {event.location && (
-              <span className="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
-                <MapPin className="h-3 w-3 shrink-0" />
-                {event.location}
-              </span>
-            )}
-          </span>
-          <span className="flex shrink-0 flex-wrap items-center gap-1.5">
-            <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${typeTones[event.type] || "bg-white/10 text-white"}`}>{event.type}</span>
-            {event.computedStatus && <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${statusTones[event.computedStatus] || "bg-white/10 text-white"}`}>{event.computedStatus}</span>}
-          </span>
-        </button>
-      ))}
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {["All", "Event", "Training", "Internal"].map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setCategory(item)}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                category === item ? "bg-primary text-white" : `${CATEGORY_TONE[item]?.badge || "bg-page text-muted"} hover:opacity-80`
+              }`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            {["Upcoming", "Past"].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setWhen(item)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                  when === item ? "bg-active text-primary" : "border border-border-subtle bg-card text-muted hover:bg-page"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <CalendarSubscribeButton />
+        </div>
+      </div>
+
+      {!grouped.length ? (
+        <p className="py-10 text-center text-sm text-muted">
+          No {when.toLowerCase()} events{category !== "All" ? ` in ${category}` : ""}.
+        </p>
+      ) : (
+        <div className="space-y-6">
+          {grouped.map(([monthKey, monthEvents]) => (
+            <div key={monthKey}>
+              <p className="mb-2 text-sm font-bold text-ink">{monthLabelFull(monthKey)}</p>
+              <div className="space-y-3">
+                {monthEvents.map((event) => {
+                  const cat = listCategory(event);
+                  const tone = CATEGORY_TONE[cat];
+                  const date = new Date(`${event.eventDate}T00:00:00`);
+                  return (
+                    <button
+                      key={event.id}
+                      type="button"
+                      onClick={() => onSelect(event)}
+                      className="flex w-full items-stretch gap-4 overflow-hidden rounded-2xl border border-border-subtle bg-card p-4 text-left shadow-sm transition hover:shadow-md"
+                    >
+                      <span className={`w-1 shrink-0 rounded-full ${tone.bar}`} />
+                      <span className="w-12 shrink-0 text-center">
+                        <span className="block text-xl font-bold text-ink">{date.getDate()}</span>
+                        <span className="block text-[10px] font-bold uppercase tracking-wide text-subtle">
+                          {date.toLocaleDateString(undefined, { weekday: "short" })}
+                        </span>
+                      </span>
+                      <span className="min-w-0 flex-1 self-center">
+                        <span className="block truncate text-sm font-bold text-ink">{event.name}</span>
+                        <span className="block truncate text-xs text-muted">
+                          {formatTime12(event.startTime)}{event.location ? ` · ${event.location}` : ""}
+                        </span>
+                      </span>
+                      <span className={`shrink-0 self-center rounded-full px-2.5 py-1 text-[10px] font-bold ${tone.badge}`}>{cat}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // Reusable Month / Week / Day / List calendar used by the shared Event
-// Organization page (Director/Teacher/Student alike). Only this component's
-// own visual skin is dark-navy/rounded to match the reference design; the
-// rest of the Event Organization page (stats, charts, table, tabs) is
-// unaffected and stays on the app's normal light theme. All view/date-
-// navigation logic is unchanged from before this restyle.
+// Organization page (Director/Teacher/Student alike) — a light, white-card
+// theme matching the rest of the app (category colors reuse the same
+// semantic tokens as EventManagement's own List view) instead of a
+// separate dark-navy skin. All view/date-navigation logic is unchanged.
 export default function EventCalendar({ events, onSelectEvent, views = ["month", "week", "day", "list"] }) {
   const [view, setView] = useState(views[0] || "month");
   const [cursor, setCursor] = useState(() => new Date());
@@ -230,35 +300,40 @@ export default function EventCalendar({ events, onSelectEvent, views = ["month",
           : "All events";
 
   return (
-    <div className={`space-y-2 rounded-2xl border ${tone.border} ${tone.card} p-2 sm:space-y-2.5 sm:p-3`}>
-      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-        <p className="text-sm font-bold text-white sm:text-lg">{label}</p>
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          {view !== "list" && (
-            <div className="flex items-center gap-1">
-              <button type="button" onClick={() => shift(-1)} className={`rounded-lg p-1.5 sm:p-2 ${tone.navBtn}`} aria-label="Previous"><ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
-              <button type="button" onClick={() => setCursor(new Date())} className={`rounded-lg px-2 py-1.5 text-[10px] font-bold sm:px-3 sm:text-xs ${tone.navBtn}`}>Today</button>
-              <button type="button" onClick={() => shift(1)} className={`rounded-lg p-1.5 sm:p-2 ${tone.navBtn}`} aria-label="Next"><ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
-            </div>
-          )}
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex gap-1">
             {views.map((item) => (
               <button
                 key={item}
                 type="button"
                 onClick={() => setView(item)}
-                className={`rounded-full px-2 py-1 text-[10px] font-bold capitalize transition sm:px-3 sm:py-1.5 sm:text-xs ${view === item ? tone.viewBtnActive : tone.viewBtnInactive}`}
+                className={`rounded-full px-3 py-1.5 text-[11px] font-bold capitalize transition sm:px-4 sm:text-xs ${view === item ? "bg-primary text-white" : "bg-page text-muted hover:bg-active hover:text-primary"}`}
               >
                 {item}
               </button>
             ))}
           </div>
+          {view !== "list" && (
+            <>
+              <button type="button" onClick={() => setCursor(new Date())} className="rounded-full bg-primary px-3.5 py-1.5 text-[11px] font-bold text-white sm:text-xs">Today</button>
+              <div className="flex items-center gap-1 rounded-xl border border-border-subtle bg-card px-1 py-1">
+                <button type="button" onClick={() => shift(-1)} className="rounded-lg p-1 text-muted hover:bg-page" aria-label="Previous"><ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
+                <span className="px-1 text-xs font-bold text-ink sm:text-sm">{label}</span>
+                <button type="button" onClick={() => shift(1)} className="rounded-lg p-1 text-muted hover:bg-page" aria-label="Next"><ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
+              </div>
+            </>
+          )}
         </div>
+        {/* List mode has its own category filter pills (in EventListView)
+              — showing this static legend too would be redundant there. */}
+        {view !== "list" && <CategoryLegend />}
       </div>
       {view === "month" && <MonthView cursor={cursor} byDate={byDate} onSelect={onSelectEvent} />}
       {view === "week" && <WeekView cursor={cursor} byDate={byDate} onSelect={onSelectEvent} />}
       {view === "day" && <DayView cursor={cursor} byDate={byDate} onSelect={onSelectEvent} />}
-      {view === "list" && <ListView events={events} onSelect={onSelectEvent} />}
+      {view === "list" && <EventListView events={events} onSelect={onSelectEvent} />}
     </div>
   );
 }

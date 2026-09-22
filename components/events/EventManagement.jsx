@@ -7,7 +7,7 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { CalendarDays, Eye, EyeOff, MapPin, Pencil, Search, Trash2, UserRound, Users } from "lucide-react";
 import { ChartCard, EmptyChartState } from "../dashboard/overview/ChartCard";
-import EventCalendar from "./EventCalendar";
+import EventCalendar, { EventListView } from "./EventCalendar";
 import EventForm from "./EventForm";
 import CalendarSubscribeButton from "./CalendarSubscribeButton";
 import DataTable, { StatusBadge as TableBadge } from "../data-table/DataTable";
@@ -121,144 +121,6 @@ function EventCard({ event, onEdit, onTogglePublish, onDelete, canManage }) {
         </div>
       </div>
     </article>
-  );
-}
-
-// A simplified 3-way grouping for the chronological List view, distinct
-// from the granular EVENT_TYPES (Workshop/Seminar/etc.) used everywhere
-// else — derived on the fly, not a stored field, so no schema/API change
-// was needed. "Training" maps directly to that same event type; "Internal"
-// covers the one type that's inherently staff-only (Meeting); everything
-// else reads as a general "Event".
-const LIST_CATEGORY_TONE = {
-  Event: { badge: "bg-info-soft text-info", bar: "bg-info" },
-  Training: { badge: "bg-success-soft text-success", bar: "bg-success" },
-  Internal: { badge: "bg-purple-soft text-purple", bar: "bg-purple" },
-};
-function listCategory(event) {
-  if (event.type === "Training") return "Training";
-  if (event.type === "Meeting") return "Internal";
-  return "Event";
-}
-function formatTime12(value) {
-  if (!value || !/^\d{2}:\d{2}$/.test(value)) return "";
-  const [h, m] = value.split(":").map(Number);
-  const period = h >= 12 ? "pm" : "am";
-  const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
-}
-const monthLabelFull = (key) => { const [y, m] = key.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" }); };
-
-// Chronological, month-grouped list — a deliberately different presentation
-// from the Table/Grid tabs (which both show every event flat, unsorted by
-// time-relevance) for the common "what's coming up" glance. Reuses the same
-// role-scoped, search-filtered `events` array the other tabs already get;
-// only the category/Upcoming-Past split below is local to this view.
-function EventListView({ events, onSelect }) {
-  const [category, setCategory] = useState("All");
-  const [when, setWhen] = useState("Upcoming");
-  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
-
-  const grouped = useMemo(() => {
-    const filtered = events.filter((event) => {
-      if (!event.eventDate) return false;
-      if (category !== "All" && listCategory(event) !== category) return false;
-      return when === "Upcoming" ? event.eventDate >= todayIso : event.eventDate < todayIso;
-    });
-    filtered.sort((a, b) =>
-      when === "Upcoming"
-        ? a.eventDate.localeCompare(b.eventDate) || (a.startTime || "").localeCompare(b.startTime || "")
-        : b.eventDate.localeCompare(a.eventDate) || (b.startTime || "").localeCompare(a.startTime || ""),
-    );
-    const byMonth = new Map();
-    filtered.forEach((event) => {
-      const key = event.eventDate.slice(0, 7);
-      if (!byMonth.has(key)) byMonth.set(key, []);
-      byMonth.get(key).push(event);
-    });
-    return [...byMonth.entries()];
-  }, [events, category, when, todayIso]);
-
-  return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1.5">
-          {["All", "Event", "Training", "Internal"].map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setCategory(item)}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                category === item ? "bg-ink text-white" : `${LIST_CATEGORY_TONE[item]?.badge || "bg-page text-muted"} hover:opacity-80`
-              }`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-1.5">
-            {["Upcoming", "Past"].map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setWhen(item)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
-                  when === item ? "bg-active text-primary" : "border border-border-subtle bg-card text-muted hover:bg-page"
-                }`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <CalendarSubscribeButton />
-        </div>
-      </div>
-
-      {!grouped.length ? (
-        <p className="py-10 text-center text-sm text-muted">
-          No {when.toLowerCase()} events{category !== "All" ? ` in ${category}` : ""}.
-        </p>
-      ) : (
-        <div className="space-y-6">
-          {grouped.map(([monthKey, monthEvents]) => (
-            <div key={monthKey}>
-              <p className="mb-2 text-sm font-bold text-ink">{monthLabelFull(monthKey)}</p>
-              <div className="space-y-3">
-                {monthEvents.map((event) => {
-                  const cat = listCategory(event);
-                  const tone = LIST_CATEGORY_TONE[cat];
-                  const date = new Date(`${event.eventDate}T00:00:00`);
-                  return (
-                    <button
-                      key={event.id}
-                      type="button"
-                      onClick={() => onSelect(event)}
-                      className="flex w-full items-stretch gap-4 overflow-hidden rounded-2xl border border-border-subtle bg-card p-4 text-left shadow-sm transition hover:shadow-md"
-                    >
-                      <span className={`w-1 shrink-0 rounded-full ${tone.bar}`} />
-                      <span className="w-12 shrink-0 text-center">
-                        <span className="block text-xl font-bold text-ink">{date.getDate()}</span>
-                        <span className="block text-[10px] font-bold uppercase tracking-wide text-subtle">
-                          {date.toLocaleDateString(undefined, { weekday: "short" })}
-                        </span>
-                      </span>
-                      <span className="min-w-0 flex-1 self-center">
-                        <span className="block truncate text-sm font-bold text-ink">{event.name}</span>
-                        <span className="block truncate text-xs text-muted">
-                          {formatTime12(event.startTime)}{event.location ? ` · ${event.location}` : ""}
-                        </span>
-                      </span>
-                      <span className={`shrink-0 self-center rounded-full px-2.5 py-1 text-[10px] font-bold ${tone.badge}`}>{cat}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -577,7 +439,7 @@ export default function EventManagement() {
               Student have no edit rights, so their click instead opens the
               same read-only event detail page the Table/Grid "View" link
               and Add-Event dialog both already use. */}
-          <EventCalendar events={events} onSelectEvent={(event) => (canManage ? open(event) : router.push(`/dashboard/events/${event.id}`))} />
+          <EventCalendar events={events} views={["list", "month"]} onSelectEvent={(event) => (canManage ? open(event) : router.push(`/dashboard/events/${event.id}`))} />
         </section>
       ) : (
         <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">

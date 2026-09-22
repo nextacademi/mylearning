@@ -15,7 +15,7 @@ import SmoothScroll from "./public/SmoothScroll";
 import PhotoGallery from "./public/PhotoGallery";
 import VideoLibrarySection from "./public/VideoLibrarySection";
 import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
-import HeroGradientMesh from "./brand/HeroGradientMesh";
+import HeroVideo from "./brand/HeroVideo";
 
 // Landing-page-only color system (blood red + white/off-white + dark text,
 // plus a near-black for the dark sections the 24asia.pages.dev-style
@@ -375,10 +375,8 @@ function Eyebrow({ children, className = "", light = false, tone = "red" }) {
   );
 }
 
-// A quick gradient sweep across the brand name only — the hero's one
-// deliberate "highlight" beat, timed to match HeroGradientMesh's pulsing
-// core so the two read as one moment rather than two separate animations
-// running side by side.
+// A quick gradient sweep across the brand name only — a small recurring
+// highlight in the hero eyebrow text.
 function BrandShimmer({ children }) {
   return (
     <motion.span
@@ -963,7 +961,7 @@ export default function PublicSite() {
           }}
         />
         <div className="mx-auto max-w-7xl px-5  md:px-10 md:py-2">
-          <div className="grid items-start gap-8 md:grid-cols-[1.15fr_1fr] md:gap-10">
+          <div className="grid items-center gap-6 md:grid-cols-2 md:gap-6">
             <div>
               <Eyebrow light tone="amber" className="text-xs">
                 <BrandShimmer>Next Academy</BrandShimmer> · Learning Platform
@@ -999,14 +997,13 @@ export default function PublicSite() {
               </div>
             </div>
 
-            {/* Decorative — shown on every screen size (was md:-only) so
-                  it's never just blank space on mobile; sized down there
-                  via max-w so it still stays out of the text's way. The
-                  section-level glow above already lights this area, so
-                  this is just a tight highlight right behind the mesh. */}
-            <div className="relative mt-6 flex justify-center md:mt-0 md:justify-end">
-              <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[#ff2d2d]/15 blur-[100px]" />
-              <HeroGradientMesh className="aspect-square w-full max-w-[220px] md:max-w-[340px] lg:max-w-[420px]" />
+            {/* Side by side with the text, not stacked below — equal
+                  columns (not a narrow side slot) so a landscape video has
+                  enough width to render without huge empty letterbox
+                  space. */}
+            <div className="relative mt-6 md:mt-0">
+              <div className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-[#ff2d2d]/15 blur-[100px]" />
+              <HeroVideo className="aspect-video w-full" />
             </div>
           </div>
 
