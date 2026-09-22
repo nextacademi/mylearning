@@ -226,6 +226,85 @@ function formatEventTime(hhmm) {
   return `${hour12}:${String(minute).padStart(2, "0")} ${period}`;
 }
 
+// "MON" / "September 2026" for a stored "YYYY-MM-DD" — built from explicit
+// Y/M/D args (local midnight), same timezone-safe construction already
+// used for the event calendar's own date math, never a raw
+// `new Date(isoString)` parse.
+function formatEventWeekday(isoDate) {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return "";
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+}
+function formatEventMonthYear(isoDate) {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return "";
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+// Compact date+title+meta row — a denser presentation of the exact same
+// real event data as the full image cards below, reused by both the
+// Events section's "Up-coming Event" list and What We Do's Current/
+// Up-coming Training lists.
+function EventListRow({ event }) {
+  const day = event.eventDate ? event.eventDate.slice(8, 10) : null;
+  const startTime = formatEventTime(event.startTime);
+  return (
+    <a
+      href="#contact"
+      className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white p-2.5 transition hover:border-[#E53935]/50 hover:shadow-sm"
+    >
+      <span className="h-8 w-[3px] shrink-0 rounded-full bg-[#E53935]" />
+      <span className="w-9 shrink-0 text-center">
+        <b className="block text-base leading-none text-[#111827]">{day}</b>
+        <small className="mt-1 block text-[9px] font-bold uppercase tracking-wide text-[#9CA3AF]">
+          {formatEventWeekday(event.eventDate)}
+        </small>
+      </span>
+      <span className="min-w-0 flex-1">
+        <b className="block truncate text-sm text-[#111827]">{event.name}</b>
+        <span className="mt-0.5 block truncate text-xs text-[#6B7280]">
+          {[startTime, event.location].filter(Boolean).join(" · ")}
+        </span>
+      </span>
+      <span className="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold text-[#B91C1C]">
+        {event.type || "Event"}
+      </span>
+    </a>
+  );
+}
+
+// Red-bordered list card — real events, a real (working) Subscribe button
+// (the same CalendarSubscribeButton used elsewhere, wired to the live
+// .ics feed), never a static/decorative copy.
+function TrainingListCard({ title, events, emptyText, loading }) {
+  return (
+    <div className="rounded-2xl border-2 border-[#E53935] bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <b className="text-base font-black text-[#B91C1C]">{title}</b>
+        <CalendarSubscribeButton />
+      </div>
+      {loading ? (
+        <p className="mt-3 text-xs text-[#6B7280]">Loading…</p>
+      ) : events.length ? (
+        <>
+          <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-[#9CA3AF]">
+            {formatEventMonthYear(events[0].eventDate)}
+          </p>
+          <div className="mt-2 space-y-2">
+            {events.map((event) => (
+              <EventListRow key={event.id} event={event} />
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="mt-3 text-xs text-[#6B7280]">{emptyText}</p>
+      )}
+    </div>
+  );
+}
+
 const TESTIMONIALS = [
   {
     avatar: photos.learner,
@@ -1009,37 +1088,61 @@ export default function PublicSite() {
           </h2>
 
           <div className="mt-4 grid gap-5 md:grid-cols-2">
-            {programs.map((program, index) => (
-              <Reveal
-                as="article"
-                index={index}
-                className="group overflow-hidden rounded-2xl border border-[#E5E7EB] border-t-4 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
-                style={{ borderTopColor: program.accent }}
-                key={program.title}
-              >
-                <div className="h-52 overflow-hidden md:h-56">
-                  <img
-                    src={program.src}
-                    alt={program.title}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                  />
-                </div>
-                <div className="p-4">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#E53935]">
-                    {program.category}
-                  </p>
-                  <h3 className="mt-1.5 text-xl font-black tracking-tight text-[#111827]">
-                    {program.title}
-                  </h3>
-                  <p className="mt-1.5 max-w-md text-sm leading-5 text-[#6B7280]">
-                    {program.copy}
-                  </p>
-                  <span className="mt-3 inline-block rounded-full bg-red-50 px-3 py-1 text-[11px] font-bold text-[#B91C1C]">
-                    {program.stat}
-                  </span>
-                </div>
+            <div className="space-y-5">
+              {programs.map((program, index) => (
+                <Reveal
+                  as="article"
+                  index={index}
+                  className="group overflow-hidden rounded-2xl border border-[#E5E7EB] border-t-4 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  style={{ borderTopColor: program.accent }}
+                  key={program.title}
+                >
+                  <div className="h-52 overflow-hidden md:h-56">
+                    <img
+                      src={program.src}
+                      alt={program.title}
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#E53935]">
+                      {program.category}
+                    </p>
+                    <h3 className="mt-1.5 text-xl font-black tracking-tight text-[#111827]">
+                      {program.title}
+                    </h3>
+                    <p className="mt-1.5 max-w-md text-sm leading-5 text-[#6B7280]">
+                      {program.copy}
+                    </p>
+                    <span className="mt-3 inline-block rounded-full bg-red-50 px-3 py-1 text-[11px] font-bold text-[#B91C1C]">
+                      {program.stat}
+                    </span>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+
+            {/* Real, live data — same events feed the Events section below
+                uses, just split by computedStatus into "running now" vs
+                "still to come" instead of one merged list. */}
+            <div className="space-y-5">
+              <Reveal index={1}>
+                <TrainingListCard
+                  title="Current Training:"
+                  events={upcomingEvents.filter((event) => event.computedStatus === "Ongoing")}
+                  emptyText="No training running right now."
+                  loading={!eventsLoaded}
+                />
               </Reveal>
-            ))}
+              <Reveal index={2}>
+                <TrainingListCard
+                  title="Up-coming Training:"
+                  events={upcomingEvents.filter((event) => event.computedStatus === "Upcoming")}
+                  emptyText="No upcoming training scheduled yet."
+                  loading={!eventsLoaded}
+                />
+              </Reveal>
+            </div>
           </div>
         </div>
       </section>
@@ -1071,7 +1174,7 @@ export default function PublicSite() {
           </p>
         ) : (
           <div className="mt-5 grid gap-6 md:grid-cols-3">
-            {upcomingEvents.map((event, index) => {
+            {upcomingEvents.slice(0, 2).map((event, index) => {
               const day = event.eventDate ? event.eventDate.slice(8, 10) : null;
               const month = event.eventDate
                 ? MONTH_ABBR[Number(event.eventDate.slice(5, 7)) - 1]
@@ -1150,6 +1253,13 @@ export default function PublicSite() {
                 </Reveal>
               );
             })}
+            <Reveal index={2}>
+              <TrainingListCard
+                title="Up-coming Event:"
+                events={upcomingEvents}
+                emptyText="No upcoming events at the moment."
+              />
+            </Reveal>
           </div>
         )}
       </section>
