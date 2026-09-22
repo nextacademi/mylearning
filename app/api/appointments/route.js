@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../lib/server/cached-profile";
-import { bookableCourses, bookedTimesForDate, cancelAppointment, createAppointment, listAppointments } from "../../../lib/server/appointment-core";
+import {
+  assignableStaff, bookableCourses, bookableStudents, bookedTimesForDate,
+  cancelAppointment, createAppointment, listAppointments, markAppointmentCompleted, rescheduleAppointment,
+} from "../../../lib/server/appointment-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,8 +39,13 @@ export async function GET(request) {
     if (a.denied) return a.denied;
     const date = new URL(request.url).searchParams.get("date");
     if (date) return NextResponse.json({ booked: await bookedTimesForDate(a.db, date) });
-    const [appointments, courses] = await Promise.all([listAppointments(a.db, a), bookableCourses(a.db)]);
-    return NextResponse.json({ appointments, courses });
+    const [appointments, courses, students, staff] = await Promise.all([
+      listAppointments(a.db, a),
+      bookableCourses(a.db),
+      a.manager ? bookableStudents(a.db) : Promise.resolve([]),
+      a.manager ? assignableStaff(a.db) : Promise.resolve([]),
+    ]);
+    return NextResponse.json({ appointments, courses, students, staff });
   } catch (error) {
     return respondError("list", error);
   }
@@ -59,9 +67,11 @@ export async function PATCH(request) {
     const a = await access(request);
     if (a.denied) return a.denied;
     const body = await request.json();
-    if (body.action !== "cancel") return NextResponse.json({ message: "Unknown action." }, { status: 400 });
-    return NextResponse.json(await cancelAppointment(a.db, body.id, a));
+    if (body.action === "cancel") return NextResponse.json(await cancelAppointment(a.db, body.id, a));
+    if (body.action === "complete") return NextResponse.json(await markAppointmentCompleted(a.db, body.id, a));
+    if (body.action === "reschedule") return NextResponse.json({ ok: true, ...(await rescheduleAppointment(a.db, body.id, body, a)) });
+    return NextResponse.json({ message: "Unknown action." }, { status: 400 });
   } catch (error) {
-    return respondError("cancel", error);
+    return respondError("update", error);
   }
 }
