@@ -161,7 +161,7 @@ export default function AuthPage({ mode = "login" }) {
 
   return (
     <main className="grid min-h-screen bg-white text-slate-800 selection:bg-red-600 selection:text-white lg:grid-cols-[1.05fr_1fr]">
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-red-950 via-slate-900 to-red-900 p-12 text-white lg:flex lg:flex-col lg:justify-between">
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-red-950 via-slate-900 to-red-900 p-12 text-white lg:flex lg:flex-col lg:justify-between lg:border-r lg:border-white/10">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-red-600/25 blur-3xl"
