@@ -12,12 +12,17 @@ import AssetsTab from "./AssetsTab";
 import TransactionsTab from "./TransactionsTab";
 import ProfitLossTab from "./ProfitLossTab";
 import ReportsTab from "./ReportsTab";
+import AppointmentScheduler from "../appointments/AppointmentScheduler";
 
 // One sidebar entry ("Finance"), one shell — matches every other module in
 // this dashboard (Training, Users, etc. are also single sidebar items with
 // their own internal tabs, e.g. Training Details' Overview/Classes/...).
-// No second dashboard shell, no new sidebar items.
-const tabs = ["Dashboard", "Invoices", "Income", "Income / Payments", "Outstanding Due", "Expenses", "Assets", "Transactions", "Profit & Loss", "Reports"];
+// No second dashboard shell, no new sidebar items. Appointments moved in
+// here from its own top-level sidebar item — Director/Admin manage it as
+// part of Finance now; Student/Guest still reach the same
+// AppointmentScheduler component from their own "Appointments" module,
+// unchanged.
+const tabs = ["Dashboard", "Invoices", "Income", "Income / Payments", "Outstanding Due", "Expenses", "Assets", "Transactions", "Profit & Loss", "Appointments", "Reports"];
 
 export default function FinanceManagement() {
   const [tab, setTab] = useState("Dashboard");
@@ -78,6 +83,7 @@ export default function FinanceManagement() {
       {tab === "Assets" && <AssetsTab />}
       {tab === "Transactions" && <TransactionsTab payments={overview?.payments || []} expenses={overview?.expenses || []} income={overview?.income || []} loading={loading} />}
       {tab === "Profit & Loss" && <ProfitLossTab />}
+      {tab === "Appointments" && <AppointmentScheduler />}
       {tab === "Reports" && <ReportsTab />}
     </div>
   );

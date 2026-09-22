@@ -1238,11 +1238,6 @@ export default function PublicSite() {
                 <span className="text-[#E53935]">✉</span>
                 nextacademi@gmail.com
               </p>
-
-              <p className="flex items-center gap-2">
-                <span className="text-[#E53935]">📍</span>
-                Singapore
-              </p>
             </div>
 
             <div className="mt-5">

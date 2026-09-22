@@ -140,7 +140,6 @@ export const roleConfig = {
       "My Shop",
       "Promo Codes",
       "User",
-      "Appointments",
       "Chat",
       "Achievement",
       "Model Test",
@@ -161,7 +160,6 @@ export const roleConfig = {
       "Documents",
       "My Shop",
       "User",
-      "Appointments",
       "Chat",
       "Achievement",
       "Model Test",
@@ -275,8 +273,6 @@ function DirectorDashboard({ profile, user }) {
               <Shop role="Director" uid={user.uid} />
             ) : active === "Promo Codes" ? (
               <PromoCodeView />
-            ) : active === "Appointments" ? (
-              <AppointmentScheduler />
             ) : active === "Achievement" ? (
               <AchievementManagement />
             ) : active === "Model Test" ? (
