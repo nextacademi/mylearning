@@ -109,9 +109,11 @@ export default function LoadingScreen({ ready, onFinished }) {
             const isActive = !isCompleted && index < activeStageCount;
             const Icon = steps[index].icon;
             const state = isCompleted ? "completed" : isActive ? "active" : "inactive";
-            const iconBg = state === "completed" ? "bg-success-soft" : state === "active" ? "bg-active" : "bg-transparent";
-            const iconColor = state === "completed" ? "text-success" : state === "active" ? "text-primary" : "text-subtle";
-            const labelColor = state === "inactive" ? "text-subtle" : state === "active" ? "text-primary" : "text-success";
+            // Red throughout (this app's brand color) — "completed" is a
+            // solid-red fill, "active" a lighter red tint, never green.
+            const iconBg = state === "completed" ? "bg-primary" : state === "active" ? "bg-active" : "bg-transparent";
+            const iconColor = state === "completed" ? "text-white" : state === "active" ? "text-primary" : "text-subtle";
+            const labelColor = state === "inactive" ? "text-subtle" : "text-primary";
             return (
               <div key={stage} className="flex flex-1 flex-col items-center gap-1.5">
                 <span

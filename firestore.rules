@@ -78,6 +78,13 @@ service cloud.firestore {
       allow read: if admin() || (signedIn() && resource.data.studentId == request.auth.uid);
       allow write: if admin();
     }
+    // Marketing promo codes (Director "Promo Codes" tab). Admin-only in
+    // every direction — every read/write happens server-side via
+    // /api/admin/promo-codes (Admin SDK), which bypasses this block; it
+    // only governs direct client access attempts.
+    match /promoCodes/{code} {
+      allow read, write: if admin();
+    }
     // Asset register (Finance → Assets) — what the academy owns and its
     // value (furniture, equipment, deposits, renovation). Same
     // admin-only, server-SDK-only pattern as expenses/finance_income

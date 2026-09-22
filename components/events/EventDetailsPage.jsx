@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { useAuth } from "../../lib/auth-context";
 import { db } from "../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -64,6 +65,21 @@ function Field({ label, value }) {
   return <div><dt className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</dt><dd className="mt-1 text-sm text-ink">{value || "—"}</dd></div>;
 }
 const statusTones = { Upcoming: "bg-info-soft text-info", Ongoing: "bg-success-soft text-success", Completed: "bg-page text-subtle", Cancelled: "bg-active text-primary", Draft: "bg-warning-soft text-warning" };
+
+// Same entrance-motion vocabulary as components/settings/SettingsPage.jsx
+// (kept as a local copy rather than a shared import — this is the only
+// other place that needed it so far) so opening an event reads as an
+// animated arrival like Settings does, instead of the plain instant swap
+// this page had before.
+const EASE = [0.22, 1, 0.36, 1];
+const staggerContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+};
+const fadeSlideUp = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE } },
+};
 
 function downloadCsv(filename, rows, headers) {
   const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
@@ -404,59 +420,65 @@ export default function EventDetailsPage() {
       ) : !event ? (
         <Empty>Event not found</Empty>
       ) : (
-        <>
-          {notice && <p className="mb-4 rounded-xl bg-success-soft p-3 text-sm text-success">{notice}</p>}
-          <header className="overflow-hidden rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] shadow-xl">
-            {event.bannerUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={event.bannerUrl} alt={event.name} className="h-56 w-full object-cover" />
-            )}
-            <div className="p-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusTones[event.computedStatus] || "bg-page text-muted"}`}>{event.computedStatus}</span>
-                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">{event.type}</span>
-              </div>
-              <h1 className="mt-2 text-3xl font-black md:text-5xl">{event.name}</h1>
-              <p className="mt-2 max-w-2xl text-sm text-muted">{event.description || "No description available."}</p>
-            </div>
-          </header>
-
-          <nav className="my-5 flex gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-1.5 shadow-sm">
-            {tabs.map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold ${tab === item ? "bg-primary text-white" : "text-muted hover:bg-active"}`}>{item}</button>)}
-          </nav>
-
-          {tab === "Overview" && (
-            <Panel title="Overview">
-              <dl className="grid gap-x-12 gap-y-6 sm:grid-cols-3">
-                <Field label="Date" value={event.eventDate} />
-                <Field label="Time" value={event.startTime && event.endTime ? `${event.startTime}–${event.endTime}` : "—"} />
-                <Field label="Location" value={event.location} />
-                <Field label="Organizer" value={event.organizer} />
-                <Field label="Target Audience" value={(event.targetAudience || []).join(", ")} />
-                <Field label="Maximum Participants" value={event.maxParticipants ?? "No limit"} />
-                <Field label="Participants Registered" value={event.participantCount ?? 0} />
-                <Field label="Registration" value={event.registrationRequired ? `Required (deadline ${event.registrationDeadline || "none"})` : "Not required"} />
-                <Field label="Published" value={event.published ? "Yes" : "No"} />
-              </dl>
-              {!canManage && event.registrationRequired && (
-                <div className="mt-6 border-t border-border-subtle pt-5">
-                  {myParticipation ? (
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="rounded-full bg-success-soft px-3 py-1.5 text-xs font-bold text-success">You are registered</span>
-                      {event.computedStatus !== "Completed" && <button type="button" onClick={cancelRegistration} disabled={registering} className="rounded-xl border border-border-subtle px-4 py-2 text-xs font-bold text-primary hover:bg-active disabled:opacity-40">Cancel Registration</button>}
-                    </div>
-                  ) : !registrationOpen ? (
-                    <span className="rounded-full bg-page px-3 py-1.5 text-xs font-bold text-muted">{isFull ? "Event Full" : "Registration Closed"}</span>
-                  ) : (
-                    <button type="button" onClick={register} disabled={registering || isFull} className="rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white disabled:opacity-40">{isFull ? "Event Full" : registering ? "Registering..." : "Register"}</button>
-                  )}
-                </div>
+        <MotionConfig reducedMotion="user">
+          <motion.div initial="hidden" animate="show" variants={staggerContainer}>
+            {notice && <p className="mb-4 rounded-xl bg-success-soft p-3 text-sm text-success">{notice}</p>}
+            <motion.header variants={fadeSlideUp} className="overflow-hidden rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] shadow-xl">
+              {event.bannerUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={event.bannerUrl} alt={event.name} className="h-56 w-full object-cover" />
               )}
-            </Panel>
-          )}
-          {tab === "Participants" && <ParticipantsTab eventId={event.id} canManage={canManage} staff={staff} onNotice={flash} />}
-          {tab === "Attendance" && canManageAttendance && <AttendanceTab eventId={event.id} onNotice={flash} />}
-        </>
+              <div className="p-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusTones[event.computedStatus] || "bg-page text-muted"}`}>{event.computedStatus}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">{event.type}</span>
+                </div>
+                <h1 className="mt-2 text-3xl font-black md:text-5xl">{event.name}</h1>
+                <p className="mt-2 max-w-2xl text-sm text-muted">{event.description || "No description available."}</p>
+              </div>
+            </motion.header>
+
+            <motion.nav variants={fadeSlideUp} className="my-5 flex gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-1.5 shadow-sm">
+              {tabs.map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold ${tab === item ? "bg-primary text-white" : "text-muted hover:bg-active"}`}>{item}</button>)}
+            </motion.nav>
+
+            <AnimatePresence mode="wait">
+              <motion.div key={tab} initial="hidden" animate="show" exit={{ opacity: 0, transition: { duration: 0.12 } }} variants={fadeSlideUp}>
+                {tab === "Overview" && (
+                  <Panel title="Overview">
+                    <dl className="grid gap-x-12 gap-y-6 sm:grid-cols-3">
+                      <Field label="Date" value={event.eventDate} />
+                      <Field label="Time" value={event.startTime && event.endTime ? `${event.startTime}–${event.endTime}` : "—"} />
+                      <Field label="Location" value={event.location} />
+                      <Field label="Organizer" value={event.organizer} />
+                      <Field label="Target Audience" value={(event.targetAudience || []).join(", ")} />
+                      <Field label="Maximum Participants" value={event.maxParticipants ?? "No limit"} />
+                      <Field label="Participants Registered" value={event.participantCount ?? 0} />
+                      <Field label="Registration" value={event.registrationRequired ? `Required (deadline ${event.registrationDeadline || "none"})` : "Not required"} />
+                      <Field label="Published" value={event.published ? "Yes" : "No"} />
+                    </dl>
+                    {!canManage && event.registrationRequired && (
+                      <div className="mt-6 border-t border-border-subtle pt-5">
+                        {myParticipation ? (
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="rounded-full bg-success-soft px-3 py-1.5 text-xs font-bold text-success">You are registered</span>
+                            {event.computedStatus !== "Completed" && <button type="button" onClick={cancelRegistration} disabled={registering} className="rounded-xl border border-border-subtle px-4 py-2 text-xs font-bold text-primary hover:bg-active disabled:opacity-40">Cancel Registration</button>}
+                          </div>
+                        ) : !registrationOpen ? (
+                          <span className="rounded-full bg-page px-3 py-1.5 text-xs font-bold text-muted">{isFull ? "Event Full" : "Registration Closed"}</span>
+                        ) : (
+                          <button type="button" onClick={register} disabled={registering || isFull} className="rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white disabled:opacity-40">{isFull ? "Event Full" : registering ? "Registering..." : "Register"}</button>
+                        )}
+                      </div>
+                    )}
+                  </Panel>
+                )}
+                {tab === "Participants" && <ParticipantsTab eventId={event.id} canManage={canManage} staff={staff} onNotice={flash} />}
+                {tab === "Attendance" && canManageAttendance && <AttendanceTab eventId={event.id} onNotice={flash} />}
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+        </MotionConfig>
       )}
     </div>
   );

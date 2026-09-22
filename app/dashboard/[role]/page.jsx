@@ -35,6 +35,8 @@ import ContactInquiries from "../../../components/dashboard/ContactInquiries";
 import { useNewInquiryCount } from "../../../lib/contact-inquiries-data";
 import IdCardPrint from "../../../components/teacher/IdCardPrint";
 import Shop from "../../../components/shop/Shop";
+import PromoCodeView from "../../../components/promo/PromoCodeView";
+import AppointmentScheduler from "../../../components/appointments/AppointmentScheduler";
 import AchievementManagement from "../../../components/achievement/AchievementManagement";
 import StudentAchievements from "../../../components/achievement/StudentAchievements";
 import StudentAttendance from "../../../components/students/StudentAttendance";
@@ -54,7 +56,7 @@ export const roleConfig = {
   // hand from the Users screen.
   Guest: {
     greeting: "Explore our trainings and events — enroll in one to unlock your full student dashboard.",
-    modules: ["Dashboard", "Training", "Events", "Chat", "Settings"],
+    modules: ["Dashboard", "Training", "Appointments", "Events", "Chat", "Settings"],
     stats: [],
   },
   Student: {
@@ -62,6 +64,7 @@ export const roleConfig = {
     modules: [
       "Dashboard",
       "My Training",
+      "Appointments",
       "Events",
       "Attendance",
       "Documents",
@@ -140,8 +143,10 @@ export const roleConfig = {
       "Finance",
       "Documents",
       "My Shop",
+      "Promo Codes",
       "User",
       "Contact Inquiries",
+      "Appointments",
       "Chat",
       "Achievement",
       "Model Test",
@@ -165,6 +170,7 @@ export const roleConfig = {
       "My Shop",
       "User",
       "Contact Inquiries",
+      "Appointments",
       "Chat",
       "Achievement",
       "Model Test",
@@ -282,6 +288,10 @@ function DirectorDashboard({ profile, user }) {
               <ContactInquiries />
             ) : active === "My Shop" ? (
               <Shop role="Director" uid={user.uid} />
+            ) : active === "Promo Codes" ? (
+              <PromoCodeView />
+            ) : active === "Appointments" ? (
+              <AppointmentScheduler />
             ) : active === "Achievement" ? (
               <AchievementManagement />
             ) : active === "Model Test" ? (
@@ -463,6 +473,8 @@ function DashboardContent({ role, profile, user }) {
               <EventManagement />
             ) : role === "Admin" && active === "Room Booking" ? (
               <RoomBooking role="Admin" />
+            ) : active === "Appointments" ? (
+              <AppointmentScheduler />
             ) : active === "Documents" ? (
               <DocumentsModule role={role} />
             ) : active === "Events" ? (
