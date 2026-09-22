@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { EVENING_SLOTS, MORNING_SLOTS, slotMinutes } from "../../lib/appointments-shared";
 import { bookPublicAppointment, loadPublicBookableCourses, loadPublicBookedSlots } from "../../lib/services/public-appointment-service";
 
@@ -16,13 +17,14 @@ const FIELD = "w-full rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const blankForm = { name: "", email: "", phone: "", courseId: "" };
+const EASE = [0.22, 1, 0.36, 1];
 
-// Compact public booking card for the landing page's "Get in touch"
-// section — no sign-in required. Writes into the exact same `appointments`
-// collection the in-app Appointments scheduler and its Director/Admin
-// view already use (see app/api/public/appointments), so a visitor's
-// booking shows up for staff with no extra work.
-export default function AppointmentBookingWidget() {
+// The actual calendar + slots + form — writes into the exact same
+// `appointments` collection the in-app Appointments scheduler and its
+// Director/Admin view already use (see app/api/public/appointments), so a
+// visitor's booking shows up for staff with no extra work. No outer
+// card chrome here — the modal panel around it supplies that.
+function BookingCard({ onBooked }) {
   const today = localToday();
   const [viewMonth, setViewMonth] = useState(() => {
     const now = new Date();
@@ -71,6 +73,7 @@ export default function AppointmentBookingWidget() {
       setForm(blankForm);
       setSelectedDate(null);
       setSelectedTime("");
+      onBooked?.();
     } catch (error) {
       setStatus("error");
       setFeedback(error.message || "Unable to book this slot. Please try another.");
@@ -89,11 +92,8 @@ export default function AppointmentBookingWidget() {
   const slotPassed = (slot) => selectedDate === today && slotMinutes(slot) <= nowMinutes;
 
   return (
-    <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm">
-      <p className="text-sm font-bold text-[#111827]">Book an Appointment</p>
-      <p className="mt-0.5 text-[11px] text-[#6B7280]">Talk to us before you enroll — pick a free slot.</p>
-
-      <div className="mt-3 flex items-center justify-between">
+    <div>
+      <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-[#111827]">{viewMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span>
         <div className="flex items-center gap-1">
           <button
@@ -214,5 +214,82 @@ export default function AppointmentBookingWidget() {
         Times are shown in the academy&apos;s local time.
       </p>
     </div>
+  );
+}
+
+// Public entry point — a compact CTA button that opens the booking card in
+// a Framer-Motion modal, instead of the card sitting inline (which pushed
+// the rest of the Contact section down). Closes on the X, backdrop click,
+// Escape, or automatically a moment after a successful booking.
+export default function AppointmentBookingWidget() {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function onKeyDown(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
+  function handleBooked() {
+    setTimeout(() => setOpen(false), 1800);
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-bold transition hover:shadow-md"
+        style={{ borderColor: RED, color: RED, background: "#FFF5F5" }}
+      >
+        <span aria-hidden="true">📅</span> Book an Appointment
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setOpen(false)}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Book an appointment"
+              className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl"
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 8 }}
+              transition={{ duration: 0.25, ease: EASE }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-bold text-[#111827]">Book an Appointment</p>
+                  <p className="mt-0.5 text-[11px] text-[#6B7280]">Talk to us before you enroll — pick a free slot.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[#9CA3AF] transition hover:bg-[#F3F4F6] hover:text-[#111827]"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="mt-3">
+                <BookingCard onBooked={handleBooked} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
