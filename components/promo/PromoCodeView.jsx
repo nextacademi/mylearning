@@ -21,7 +21,7 @@ const TYPE_META = {
   fixed: { icon: Wallet, tone: "bg-success-soft text-success", label: (promo) => `${formatMoney(promo.value)} OFF` },
   shipping: { icon: Truck, tone: "bg-warning-soft text-warning", label: () => "FREE SHIPPING" },
 };
-const STATUS_TONE = { Active: "bg-success-soft text-success", Expired: "bg-active text-primary", "Used up": "bg-page text-muted" };
+const STATUS_TONE = { Active: "bg-success-soft text-success", Expired: "bg-active text-primary", "Used up": "bg-page text-ink" };
 const today = () => new Date().toISOString().slice(0, 10);
 
 function promoStatus(promo) {
@@ -60,14 +60,30 @@ function CopyButton({ code }) {
   );
 }
 
-function PromoCard({ promo, onViewQr, onDelete }) {
+function RowCheckbox({ checked, onChange, label }) {
+  return (
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+      onClick={(e) => e.stopPropagation()}
+      aria-label={label}
+      className="h-4 w-4 shrink-0 cursor-pointer rounded border-border-subtle text-primary focus:ring-2 focus:ring-primary"
+    />
+  );
+}
+
+function PromoCard({ promo, onViewQr, onDelete, selected, onToggleSelect }) {
   const status = promoStatus(promo);
   const percent = promo.limit ? Math.min(100, Math.round((promo.used / promo.limit) * 100)) : 0;
   return (
-    <article className="flex flex-col justify-between rounded-2xl border border-border-subtle bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+    <article className={`flex flex-col justify-between rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md ${selected ? "border-primary ring-1 ring-primary" : "border-border-subtle"}`}>
       <div>
         <div className="mb-3 flex items-center justify-between gap-2">
-          <TypeBadge promo={promo} />
+          <div className="flex items-center gap-2.5">
+            <RowCheckbox checked={selected} onChange={() => onToggleSelect(promo.id)} label={`Select ${promo.code}`} />
+            <TypeBadge promo={promo} />
+          </div>
           <div className="flex items-center gap-1">
             <button type="button" onClick={() => onViewQr(promo)} title="View QR & details" className="rounded-lg p-1.5 text-subtle hover:bg-active hover:text-primary">
               <QrCodeIcon className="h-4 w-4" aria-hidden="true" />
@@ -81,10 +97,10 @@ function PromoCard({ promo, onViewQr, onDelete }) {
           <h4 className="font-mono text-lg font-bold tracking-wide text-ink">{promo.code}</h4>
           <CopyButton code={promo.code} />
         </div>
-        <p className="mb-4 line-clamp-2 text-xs text-muted">{promo.description || "No additional description provided."}</p>
+        <p className="mb-4 line-clamp-2 text-xs font-medium text-ink/70">{promo.description || "No additional description provided."}</p>
       </div>
       <div className="space-y-3 border-t border-border-subtle pt-4">
-        <div className="flex justify-between text-xs font-medium text-muted">
+        <div className="flex justify-between text-xs font-bold text-ink">
           <span>Usage Limit</span>
           <span>{promo.used} / {promo.limit} used</span>
         </div>
@@ -92,7 +108,7 @@ function PromoCard({ promo, onViewQr, onDelete }) {
           <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
         </div>
         <div className="flex items-center justify-between text-xs">
-          <span className="text-subtle">Expires: {formatDate(promo.expiry)}</span>
+          <span className="font-semibold text-muted">Expires: {formatDate(promo.expiry)}</span>
           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_TONE[status]}`}>{status}</span>
         </div>
       </div>
@@ -100,26 +116,27 @@ function PromoCard({ promo, onViewQr, onDelete }) {
   );
 }
 
-function PromoRow({ promo, onViewQr, onDelete }) {
+function PromoRow({ promo, onViewQr, onDelete, selected, onToggleSelect }) {
   const status = promoStatus(promo);
   const percent = promo.limit ? Math.min(100, Math.round((promo.used / promo.limit) * 100)) : 0;
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 p-4 hover:bg-page">
+    <div className={`flex flex-wrap items-center gap-x-6 gap-y-3 p-4 hover:bg-page ${selected ? "bg-active/40" : ""}`}>
+      <RowCheckbox checked={selected} onChange={() => onToggleSelect(promo.id)} label={`Select ${promo.code}`} />
       <div className="w-36 shrink-0"><TypeBadge promo={promo} /></div>
       <div className="min-w-[180px] flex-1">
         <div className="flex items-center gap-3">
           <b className="font-mono text-sm tracking-wide text-ink">{promo.code}</b>
           <CopyButton code={promo.code} />
         </div>
-        <p className="mt-0.5 line-clamp-1 text-xs text-muted">{promo.description || "No additional description provided."}</p>
+        <p className="mt-0.5 line-clamp-1 text-xs font-medium text-ink/70">{promo.description || "No additional description provided."}</p>
       </div>
       <div className="w-40 shrink-0 space-y-1.5">
-        <span className="text-[11px] font-medium text-muted">{promo.used} / {promo.limit} used</span>
+        <span className="text-[11px] font-bold text-ink">{promo.used} / {promo.limit} used</span>
         <div className="h-2 w-full overflow-hidden rounded-full bg-page" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Usage">
           <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
         </div>
       </div>
-      <span className="w-28 shrink-0 text-xs text-subtle">Expires {formatDate(promo.expiry)}</span>
+      <span className="w-28 shrink-0 text-xs font-semibold text-muted">Expires {formatDate(promo.expiry)}</span>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_TONE[status]}`}>{status}</span>
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <button type="button" onClick={() => onViewQr(promo)} title="View QR & details" className="rounded-lg p-1.5 text-subtle hover:bg-active hover:text-primary">
@@ -139,12 +156,14 @@ const VIEW_MODES = [
 ];
 
 const blankPromo = { code: "", type: "percentage", value: "20", limit: "100", expiry: "", description: "" };
-const blankBulk = { type: "percentage", orgName: "Org Member Batch", expiry: "" };
+const blankBulk = { type: "percentage", orgName: "Org Member Batch", expiry: "", count: "100" };
+// Mirrors lib/server/promo-core.js's MAX_BULK_COUNT — the 4-digit code
+// suffix only has 9,000 possible draws, so this stays well under that.
+const MAX_BULK_COUNT = 2000;
 
 // Real, Firestore-backed promo code manager — Director "Promo Codes" tab.
 // No mock data anywhere: every stat, code, and redemption below is read
 // from / written to /api/admin/promo-codes (lib/server/promo-core.js).
-// Deliberately grid-only (no list/table view).
 export default function PromoCodeView() {
   const toast = useToast();
   const confirm = useConfirm();
@@ -175,6 +194,55 @@ export default function PromoCodeView() {
       return matchesQuery && matchesType;
     });
   }, [promos, search, typeFilter]);
+
+  // ---- Multi-select + bulk delete ----
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const allVisibleSelected = filtered.length > 0 && filtered.every((promo) => selectedIds.has(promo.id));
+
+  function toggleSelect(id) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function toggleSelectAll() {
+    setSelectedIds((current) => {
+      if (allVisibleSelected) return new Set();
+      const next = new Set(current);
+      filtered.forEach((promo) => next.add(promo.id));
+      return next;
+    });
+  }
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function bulkDeleteSelected() {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    return confirm({
+      title: "Delete selected coupons",
+      message: `Delete ${ids.length} selected coupon${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
+      tone: "danger",
+      confirmLabel: "Delete",
+      onConfirm: async () => {
+        setBulkDeleting(true);
+        try {
+          const results = await Promise.allSettled(ids.map((id) => deletePromoCode(id)));
+          const failed = results.filter((result) => result.status === "rejected").length;
+          if (failed) toast.error(`Deleted ${ids.length - failed} of ${ids.length} — ${failed} failed.`);
+          else toast.success(`Deleted ${ids.length} coupon${ids.length === 1 ? "" : "s"} successfully`);
+          clearSelection();
+          load();
+        } finally {
+          setBulkDeleting(false);
+        }
+      },
+    });
+  }
 
   const stats = useMemo(() => {
     const active = promos.filter((promo) => promoStatus(promo) === "Active").length;
@@ -254,10 +322,15 @@ export default function PromoCodeView() {
     setBulking(true);
   }
   async function submitBulk() {
+    const count = Number(bulkForm.count);
+    if (!Number.isInteger(count) || count < 1 || count > MAX_BULK_COUNT) {
+      setBulkMessage(`Enter a whole number between 1 and ${MAX_BULK_COUNT}.`);
+      return;
+    }
     setSavingBulk(true);
     setBulkMessage("");
     try {
-      const result = await bulkGeneratePromoCodes(bulkForm);
+      const result = await bulkGeneratePromoCodes({ ...bulkForm, count });
       toast.success(`Generated ${result.count} individual codes successfully`);
       setBulking(false);
       load();
@@ -305,7 +378,7 @@ export default function PromoCodeView() {
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={openBulk} className="inline-flex items-center gap-2 rounded-xl bg-success px-4 py-2.5 text-xs font-bold text-white shadow-sm">
             <UsersRound className="h-4 w-4" aria-hidden="true" />
-            Generate Bulk (100)
+            Generate Bulk
           </button>
           <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm">
             <Plus className="h-4 w-4" aria-hidden="true" />
@@ -327,7 +400,7 @@ export default function PromoCodeView() {
         <div className="relative z-10 max-w-2xl">
           <span className="mb-3 inline-block rounded-full bg-active px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">Live Checkout Simulator</span>
           <h3 className="text-xl font-bold text-ink sm:text-2xl">Test &amp; Redeem a Promo Code</h3>
-          <p className="mt-1 text-sm text-muted">Apply a real order amount to see the exact discount a percentage code would give — nothing here is estimated.</p>
+          <p className="mt-1 text-sm font-medium text-ink/80">Apply a real order amount to see the exact discount a percentage code would give — nothing here is estimated.</p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <input
               value={simCode}
@@ -378,7 +451,7 @@ export default function PromoCodeView() {
                   type="button"
                   aria-pressed={view === id}
                   onClick={() => setView(id)}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${view === id ? "bg-primary text-white" : "text-muted hover:bg-active"}`}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${view === id ? "bg-primary text-white" : "text-ink hover:bg-active"}`}
                 >
                   <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                   {label}
@@ -388,17 +461,44 @@ export default function PromoCodeView() {
           </div>
         </div>
 
+        {!loading && filtered.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-card px-4 py-2.5">
+            <RowCheckbox checked={allVisibleSelected} onChange={toggleSelectAll} label="Select all visible" />
+            <span className="text-xs font-bold text-ink">
+              {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+            </span>
+            {selectedIds.size > 0 && (
+              <div className="ml-auto flex items-center gap-2">
+                <button type="button" onClick={clearSelection} className="text-xs font-bold text-ink hover:underline">Clear</button>
+                <button
+                  type="button"
+                  onClick={bulkDeleteSelected}
+                  disabled={bulkDeleting}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-sm disabled:opacity-60"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  {bulkDeleting ? "Deleting…" : "Delete Selected"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {loading ? (
           <SkeletonGrid count={6} className="grid gap-5 md:grid-cols-2 lg:grid-cols-3" />
         ) : !filtered.length ? (
-          <p className="rounded-2xl border border-dashed border-border-subtle bg-card p-8 text-center text-sm text-muted">No promotional codes found matching your criteria.</p>
+          <p className="rounded-2xl border border-dashed border-border-subtle bg-card p-8 text-center text-sm font-semibold text-ink/70">No promotional codes found matching your criteria.</p>
         ) : view === "grid" ? (
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((promo) => <PromoCard key={promo.id} promo={promo} onViewQr={setViewing} onDelete={remove} />)}
+            {filtered.map((promo) => (
+              <PromoCard key={promo.id} promo={promo} onViewQr={setViewing} onDelete={remove} selected={selectedIds.has(promo.id)} onToggleSelect={toggleSelect} />
+            ))}
           </div>
         ) : (
           <div className="divide-y divide-border-subtle overflow-hidden rounded-2xl border border-border-subtle bg-card shadow-sm">
-            {filtered.map((promo) => <PromoRow key={promo.id} promo={promo} onViewQr={setViewing} onDelete={remove} />)}
+            {filtered.map((promo) => (
+              <PromoRow key={promo.id} promo={promo} onViewQr={setViewing} onDelete={remove} selected={selectedIds.has(promo.id)} onToggleSelect={toggleSelect} />
+            ))}
           </div>
         )}
       </section>
@@ -411,33 +511,33 @@ export default function PromoCodeView() {
               <button type="button" onClick={() => setCreating(false)} className="text-xl text-muted" aria-label="Close">×</button>
             </div>
             <form onSubmit={submitCreate} className="space-y-4">
-              <label className="grid gap-1 text-xs font-bold text-muted">
+              <label className="grid gap-1 text-xs font-bold text-ink">
                 Coupon Code
                 <input required value={createForm.code} onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })} placeholder="e.g. SUMMER50" className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm font-mono uppercase text-ink outline-none focus:ring-2 focus:ring-primary" />
               </label>
               <div className="grid grid-cols-2 gap-4">
-                <label className="grid gap-1 text-xs font-bold text-muted">
+                <label className="grid gap-1 text-xs font-bold text-ink">
                   Discount Type
                   <select value={createForm.type} onChange={(e) => setCreateForm({ ...createForm, type: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary">
                     {PROMO_TYPES.map((type) => <option key={type} value={type}>{type === "percentage" ? "Percentage Off (%)" : type === "fixed" ? "Fixed Amount" : "Free Shipping"}</option>)}
                   </select>
                 </label>
-                <label className="grid gap-1 text-xs font-bold text-muted">
+                <label className="grid gap-1 text-xs font-bold text-ink">
                   {createForm.type === "percentage" ? "Discount Percentage" : createForm.type === "fixed" ? "Discount Amount" : "Value (N/A)"}
                   <input type="number" min="1" disabled={createForm.type === "shipping"} required={createForm.type !== "shipping"} value={createForm.value} onChange={(e) => setCreateForm({ ...createForm, value: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary disabled:opacity-50" />
                 </label>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <label className="grid gap-1 text-xs font-bold text-muted">
+                <label className="grid gap-1 text-xs font-bold text-ink">
                   Usage Limit
                   <input type="number" min="1" required value={createForm.limit} onChange={(e) => setCreateForm({ ...createForm, limit: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary" />
                 </label>
-                <label className="grid gap-1 text-xs font-bold text-muted">
+                <label className="grid gap-1 text-xs font-bold text-ink">
                   Expiration Date
                   <input type="date" required value={createForm.expiry} onChange={(e) => setCreateForm({ ...createForm, expiry: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary" />
                 </label>
               </div>
-              <label className="grid gap-1 text-xs font-bold text-muted">
+              <label className="grid gap-1 text-xs font-bold text-ink">
                 Description / Tag
                 <input value={createForm.description} onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })} placeholder="e.g. Summer sale special for all users" className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary" />
               </label>
@@ -455,15 +555,28 @@ export default function PromoCodeView() {
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-8">
           <div className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><UsersRound className="h-5 w-5 text-success" aria-hidden="true" /> Generate 100 Org Promos</h3>
+              <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><UsersRound className="h-5 w-5 text-success" aria-hidden="true" /> Generate Org Promos</h3>
               <button type="button" onClick={() => setBulking(false)} className="text-xl text-muted" aria-label="Close">×</button>
             </div>
-            <p className="mb-4 text-xs text-muted">
-              Batch-generates <b>100 unique 8-character promo codes</b> (format <code className="rounded bg-page px-1.5 py-0.5 font-mono text-success">NEXTXXXX</code>) for team members or clients — one use each.
+            <p className="mb-4 text-xs font-medium text-ink/70">
+              Batch-generates unique 8-character promo codes (format <code className="rounded bg-page px-1.5 py-0.5 font-mono text-success">NEXTXXXX</code>) for team members or clients — one use each.
             </p>
             <div className="space-y-4">
+              <label className="grid gap-1 text-xs font-bold text-ink">
+                Quantity
+                <input
+                  type="number"
+                  min="1"
+                  max={MAX_BULK_COUNT}
+                  step="1"
+                  value={bulkForm.count}
+                  onChange={(e) => setBulkForm({ ...bulkForm, count: e.target.value })}
+                  className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-success"
+                />
+                <span className="font-semibold normal-case text-muted">Up to {MAX_BULK_COUNT} codes at a time.</span>
+              </label>
               <div className="grid grid-cols-2 gap-4">
-                <label className="grid gap-1 text-xs font-bold text-muted">
+                <label className="grid gap-1 text-xs font-bold text-ink">
                   Discount Type
                   <select value={bulkForm.type} onChange={(e) => setBulkForm({ ...bulkForm, type: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-success">
                     <option value="percentage">Percentage Off (25%)</option>
@@ -471,19 +584,19 @@ export default function PromoCodeView() {
                     <option value="shipping">Free Shipping</option>
                   </select>
                 </label>
-                <label className="grid gap-1 text-xs font-bold text-muted">
+                <label className="grid gap-1 text-xs font-bold text-ink">
                   Organization Name
                   <input value={bulkForm.orgName} onChange={(e) => setBulkForm({ ...bulkForm, orgName: e.target.value })} placeholder="e.g. Enterprise Partner" className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-success" />
                 </label>
               </div>
-              <label className="grid gap-1 text-xs font-bold text-muted">
+              <label className="grid gap-1 text-xs font-bold text-ink">
                 Expiration Date
                 <input type="date" value={bulkForm.expiry} onChange={(e) => setBulkForm({ ...bulkForm, expiry: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-success" />
               </label>
               {bulkMessage && <p className="text-xs text-primary">{bulkMessage}</p>}
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setBulking(false)} disabled={savingBulk} className="rounded-xl border border-border-subtle px-5 py-2.5 text-sm font-medium text-ink">Cancel</button>
-                <button type="button" onClick={submitBulk} disabled={savingBulk} className="inline-flex items-center gap-2 rounded-xl bg-success px-5 py-2.5 text-sm font-medium text-white shadow-md disabled:opacity-60">{savingBulk ? "Generating…" : "Generate 100 Codes"}</button>
+                <button type="button" onClick={submitBulk} disabled={savingBulk} className="inline-flex items-center gap-2 rounded-xl bg-success px-5 py-2.5 text-sm font-medium text-white shadow-md disabled:opacity-60">{savingBulk ? "Generating…" : `Generate ${bulkForm.count || 0} Codes`}</button>
               </div>
             </div>
           </div>
@@ -508,7 +621,7 @@ export default function PromoCodeView() {
               </div>
               <span className="font-mono text-lg font-bold tracking-wider text-primary">{viewing.code}</span>
             </div>
-            <p className="text-xs text-muted">{viewing.description || "No additional description provided."}</p>
+            <p className="text-xs font-medium text-ink/70">{viewing.description || "No additional description provided."}</p>
             <button type="button" onClick={() => { navigator.clipboard?.writeText(viewing.code).catch(() => {}); setViewing(null); setQrDataUrl(""); }} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-medium text-white shadow-sm">
               <Copy className="h-4 w-4" aria-hidden="true" /> Copy Promo Code
             </button>

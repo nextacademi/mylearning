@@ -1089,7 +1089,7 @@ export default function PublicSite() {
 
           <div className="mt-4 grid gap-5 md:grid-cols-2">
             <div className="space-y-5">
-              {programs.map((program, index) => (
+              {programs.slice(0, 2).map((program, index) => (
                 <Reveal
                   as="article"
                   index={index}
@@ -1351,7 +1351,7 @@ export default function PublicSite() {
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-8 md:px-10 md:py-14">
           <div>
             <Brand light />
-            <p className="mt-3 max-w-xs text-sm leading-6 text-white/50">
+            <p className="mt-3 max-w-xs text-sm leading-6 text-white/70">
               Practical learning for people building stronger careers,
               classrooms, and communities.
             </p>
@@ -1363,10 +1363,10 @@ export default function PublicSite() {
             </button>
           </div>
           <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/60">
               Explore
             </p>
-            <div className={`${displayFont.className} mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm font-medium tracking-tight text-white/70 md:gap-y-4 md:text-base`}>
+            <div className={`${displayFont.className} mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm font-medium tracking-tight text-white/85 md:gap-y-4 md:text-base`}>
               <a href="#home" className="transition hover:text-white">
                 Home
               </a>
@@ -1388,26 +1388,26 @@ export default function PublicSite() {
             </div>
           </div>
           <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/60">
               Get in touch
             </p>
-            <div className="mt-4 grid gap-2.5 text-sm text-white/70">
+            <div className="mt-4 grid gap-2.5 text-sm text-white/85">
               <a
                 href="mailto:nextacademi@gmail.com"
                 className="flex items-center gap-2 transition hover:text-white"
               >
-                <span className="text-white/40">✉</span> nextacademi@gmail.com
+                <span className="text-white/60">✉</span> nextacademi@gmail.com
               </a>
               <span className="flex items-center gap-2">
-                <span className="text-white/40">📍</span> Singapore
+                <span className="text-white/60">📍</span> Singapore
               </span>
             </div>
           </div>
           <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/60">
               Next Academy
             </p>
-            <p className="mt-4 max-w-xs text-sm leading-6 text-white/50">
+            <p className="mt-4 max-w-xs text-sm leading-6 text-white/70">
               © 2026 Next Academy. Learning for what comes next.
             </p>
           </div>
