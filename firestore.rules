@@ -185,6 +185,15 @@ service cloud.firestore {
       allow read: if admin() || (signedIn() && resource.data.userId == request.auth.uid);
       allow write: if admin();
     }
+    // Every Q&A turn with the floating AI Assistant (see the route's own
+    // comment for why this is separate from aiAuditLog). Same visibility
+    // model, same "no client write path" rule — every write happens
+    // server-side via /api/ai-assistant/conversations using the verified
+    // token, never trusted from the client.
+    match /aiAssistantConversations/{entryId} {
+      allow read: if admin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow write: if admin();
+    }
     match /achievements/{achievementId} { allow read: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.studentId == request.auth.uid); allow create: if admin() || (teacher() && request.resource.data.teacherId == request.auth.uid && assignedStudent(request.resource.data.studentId)); allow update, delete: if admin() || (teacher() && resource.data.teacherId == request.auth.uid && request.resource.data.teacherId == resource.data.teacherId); }
     match /assessments/{assessmentId} { allow read: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.studentId == request.auth.uid); allow create: if admin() || (teacher() && request.resource.data.teacherId == request.auth.uid && assignedStudent(request.resource.data.studentId)); allow update, delete: if admin() || (teacher() && resource.data.teacherId == request.auth.uid && request.resource.data.teacherId == resource.data.teacherId); }
     match /certificates/{certificateId} { allow read: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.studentId == request.auth.uid); allow create: if admin() || (teacher() && request.resource.data.teacherId == request.auth.uid && assignedStudent(request.resource.data.studentId)); allow update, delete: if admin() || (teacher() && resource.data.teacherId == request.auth.uid && request.resource.data.teacherId == resource.data.teacherId); }

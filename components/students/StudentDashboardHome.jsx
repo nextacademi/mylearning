@@ -110,10 +110,10 @@ export default function StudentDashboardHome({ uid, name, greeting, modules, act
   return (
     <div className="space-y-6">
       {/* Welcome + sync status */}
-      <section className="flex flex-col gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl md:flex-row md:items-center md:justify-between md:p-8">
+      <section className="flex flex-col gap-4 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:flex-row md:items-center md:justify-between md:p-5">
         <div>
-          <h2 className="text-2xl font-extrabold md:text-3xl">Welcome, {name}</h2>
-          <p className="mt-2 max-w-xl text-xs leading-relaxed text-muted">{greeting}</p>
+          <h2 className="text-lg font-extrabold md:text-xl">Welcome, {name}</h2>
+          <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted">{greeting}</p>
         </div>
         <div className="flex items-center gap-2 self-start rounded-full border border-border-subtle bg-card px-3 py-1.5 text-[11px] font-bold shadow-sm">
           {online ? (

@@ -115,15 +115,15 @@ export default function TeacherStudentProfile() {
             </div>
           ) : (
             <>
-              <header className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl md:p-8">
+              <header className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
                     {student.userId || "—"} · Student profile
                   </p>
-                  <h1 className="mt-3 text-2xl font-black md:text-4xl">
+                  <h1 className="mt-1 text-lg font-black md:text-xl">
                     {student.displayName || "Unnamed student"}
                   </h1>
-                  <p className="mt-2 text-sm text-muted">{student.email}</p>
+                  <p className="mt-1 text-xs text-muted">{student.email}</p>
                 </div>
                 <button
                   onClick={() => setShowIdCard((current) => !current)}

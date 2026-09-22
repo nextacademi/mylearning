@@ -423,18 +423,18 @@ export default function EventDetailsPage() {
         <MotionConfig reducedMotion="user">
           <motion.div initial="hidden" animate="show" variants={staggerContainer}>
             {notice && <p className="mb-4 rounded-xl bg-success-soft p-3 text-sm text-success">{notice}</p>}
-            <motion.header variants={fadeSlideUp} className="overflow-hidden rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] shadow-xl">
+            <motion.header variants={fadeSlideUp} className="overflow-hidden rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] shadow-sm">
               {event.bannerUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={event.bannerUrl} alt={event.name} className="h-56 w-full object-cover" />
               )}
-              <div className="p-6">
+              <div className="p-4 md:p-5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusTones[event.computedStatus] || "bg-page text-muted"}`}>{event.computedStatus}</span>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary">{event.type}</span>
                 </div>
-                <h1 className="mt-2 text-3xl font-black md:text-5xl">{event.name}</h1>
-                <p className="mt-2 max-w-2xl text-sm text-muted">{event.description || "No description available."}</p>
+                <h1 className="mt-1 text-lg font-black md:text-xl">{event.name}</h1>
+                <p className="mt-1 max-w-2xl text-xs text-muted">{event.description || "No description available."}</p>
               </div>
             </motion.header>
 

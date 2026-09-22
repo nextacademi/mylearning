@@ -311,12 +311,12 @@ export default function TeacherExams({ teacherId, isManager = false }) {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
         <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-active p-3"><ClipboardList className="h-7 w-7 text-primary" aria-hidden="true" /></div>
+          <div className="rounded-2xl bg-active p-2"><ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" /></div>
           <div>
-            <h2 className="text-2xl font-black sm:text-3xl">Exams &amp; Quizzes</h2>
-            <p className="mt-1 text-sm text-muted">
+            <h2 className="text-lg font-black sm:text-xl">Exams &amp; Quizzes</h2>
+            <p className="mt-1 text-xs text-muted">
               {isManager
                 ? "Oversee every exam across the academy — students take them online, graded automatically."
                 : "Create exams for your courses — students take them online, graded automatically."}

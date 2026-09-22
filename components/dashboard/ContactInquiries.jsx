@@ -132,10 +132,10 @@ export default function ContactInquiries() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
         <div>
-          <h2 className="text-3xl font-black">Contact Inquiries</h2>
-          <p className="mt-2 text-sm text-muted">
+          <h2 className="text-lg font-black">Contact Inquiries</h2>
+          <p className="mt-1 text-xs text-muted">
             Manage messages and inquiries received from website visitors.
           </p>
         </div>
@@ -145,8 +145,8 @@ export default function ContactInquiries() {
               {newCount} New
             </span>
           )}
-          <div className="rounded-2xl bg-active p-3">
-            <Mail className="h-7 w-7 text-primary" aria-hidden="true" />
+          <div className="rounded-2xl bg-active p-2">
+            <Mail className="h-5 w-5 text-primary" aria-hidden="true" />
           </div>
         </div>
       </section>

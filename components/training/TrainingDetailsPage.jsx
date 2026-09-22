@@ -341,12 +341,12 @@ export default function TrainingDetailsPage() {
         <TrainingDetailsSkeleton />
       ) : !allowed && profile?.role === "Student" && studentEnrolled ? (
         <div className="mt-6">
-          <header className="rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
+          <header className="rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
             <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
               {course.courseCode || course.id} · Offline Training
             </p>
-            <h1 className="mt-2 text-3xl font-black md:text-5xl">{course.title}</h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted">{course.description || "No description available."}</p>
+            <h1 className="mt-1 text-lg font-black md:text-xl">{course.title}</h1>
+            <p className="mt-1 max-w-2xl text-xs text-muted">{course.description || "No description available."}</p>
           </header>
           <div className="mt-5">
             <StudentCourseLearningView course={course} courseId={course.id} uid={user.uid} />
@@ -358,14 +358,14 @@ export default function TrainingDetailsPage() {
         </div>
       ) : (
         <>
-          <header className="rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
+          <header className="rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
             <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
               {course.courseCode || course.id} · Offline Training
             </p>
-            <h1 className="mt-2 text-3xl font-black md:text-5xl">
+            <h1 className="mt-1 text-lg font-black md:text-xl">
               {course.title}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted">
+            <p className="mt-1 max-w-2xl text-xs text-muted">
               {course.description || "No description available."}
             </p>
           </header>

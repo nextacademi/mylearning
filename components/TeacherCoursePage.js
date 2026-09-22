@@ -163,14 +163,14 @@ export default function TeacherCoursePage() {
             </div>
           ) : (
             <>
-              <header className="mt-5 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl md:p-8">
+              <header className="mt-5 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
                   Teacher course
                 </p>
-                <h1 className="mt-3 text-3xl font-black md:text-5xl">
+                <h1 className="mt-1 text-lg font-black md:text-xl">
                   {course.title}
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm text-muted">
+                <p className="mt-1 max-w-2xl text-xs text-muted">
                   {course.description || "No course description available."}
                 </p>
               </header>

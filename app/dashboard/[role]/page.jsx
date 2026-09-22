@@ -16,8 +16,6 @@ import { prefetchAchievements } from "../../../lib/achievement-data";
 import { prefetchManagerExams } from "../../../lib/exam-data";
 import { prefetchFinanceOverview } from "../../../lib/services/finance-service";
 import { prefetchInvoices } from "../../../lib/services/invoice-service";
-import StudentManagement from "../../../components/StudentManagement";
-import TeacherAssignment from "../../../components/teacher-assignment/TeacherAssignment";
 import EventManagement from "../../../components/events/EventManagement";
 import StudentEvents from "../../../components/events/StudentEvents";
 import SidebarIcon from "../../../components/dashboard/SidebarIcon";
@@ -29,9 +27,8 @@ import TrainingManagement from "../../../components/training/TrainingManagement"
 import FinanceManagement from "../../../components/finance/FinanceManagement";
 import MyPaymentSummary from "../../../components/students/MyPaymentSummary";
 import LoadingScreen from "../../../components/dashboard/LoadingScreen";
-import ChatWorkspace from "../../../components/chat/ChatWorkspace";
+import ChatHub from "../../../components/chat/ChatHub";
 import SettingsPage from "../../../components/settings/SettingsPage";
-import ContactInquiries from "../../../components/dashboard/ContactInquiries";
 import { useNewInquiryCount } from "../../../lib/contact-inquiries-data";
 import IdCardPrint from "../../../components/teacher/IdCardPrint";
 import Shop from "../../../components/shop/Shop";
@@ -135,8 +132,6 @@ export const roleConfig = {
       "Your organization overview will appear here when Director data sources are available.",
     modules: [
       "Dashboard",
-      "Students",
-      "Teacher",
       "Training",
       "Event",
       "Room Booking",
@@ -145,7 +140,6 @@ export const roleConfig = {
       "My Shop",
       "Promo Codes",
       "User",
-      "Contact Inquiries",
       "Appointments",
       "Chat",
       "Achievement",
@@ -160,8 +154,6 @@ export const roleConfig = {
     greeting: "Everything is under control.",
     modules: [
       "Dashboard",
-      "Students",
-      "Teacher",
       "Training",
       "Event",
       "Room Booking",
@@ -169,7 +161,6 @@ export const roleConfig = {
       "Documents",
       "My Shop",
       "User",
-      "Contact Inquiries",
       "Appointments",
       "Chat",
       "Achievement",
@@ -264,18 +255,14 @@ function DirectorDashboard({ profile, user }) {
       headerTitle={active === "Dashboard" ? "Director Dashboard" : active}
       headerSubtitle="Organization overview"
       onLogout={logout}
-      badges={{ "Contact Inquiries": newInquiryCount }}
+      badges={{ Chat: newInquiryCount }}
     >
             {active === "Dashboard" ? (
               <DirectorOverview onNavigate={setActive} />
-            ) : active === "Students" ? (
-              <StudentManagement role="Director" />
             ) : active === "User" ? (
-              <UserManagement role="Director" currentUserId={user.uid} />
+              <UserManagement role="Director" currentUserId={user.uid} onNavigate={setActive} />
             ) : active === "Training" ? (
               <TrainingManagement role="Director" />
-            ) : active === "Teacher" ? (
-              <TeacherAssignment onNavigate={setActive} />
             ) : active === "Event" ? (
               <EventManagement />
             ) : active === "Room Booking" ? (
@@ -284,8 +271,6 @@ function DirectorDashboard({ profile, user }) {
               <DocumentsModule role="Director" />
             ) : active === "Finance" ? (
               <FinanceManagement />
-            ) : active === "Contact Inquiries" ? (
-              <ContactInquiries />
             ) : active === "My Shop" ? (
               <Shop role="Director" uid={user.uid} />
             ) : active === "Promo Codes" ? (
@@ -319,7 +304,7 @@ function DirectorDashboard({ profile, user }) {
                 />
               </section>
             ) : active === "Chat" ? (
-              <ChatWorkspace currentUserId={user.uid} currentUserRole="Director" currentUserName={name} />
+              <ChatHub currentUserId={user.uid} currentUserRole="Director" currentUserName={name} newInquiryCount={newInquiryCount} />
             ) : active === "Settings" ? (
               <SettingsPage />
             ) : (
@@ -453,22 +438,16 @@ function DashboardContent({ role, profile, user }) {
       userEmail={user.email}
       headerTitle={active === "Dashboard" ? `${role} Dashboard` : active}
       onLogout={logout}
-      badges={{ "Contact Inquiries": newInquiryCount }}
+      badges={{ Chat: newInquiryCount }}
     >
-            {role === "Admin" && active === "Students" ? (
-              <StudentManagement role="Admin" />
-            ) : role === "Admin" && active === "User" ? (
-              <UserManagement role="Admin" currentUserId={user.uid} />
+            {role === "Admin" && active === "User" ? (
+              <UserManagement role="Admin" currentUserId={user.uid} onNavigate={setActive} />
             ) : role === "Admin" && active === "Finance" ? (
               <FinanceManagement />
-            ) : role === "Admin" && active === "Contact Inquiries" ? (
-              <ContactInquiries />
             ) : role === "Student" && (active === "Training" || active === "My Training") ? (
               <MyPaymentSummary />
             ) : (active === "Training" || active === "My Training") ? (
               <TrainingManagement role={role} />
-            ) : role === "Admin" && active === "Teacher" ? (
-              <TeacherAssignment onNavigate={setActive} />
             ) : role === "Admin" && active === "Event" ? (
               <EventManagement />
             ) : role === "Admin" && active === "Room Booking" ? (
@@ -523,18 +502,18 @@ function DashboardContent({ role, profile, user }) {
                 />
               </section>
             ) : active === "Chat" ? (
-              <ChatWorkspace currentUserId={user.uid} currentUserRole={role} currentUserName={name} />
+              <ChatHub currentUserId={user.uid} currentUserRole={role} currentUserName={name} newInquiryCount={newInquiryCount} />
             ) : active === "Settings" ? (
               <SettingsPage />
             ) : (
               <>
             {active === "Dashboard" && (
-            <section className="flex flex-col justify-between gap-6 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl md:flex-row md:items-center md:p-8">
+            <section className="flex flex-col justify-between gap-6 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:flex-row md:items-center md:p-5">
               <div>
-                <h2 className="text-3xl font-extrabold">
+                <h2 className="text-lg font-extrabold">
                   Welcome, {name}
                 </h2>
-                <p className="mt-2 max-w-xl text-xs leading-relaxed text-muted">
+                <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted">
                   {config.greeting}
                 </p>
               </div>

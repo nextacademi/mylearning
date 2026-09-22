@@ -167,11 +167,11 @@ export default function StudentExams({ uid }) {
 
   return (
     <div className="space-y-6">
-      <section className="flex items-center gap-3 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
-        <div className="rounded-2xl bg-active p-3"><ClipboardList className="h-7 w-7 text-primary" aria-hidden="true" /></div>
+      <section className="flex items-center gap-3 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
+        <div className="rounded-2xl bg-active p-2"><ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" /></div>
         <div>
-          <h2 className="text-2xl font-black sm:text-3xl">Exams &amp; Quizzes</h2>
-          <p className="mt-1 text-sm text-muted">Take exams published for the courses you&apos;re enrolled in.</p>
+          <h2 className="text-lg font-black sm:text-xl">Exams &amp; Quizzes</h2>
+          <p className="mt-1 text-xs text-muted">Take exams published for the courses you&apos;re enrolled in.</p>
         </div>
       </section>
 

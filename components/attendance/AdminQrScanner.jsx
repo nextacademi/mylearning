@@ -94,10 +94,10 @@ export default function AdminQrScanner() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 shadow-xl">
+      <section className="rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 shadow-sm md:p-5">
         <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Attendance</p>
-        <h2 className="mt-2 text-3xl font-black text-ink">Scan QR Code</h2>
-        <p className="mt-2 text-sm text-muted">Check students in/out of an offline class using their D Card QR code.</p>
+        <h2 className="mt-2 text-lg font-black text-ink">Scan QR Code</h2>
+        <p className="mt-1 text-xs text-muted">Check students in/out of an offline class using their D Card QR code.</p>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_.8fr]">

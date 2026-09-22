@@ -550,14 +550,14 @@ export default function TeacherAssignment({ onNavigate }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-[#bfe6cf] bg-[linear-gradient(120deg,#eafaf1_0%,#f4fbf7_45%,#ffffff_100%)] p-6 text-ink shadow-xl md:p-8">
-        <h2 className="flex items-center gap-2 text-2xl font-black md:text-3xl"><GraduationCap className="h-7 w-7 text-success" aria-hidden="true" /> Teacher Assignment</h2>
-        <p className="mt-2 text-sm text-muted">Assign real, active Teacher accounts to your existing courses and classes. Workload updates automatically from live enrollment data.</p>
+      <section className="rounded-2xl border border-[#bfe6cf] bg-[linear-gradient(120deg,#eafaf1_0%,#f4fbf7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
+        <h2 className="flex items-center gap-1.5 text-lg font-black md:text-xl"><GraduationCap className="h-5 w-5 text-success" aria-hidden="true" /> Teacher Assignment</h2>
+        <p className="mt-1 text-xs text-muted">Assign real, active Teacher accounts to your existing courses and classes. Workload updates automatically from live enrollment data.</p>
         {!loading && (
-          <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
-            <span className="rounded-full bg-card px-3 py-1.5 text-ink shadow-sm">{data.teachers.length} active teacher{data.teachers.length === 1 ? "" : "s"}</span>
-            <span className="rounded-full bg-card px-3 py-1.5 text-ink shadow-sm">{data.courses.length} course{data.courses.length === 1 ? "" : "s"}</span>
-            <span className="rounded-full bg-card px-3 py-1.5 text-ink shadow-sm">{data.classes.length} class{data.classes.length === 1 ? "" : "es"}</span>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+            <span className="rounded-full bg-card px-2.5 py-1 text-ink shadow-sm">{data.teachers.length} active teacher{data.teachers.length === 1 ? "" : "s"}</span>
+            <span className="rounded-full bg-card px-2.5 py-1 text-ink shadow-sm">{data.courses.length} course{data.courses.length === 1 ? "" : "s"}</span>
+            <span className="rounded-full bg-card px-2.5 py-1 text-ink shadow-sm">{data.classes.length} class{data.classes.length === 1 ? "" : "es"}</span>
           </div>
         )}
       </section>

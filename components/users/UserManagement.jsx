@@ -1,12 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, MoreVertical, ShieldCheck, Trash2 } from "lucide-react";
+import { Eye, MoreVertical, Trash2 } from "lucide-react";
 import { changeUserRole, deleteUserAccount, loadUsersCached } from "../../lib/services/user-service";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
 import { SkeletonBar, SkeletonList } from "../ui/Skeleton";
+import StudentManagement from "../StudentManagement";
+import TeacherAssignment from "../teacher-assignment/TeacherAssignment";
+
+// "Students" and "Teacher" used to be their own sidebar items; consolidated
+// here as sub-tabs so "User" is the one place Director/Admin manage every
+// person in the academy. Each tab renders the exact same, already-working
+// component those sidebar items used to point at — nothing about student/
+// teacher management itself changed, only where it's reached from.
+const USER_TABS = ["All Users", "Students", "Teachers"];
 
 const assignableRoles = ["Student", "Teacher", "Admin", "Director"];
 const dash = "—";
@@ -73,7 +82,8 @@ function UserDetails({ user }) {
   return <dl className="grid gap-4 text-sm">{rows.map(([label, value]) => <div key={label}><dt className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</dt><dd className="mt-1 break-all font-medium text-muted">{value || dash}</dd></div>)}</dl>;
 }
 
-export default function UserManagement({ role, currentUserId }) {
+export default function UserManagement({ role, currentUserId, onNavigate }) {
+  const [tab, setTab] = useState("All Users");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -148,37 +158,52 @@ export default function UserManagement({ role, currentUserId }) {
   }
 
   return <div className="space-y-6">
-    <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
-      <div><h2 className="text-3xl font-black">Users</h2><p className="mt-2 text-sm text-muted">Manage all registered users and their roles.</p></div>
-      <div className="rounded-2xl bg-active p-3"><ShieldCheck className="h-7 w-7 text-primary" aria-hidden="true" /></div>
-    </section>
-    {notice && <p className="rounded-xl bg-success-soft px-4 py-3 text-sm text-success">{notice}</p>}
-    {error && !changing && <div className="rounded-xl bg-active px-4 py-3 text-sm text-primary"><b>Unable to load users. Please try again.</b><p>{error}</p></div>}
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student], ["Guests", counts.Guest]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>{loading ? <SkeletonBar className="mt-2 h-7 w-12" /> : <p className="mt-2 text-2xl font-extrabold text-ink">{value}</p>}</article>)}</section>
-    <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
-      <div className="mb-4"><h3 className="font-bold text-ink">All Users</h3><p className="mt-1 text-xs text-muted">Search by user ID, name, email, or phone · filter by role or status · export the current view.</p></div>
-      {loading ? (
-        <SkeletonList count={8} />
-      ) : (
-        <DataTable
-          title="users"
-          name="users"
-          columns={columns}
-          rows={users}
-          loading={loading}
-          initialSort={{ key: "createdAt", dir: "desc" }}
-          pageSize={10}
-          emptyLabel="No users found."
-          rowActions={(user) => (
-            <>
-              <button type="button" onClick={() => setViewing(user)} className="inline-flex items-center gap-1 rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90"><Eye className="h-3.5 w-3.5" /> View</button>
-              {canChange(user) && <button type="button" onClick={() => { setChanging(user); setNextRole(user.role); setError(""); }} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page">Change role</button>}
-              {canChange(user) && <RowMenu onDelete={() => deleteUser(user)} />}
-            </>
+    <nav className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-2 shadow-sm">
+      {USER_TABS.map((item) => (
+        <button
+          key={item}
+          type="button"
+          onClick={() => setTab(item)}
+          className={`shrink-0 rounded-xl px-4 py-2 text-xs font-bold ${tab === item ? "bg-primary text-white" : "text-muted hover:bg-active"}`}
+        >
+          {item}
+        </button>
+      ))}
+    </nav>
+
+    {tab === "Students" && <StudentManagement role={role} />}
+    {tab === "Teachers" && <TeacherAssignment onNavigate={onNavigate} />}
+    {tab === "All Users" && (
+      <>
+        {notice && <p className="rounded-xl bg-success-soft px-4 py-3 text-sm text-success">{notice}</p>}
+        {error && !changing && <div className="rounded-xl bg-active px-4 py-3 text-sm text-primary"><b>Unable to load users. Please try again.</b><p>{error}</p></div>}
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student], ["Guests", counts.Guest]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>{loading ? <SkeletonBar className="mt-2 h-7 w-12" /> : <p className="mt-2 text-2xl font-extrabold text-ink">{value}</p>}</article>)}</section>
+        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
+          <div className="mb-4"><h3 className="font-bold text-ink">All Users</h3><p className="mt-1 text-xs text-muted">Search by user ID, name, email, or phone · filter by role or status · export the current view.</p></div>
+          {loading ? (
+            <SkeletonList count={8} />
+          ) : (
+            <DataTable
+              title="users"
+              name="users"
+              columns={columns}
+              rows={users}
+              loading={loading}
+              initialSort={{ key: "createdAt", dir: "desc" }}
+              pageSize={10}
+              emptyLabel="No users found."
+              rowActions={(user) => (
+                <>
+                  <button type="button" onClick={() => setViewing(user)} className="inline-flex items-center gap-1 rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90"><Eye className="h-3.5 w-3.5" /> View</button>
+                  {canChange(user) && <button type="button" onClick={() => { setChanging(user); setNextRole(user.role); setError(""); }} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page">Change role</button>}
+                  {canChange(user) && <RowMenu onDelete={() => deleteUser(user)} />}
+                </>
+              )}
+            />
           )}
-        />
-      )}
-    </section>
+        </section>
+      </>
+    )}
     {viewing && <Dialog title="User details" onClose={() => setViewing(null)}><UserDetails user={viewing} /></Dialog>}
     {changing && <Dialog title="Change user role" onClose={() => !saving && setChanging(null)}><form onSubmit={updateRole} className="space-y-5"><p className="text-sm text-muted">Change the role for <b>{changing.displayName || changing.email || changing.uid}</b>. This takes effect immediately after confirmation.</p><label className="block text-sm font-semibold text-muted">Role<select value={nextRole} onChange={(event) => setNextRole(event.target.value)} className="mt-2 w-full rounded-xl border border-border-subtle bg-card px-3 py-2.5 font-normal outline-none focus:ring-2 focus:ring-primary">{assignableRoles.filter((item) => role === "Director" || item !== "Director").map((item) => <option key={item} value={item}>{item}</option>)}</select></label>{error && <p className="rounded-xl bg-active px-3 py-2 text-sm text-primary">{error}</p>}<div className="flex justify-end gap-3"><button type="button" onClick={() => setChanging(null)} disabled={saving} className="rounded-xl px-4 py-2 text-sm font-bold text-muted">Cancel</button><button disabled={saving || !canChange(changing)} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Updating role..." : "Confirm role change"}</button></div></form></Dialog>}
   </div>;

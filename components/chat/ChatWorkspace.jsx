@@ -70,9 +70,14 @@ function conversationDisplay(conversation, currentUserId) {
   return { name: otherUid ? conversation.participantNames?.[otherUid] || "Conversation" : "Conversation", photo: "", sub: otherUid ? conversation.participantRoles?.[otherUid] || "" : "" };
 }
 
-export default function ChatWorkspace({ currentUserId, currentUserRole, currentUserName }) {
+export default function ChatWorkspace({ currentUserId, currentUserRole, currentUserName, initialConversationId = "" }) {
   const [conversations, setConversations] = useState([]);
-  const [selected, setSelected] = useState("");
+  // Lazy initializer only — set once, on mount, from the "follow up on
+  // this AI Assistant question" flow (components/chat/ChatHub.jsx). A
+  // fresh mount is what delivers a new value here, not a prop-change
+  // effect, since this component isn't otherwise designed to jump
+  // conversations out from under whatever the user is currently viewing.
+  const [selected, setSelected] = useState(() => initialConversationId);
   const [messages, setMessages] = useState([]);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");

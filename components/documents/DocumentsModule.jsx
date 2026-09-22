@@ -473,9 +473,9 @@ function LearnerView({ heading, subheading, documents, loading, error, search, o
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-[#bfe6cf] bg-[linear-gradient(120deg,#eafaf1_0%,#f4fbf7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
-        <h2 className="flex items-center gap-2 text-2xl font-black md:text-3xl"><FileText className="h-7 w-7 text-success" aria-hidden="true" /> {heading}</h2>
-        <p className="mt-2 text-sm text-muted">{subheading}</p>
+      <section className="rounded-2xl border border-[#bfe6cf] bg-[linear-gradient(120deg,#eafaf1_0%,#f4fbf7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
+        <h2 className="flex items-center gap-1.5 text-lg font-black md:text-xl"><FileText className="h-5 w-5 text-success" aria-hidden="true" /> {heading}</h2>
+        <p className="mt-1 text-xs text-muted">{subheading}</p>
       </section>
 
       <label className="relative block max-w-md">
@@ -633,10 +633,10 @@ function ManagerView({ payload, loading, error, reload, canManagerControls, cour
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl md:flex-row md:items-center md:justify-between md:p-8">
+      <section className="flex flex-col gap-4 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:flex-row md:items-center md:justify-between md:p-5">
         <div>
-          <h2 className="flex items-center gap-2 text-2xl font-black md:text-3xl"><FileText className="h-7 w-7 text-primary" aria-hidden="true" /> {scoped ? "Course Documents" : canManagerControls ? "Documents Management" : "Course Learning Materials"}</h2>
-          <p className="mt-2 text-sm text-muted">
+          <h2 className="flex items-center gap-1.5 text-lg font-black md:text-xl"><FileText className="h-5 w-5 text-primary" aria-hidden="true" /> {scoped ? "Course Documents" : canManagerControls ? "Documents Management" : "Course Learning Materials"}</h2>
+          <p className="mt-1 text-xs text-muted">
             {scoped
               ? `Learning materials for ${courseName || "this course"}.`
               : "Learning materials for the whole academy — assign to a course, class, student, role, or everyone."}

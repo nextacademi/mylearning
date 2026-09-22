@@ -5,6 +5,7 @@ import { Bot, Copy, RotateCcw, Send, Trash2, User } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import { initialState, processMessage } from "../../lib/ai-assistant/engine";
 import { answerQuery } from "../../lib/ai-assistant/queryEngine";
+import { logAiConversation } from "../../lib/services/ai-assistant-service";
 
 const GREETING_TEXT = "Hi! Ask me anything about your LMS, or tell me what you'd like to create or update.";
 
@@ -80,6 +81,10 @@ export default function AiAssistantPanel() {
     try {
       const reply = await runTurn(trimmed);
       setMessages((current) => [...current, { role: "assistant", text: reply }]);
+      // Fire-and-forget — Director/Admin's Chat -> AI Assistant tab reads
+      // this so they can see what people are asking and follow up; must
+      // never block or break the chat itself if logging fails.
+      logAiConversation(trimmed, reply).catch(() => {});
     } catch (error) {
       setMessages((current) => [...current, { role: "assistant", text: `❌ Something went wrong: ${error.message || "Please try again."}` }]);
     } finally {
@@ -93,6 +98,7 @@ export default function AiAssistantPanel() {
     try {
       const reply = await runTurn(lastUserText);
       setMessages((current) => [...current, { role: "assistant", text: reply }]);
+      logAiConversation(lastUserText, reply).catch(() => {});
     } catch (error) {
       setMessages((current) => [...current, { role: "assistant", text: `❌ Something went wrong: ${error.message || "Please try again."}` }]);
     } finally {

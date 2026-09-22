@@ -504,8 +504,8 @@ export default function EventManagement() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl">
-        <div><h2 className="text-3xl font-black">Events</h2><p className="mt-2 text-sm text-muted">{canManage ? "Create, publish, and manage academy-wide events, workshops, and activities." : "Browse academy events, workshops, and activities."}</p></div>
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
+        <div><h2 className="text-lg font-black">Events</h2><p className="mt-1 text-xs text-muted">{canManage ? "Create, publish, and manage academy-wide events, workshops, and activities." : "Browse academy events, workshops, and activities."}</p></div>
         {canManage && <button type="button" onClick={() => open(null)} className="rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white">Add Event</button>}
       </section>
 

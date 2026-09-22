@@ -180,11 +180,11 @@ function DashboardView({ data }) {
   ];
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl md:p-8">
-        <h2 className="text-3xl font-extrabold">
+      <div className="rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
+        <h2 className="text-lg font-extrabold">
           Teacher Dashboard
         </h2>
-        <p className="mt-2 text-xs text-muted">
+        <p className="mt-1 text-xs text-muted">
           Manage your courses, classes, students, and teaching activities.
         </p>
       </div>
