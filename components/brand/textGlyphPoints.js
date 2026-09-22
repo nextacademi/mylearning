@@ -1,9 +1,8 @@
 "use client";
 
-// Shared canvas-based text sampling used by both ParticleText (the
-// full-screen logo reveal) and HeroParticleSphere (the hero's looping
-// particle sphere) — measures where a word's actual glyphs are (not a
-// hand-tuned layout) so particles can land precisely on letterforms.
+// Canvas-based text sampling used by ParticleText (the full-screen logo
+// reveal) — measures where a word's actual glyphs are (not a hand-tuned
+// layout) so particles can land precisely on letterforms.
 
 export function seededRandom(seed) {
   let s = seed % 2147483647;

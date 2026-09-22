@@ -11,27 +11,11 @@ import { subscribePublishedEvents } from "../lib/public-events-data";
 import { computeEventStatus, isRegistrationOpen } from "../lib/events-shared";
 import TestimonialCarousel from "./public/TestimonialCarousel";
 import AppointmentBookingWidget from "./public/AppointmentBookingWidget";
+import SmoothScroll from "./public/SmoothScroll";
 import PhotoGallery from "./public/PhotoGallery";
 import VideoLibrarySection from "./public/VideoLibrarySection";
 import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
-import HeroParticleSphere from "./brand/HeroParticleSphere";
-
-// Hero-only wordmark variant — same "NEXT ACADEMY" as BRAND_WORDS (the
-// full-screen LogoReveal intro), but with "N" split out in the brand red
-// so the hero's looping particle sphere reads as a stylized logo mark, not
-// plain text. Kept separate from LogoReveal's BRAND_WORDS so the once-per-
-// session intro reveal is untouched.
-const HERO_WORDMARK = [
-  {
-    text: "NEXT",
-    color: "#ffffff",
-    parts: [
-      { text: "N", color: "#F04438" },
-      { text: "EXT", color: "#ffffff" },
-    ],
-  },
-  { text: "ACADEMY", color: "#F04438" },
-];
+import HeroGradientMesh from "./brand/HeroGradientMesh";
 
 // Landing-page-only color system (blood red + white/off-white + dark text,
 // plus a near-black for the dark sections the 24asia.pages.dev-style
@@ -312,13 +296,14 @@ function Eyebrow({ children, className = "", light = false, tone = "red" }) {
   );
 }
 
-// Scroll-in-view reveal — fade + slight rise, staggered in groups of 4 by
-// 70ms. Matches 24asia.pages.dev's own reveal recipe (same duration,
-// easing curve, and stagger step), reused here for section heads, cards,
-// and grids across the page. `whileInView` + `viewport.once` means each
-// element animates in exactly once, the first time it's scrolled into
-// view, then stays put — never replays on scroll-up.
-const REVEAL_EASE = [0.22, 1, 0.36, 1];
+// Scroll-in-view reveal — fade + rise-and-settle from a slight scale-down,
+// staggered in groups of 4 by 90ms. This is this site's own recipe (not
+// borrowed from any reference site): the extra scale on top of fade+y is
+// what gives it a "settling into place" feel instead of a flat slide-up.
+// `whileInView` + `viewport.once` means each element animates in exactly
+// once, the first time it's scrolled into view, then stays put — never
+// replays on scroll-up.
+const REVEAL_EASE = [0.16, 1, 0.3, 1];
 function Reveal({ children, index = 0, className, as = "div", ...rest }) {
   // `motion.article` etc. — a plain tag name like "article" doesn't
   // understand Framer Motion's animation props on its own.
@@ -326,12 +311,12 @@ function Reveal({ children, index = 0, className, as = "div", ...rest }) {
   return (
     <Component
       className={className}
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 26, scale: 0.97 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true, amount: 0.12, margin: "0px 0px -40px 0px" }}
       transition={{
-        duration: 0.65,
-        delay: Math.min(index % 4, 3) * 0.07,
+        duration: 0.75,
+        delay: Math.min(index % 4, 3) * 0.09,
         ease: REVEAL_EASE,
       }}
       {...rest}
@@ -748,6 +733,7 @@ export default function PublicSite() {
     <main
       className={`${publicFont.className} overflow-x-clip bg-white text-[#111827]`}
     >
+      <SmoothScroll />
       {/* NAVBAR — landing page only, dark per the reference theme */}
       <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0D10]/95 shadow-sm backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:px-10">
@@ -865,11 +851,10 @@ export default function PublicSite() {
         )}
       </nav>
 
-      {/* HERO — dark, 3-line headline, real stat row, dot-cloud graphic.
-            Ambient red-to-black radial glow on the right mirrors the
-            24asia.pages.dev reference's atmospheric background, behind
-            everything (-z-10) so it never competes with the particle
-            sphere or text for clicks/readability. */}
+      {/* HERO — dark, 3-line headline, real stat row, drifting gradient
+            mesh graphic. Ambient red-to-black radial glow on the right
+            sits behind everything (-z-10) so it never competes with the
+            mesh or text for clicks/readability. */}
       <section id="home" className="relative overflow-hidden bg-[#0B0D10]">
         <div
           className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-full max-w-3xl opacity-60"
@@ -919,13 +904,10 @@ export default function PublicSite() {
                   and text-first on small screens; shows from md: up where
                   there's actually room for it to breathe. The section-level
                   glow above already lights this area, so this is just a
-                  tight highlight right behind the sphere itself. */}
+                  tight highlight right behind the gradient mesh itself. */}
             <div className="relative hidden justify-center md:flex md:justify-end">
               <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[#ff2d2d]/15 blur-[100px]" />
-              <HeroParticleSphere
-                words={HERO_WORDMARK}
-                className="w-full max-w-[480px] lg:max-w-[600px]"
-              />
+              <HeroGradientMesh className="aspect-square w-full max-w-[480px] lg:max-w-[600px]" />
             </div>
           </div>
 
