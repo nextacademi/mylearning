@@ -104,6 +104,17 @@ function SlotGroup({ title, slots, booked, passed, selected, onPick }) {
 
 const blankForm = { name: "", phone: "", email: "", courseId: "" };
 
+// "14:05" (native <input type="time">) -> "2:05 PM", matching the
+// "h:mm AM/PM" format used everywhere else (slots, slotMinutes, etc).
+function to12Hour(hhmm) {
+  if (!/^\d{2}:\d{2}$/.test(hhmm)) return "";
+  const [hourStr, minute] = hhmm.split(":");
+  const hour = Number(hourStr);
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${minute} ${period}`;
+}
+
 // Consultation booking + appointment list. Everyone can book and see their
 // own bookings; Director/Admin also see (and can cancel) everyone's, and
 // book on behalf of a walk-in or phone enquiry — the form isn't prefilled
@@ -130,6 +141,7 @@ export default function AppointmentScheduler() {
   const [bookedTimes, setBookedTimes] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedTime, setSelectedTime] = useState("");
+  const [customTime, setCustomTime] = useState("");
   const [form, setForm] = useState(() => (isManager ? blankForm : { name: profile?.displayName || user?.displayName || "", phone: profile?.phone || "", email: user?.email || "", courseId: "" }));
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -154,6 +166,7 @@ export default function AppointmentScheduler() {
     latestDate.current = date;
     setSelectedDate(date);
     setSelectedTime("");
+    setCustomTime("");
     setBookedTimes([]);
     setMessage("");
     setSlotsLoading(true);
@@ -169,6 +182,11 @@ export default function AppointmentScheduler() {
       });
   }
 
+  function pickSlot(slot) {
+    setCustomTime("");
+    setSelectedTime(slot);
+  }
+
   async function submit(event) {
     event.preventDefault();
     if (!selectedDate || !selectedTime) return;
@@ -179,6 +197,7 @@ export default function AppointmentScheduler() {
       toast.success("Appointment booked successfully");
       setSelectedDate(null);
       setSelectedTime("");
+      setCustomTime("");
       setBookedTimes([]);
       setForm(isManager ? blankForm : { ...form, courseId: "" });
       load();
@@ -302,8 +321,34 @@ export default function AppointmentScheduler() {
                   <h3 className="text-lg font-bold text-ink">{selectedDateTitle}</h3>
                   {slotsLoading && <span className="text-xs text-muted">Checking availability…</span>}
                 </div>
-                <SlotGroup title="Morning Sessions" slots={MORNING_SLOTS} booked={bookedTimes} passed={slotPassed} selected={selectedTime} onPick={setSelectedTime} />
-                <SlotGroup title="Evening Sessions" slots={EVENING_SLOTS} booked={bookedTimes} passed={slotPassed} selected={selectedTime} onPick={setSelectedTime} />
+                <SlotGroup title="Morning Sessions" slots={MORNING_SLOTS} booked={bookedTimes} passed={slotPassed} selected={selectedTime} onPick={pickSlot} />
+                <SlotGroup title="Evening Sessions" slots={EVENING_SLOTS} booked={bookedTimes} passed={slotPassed} selected={selectedTime} onPick={pickSlot} />
+
+                {isManager && (
+                  <div className="space-y-2 border-t border-border-subtle pt-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-subtle">Or set a custom time</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="time"
+                        value={customTime}
+                        onChange={(e) => setCustomTime(e.target.value)}
+                        className="rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <button
+                        type="button"
+                        disabled={!customTime}
+                        onClick={() => setSelectedTime(to12Hour(customTime))}
+                        className={`rounded-xl border px-4 py-2.5 text-xs font-bold transition disabled:opacity-50 ${selectedTime && selectedTime === to12Hour(customTime) ? "border-primary bg-primary text-white" : "border-border-subtle text-ink hover:bg-active"}`}
+                      >
+                        Use this time
+                      </button>
+                      {selectedTime && selectedTime === to12Hour(customTime) && (
+                        <span className="text-xs font-semibold text-primary">Selected: {selectedTime}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {message && <p className="rounded-xl bg-active px-3 py-2 text-xs text-primary">{message}</p>}
 
                 {selectedTime ? (
