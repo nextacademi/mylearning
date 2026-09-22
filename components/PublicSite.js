@@ -1259,7 +1259,7 @@ export default function PublicSite() {
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
               Explore
             </p>
-            <div className="mt-4 grid gap-2.5 text-sm text-white/70">
+            <div className={`${displayFont.className} mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm font-medium tracking-tight text-white/70`}>
               <a href="#home" className="transition hover:text-white">
                 Home
               </a>
