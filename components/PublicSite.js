@@ -278,11 +278,11 @@ function EventListRow({ event }) {
 // Red-bordered list card — real events, a real (working) Subscribe button
 // (the same CalendarSubscribeButton used elsewhere, wired to the live
 // .ics feed), never a static/decorative copy.
-function TrainingListCard({ title, events, emptyText, loading }) {
+function TrainingListCard({ title, events, emptyText, loading, tone = "red" }) {
   return (
     <div className="rounded-2xl border-2 border-[#E53935] bg-white p-4">
       <div className="flex items-center justify-between gap-3">
-        <b className="text-base font-black text-[#B91C1C]">{title}</b>
+        <b className={`text-base font-black ${tone === "dark" ? "text-[#111827]" : "text-[#B91C1C]"}`}>{title}</b>
         <CalendarSubscribeButton />
       </div>
       {loading ? (
@@ -1129,6 +1129,7 @@ export default function PublicSite() {
               <Reveal index={1}>
                 <TrainingListCard
                   title="Current Training:"
+                  tone="dark"
                   events={upcomingEvents.filter((event) => event.computedStatus === "Ongoing")}
                   emptyText="No training running right now."
                   loading={!eventsLoaded}
