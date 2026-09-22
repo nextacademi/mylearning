@@ -1192,8 +1192,8 @@ export default function PublicSite() {
       <VideoLibrarySection />
 
       {/* GRADIENT CTA BANNER */}
-      <section className="mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-8">
-        <Reveal className="rounded-3xl bg-gradient-to-br from-[#E53935] to-[#F59E0B] px-6 py-7 text-center text-white md:px-16 md:py-9">
+      <section className="mx-auto max-w-7xl px-5 py-3 md:px-10 md:py-4">
+        <Reveal className="rounded-3xl bg-gradient-to-br from-[#E53935] to-[#B91C1C] px-6 py-7 text-center text-white md:px-16 md:py-9">
           <h2 className={`${displayFont.className} mx-auto max-w-2xl text-3xl font-black leading-tight md:text-4xl`}>
             Your next skill is one enrollment away.
           </h2>
@@ -1241,7 +1241,7 @@ export default function PublicSite() {
 
       {/* FOOTER — dark per the reference theme */}
       <footer className="border-t border-white/10 bg-[#0B0D10] text-white">
-        <div className="mx-auto grid max-w-7xl gap-6 px-5 py-6 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-6 md:px-10 md:py-8">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-8 md:px-10 md:py-14">
           <div>
             <Brand light />
             <p className="mt-3 max-w-xs text-sm leading-6 text-white/50">
@@ -1259,7 +1259,7 @@ export default function PublicSite() {
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-white/40">
               Explore
             </p>
-            <div className={`${displayFont.className} mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm font-medium tracking-tight text-white/70`}>
+            <div className={`${displayFont.className} mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm font-medium tracking-tight text-white/70 md:gap-y-4 md:text-base`}>
               <a href="#home" className="transition hover:text-white">
                 Home
               </a>
