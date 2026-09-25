@@ -52,8 +52,22 @@ export async function GET() {
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
       "X-WR-CALNAME:Next Academy Events",
+      "X-WR-TIMEZONE:Asia/Singapore",
       "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
       "X-PUBLISHED-TTL:PT1H",
+      // Events below reference TZID=Asia/Singapore. Google resolves that
+      // name itself, but strict RFC 5545 clients (Outlook, some Apple
+      // versions) need the zone defined in the feed. Singapore has no DST,
+      // so a single fixed-offset STANDARD block is complete.
+      "BEGIN:VTIMEZONE",
+      "TZID:Asia/Singapore",
+      "BEGIN:STANDARD",
+      "DTSTART:19700101T000000",
+      "TZOFFSETFROM:+0800",
+      "TZOFFSETTO:+0800",
+      "TZNAME:SGT",
+      "END:STANDARD",
+      "END:VTIMEZONE",
     ];
 
     snapshot.docs.forEach((doc) => {
@@ -83,7 +97,8 @@ export async function GET() {
 
     lines.push("END:VCALENDAR");
 
-    return new NextResponse(lines.join("\r\n"), {
+    // RFC 5545: every content line, including the last, ends with CRLF.
+    return new NextResponse(`${lines.join("\r\n")}\r\n`, {
       status: 200,
       headers: {
         "Content-Type": "text/calendar; charset=utf-8",
