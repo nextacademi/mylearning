@@ -23,7 +23,7 @@ export default function HeroVideo({ className = "" }) {
     <div className={`relative overflow-hidden bg-black ${className}`}>
       <video
         className="h-full w-full object-contain"
-        src="/hero-video.mp4"
+        src="/hero-video-red.mp4"
         autoPlay
         muted
         loop
