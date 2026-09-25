@@ -41,7 +41,10 @@ export default function CalendarSubscribeButton() {
   }
 
   function openGoogle() {
-    window.open(`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(feedUrl())}`, "_blank", "noopener,noreferrer");
+    // Google's "add by URL" is documented for webcal:// feeds; an https://
+    // cid can be read as a calendar *ID* instead of a feed URL.
+    const webcal = feedUrl().replace(/^https?:/, "webcal:");
+    window.open(`https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`, "_blank", "noopener,noreferrer");
     setOpen(false);
   }
 
