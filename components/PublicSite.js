@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Space_Grotesk, Inter } from "next/font/google";
 import { motion } from "framer-motion";
 import { useAuth } from "../lib/auth-context";
+import { ACADEMY_INFO } from "../lib/academy-info";
 import { submitContactInquiry } from "../lib/contact-inquiries-data";
 import { subscribePublishedEvents } from "../lib/public-events-data";
 import { computeEventStatus, isRegistrationOpen } from "../lib/events-shared";
@@ -1395,8 +1396,14 @@ export default function PublicSite() {
               >
                 <span className="text-white/60">✉</span> nextacademi@gmail.com
               </a>
-              <span className="flex items-center gap-2">
-                <span className="text-white/60">📍</span> Singapore
+              <span className="flex items-start gap-2">
+                <span className="text-white/60">📍</span>
+                <span className="leading-6">
+                  <b className="font-semibold text-white">{ACADEMY_INFO.legalName}</b>
+                  {ACADEMY_INFO.addressLines.map((line) => (
+                    <span key={line} className="block">{line}</span>
+                  ))}
+                </span>
               </span>
             </div>
           </div>
