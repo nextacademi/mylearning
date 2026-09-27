@@ -20,9 +20,12 @@ import HeroVideo from "./brand/HeroVideo";
 import founderPhotoAsset from "../public/team/founder.jpg";
 import coFounderPhotoAsset from "../public/team/co-founder.jpg";
 import trainingPhoto1 from "../public/tranning1.jpeg";
+import trainingPhoto2 from "../public/tranning2.jpeg";
 import trainingPhoto3 from "../public/tranning3.jpeg";
 import trainingPhoto4 from "../public/tranning4.jpeg";
 import trainingPhoto5 from "../public/tranning5.jpeg";
+import trainingPhoto18 from "../public/tranning18.jpeg";
+import trainingPhoto145 from "../public/tranning145.jpeg";
 
 // Landing-page-only color system (blood red + white/off-white + dark text,
 // plus a near-black for the dark sections the 24asia.pages.dev-style
@@ -108,17 +111,17 @@ const programs = [
 // gallery grid — no stock/fabricated imagery.
 const galleryItems = [
   {
-    src: "/tranning2.jpeg",
+    src: trainingPhoto2.src,
     category: "Education",
     title: "Classroom Sessions",
   },
   {
-    src: "/tranning18.jpeg",
+    src: trainingPhoto18.src,
     category: "Education",
     title: "Hands-on Training",
   },
   {
-    src: "/tranning145.jpeg",
+    src: trainingPhoto145.src,
     category: "Community",
     title: "Group Activities",
   },

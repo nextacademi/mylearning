@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  turbopack: {
+    rules: {
+      "*.mp4": { type: "asset" },
+    },
+  },
   // Serves Firebase's sign-in handler from this app's own domain so the
   // Google account chooser shows the custom domain (authDomain) instead of
   // mynextlms.firebaseapp.com.

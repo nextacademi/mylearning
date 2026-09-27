@@ -1,4 +1,8 @@
 import { PlayCircle } from "lucide-react";
+import trainingPhoto2 from "../../public/tranning2.jpeg";
+import trainingPhoto18 from "../../public/tranning18.jpeg";
+import trainingPhoto145 from "../../public/tranning145.jpeg";
+import trainingPhoto195 from "../../public/tranning195.jpeg";
 
 // Reference site's "video library" section, restyled to fit Next Academy:
 // no confirmed YouTube channel exists for this app, so rather than
@@ -8,10 +12,10 @@ import { PlayCircle } from "lucide-react";
 // (Excel/PowerPoint/AutoCAD). No "Watch on YouTube" link since there's
 // nothing real to link to yet.
 const CLIPS = [
-  { src: "/tranning2.jpeg", title: "Microsoft Excel Training Session" },
-  { src: "/tranning18.jpeg", title: "PowerPoint Workshop Highlights" },
-  { src: "/tranning145.jpeg", title: "AutoCAD Training Session" },
-  { src: "/tranning195.jpeg", title: "Classroom Highlights" },
+  { src: trainingPhoto2.src, title: "Microsoft Excel Training Session" },
+  { src: trainingPhoto18.src, title: "PowerPoint Workshop Highlights" },
+  { src: trainingPhoto145.src, title: "AutoCAD Training Session" },
+  { src: trainingPhoto195.src, title: "Classroom Highlights" },
 ];
 
 export default function VideoLibrarySection() {

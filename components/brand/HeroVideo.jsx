@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { Space_Grotesk } from "next/font/google";
+import heroVideoSrc from "../../public/hero-video-red.mp4";
 
 // Same config as PublicSite.js's displayFont — Next.js dedupes identical
 // next/font/google configs at build time, so this doesn't load the font
@@ -23,7 +24,7 @@ export default function HeroVideo({ className = "" }) {
     <div className={`relative overflow-hidden bg-black ${className}`}>
       <video
         className="h-full w-full object-contain"
-        src="/hero-video-red.mp4"
+        src={heroVideoSrc}
         autoPlay
         muted
         loop
