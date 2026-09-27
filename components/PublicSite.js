@@ -142,7 +142,7 @@ const galleryItems = [
 const TEAM_MEMBERS = [
   {
     id: "founder",
-    name: "",
+    name: "Nazmul Khan",
     role: "Founder",
     photo: founderPhotoAsset.src,
     socials: {
@@ -154,7 +154,7 @@ const TEAM_MEMBERS = [
   },
   {
     id: "co-founder",
-    name: "",
+    name: "Sahed Mohammad",
     role: "Co-founder",
     photo: coFounderPhotoAsset.src,
     socials: {
