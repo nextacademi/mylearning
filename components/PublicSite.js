@@ -17,6 +17,12 @@ import PhotoGallery from "./public/PhotoGallery";
 import VideoLibrarySection from "./public/VideoLibrarySection";
 import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
 import HeroVideo from "./brand/HeroVideo";
+import founderPhotoAsset from "../public/team/founder.jpg";
+import coFounderPhotoAsset from "../public/team/co-founder.jpg";
+import trainingPhoto1 from "../public/tranning1.jpeg";
+import trainingPhoto3 from "../public/tranning3.jpeg";
+import trainingPhoto4 from "../public/tranning4.jpeg";
+import trainingPhoto5 from "../public/tranning5.jpeg";
 
 // Landing-page-only color system (blood red + white/off-white + dark text,
 // plus a near-black for the dark sections the 24asia.pages.dev-style
@@ -68,7 +74,7 @@ const programs = [
     category: "Leadership",
     title: "Lead with clarity",
     copy: "Build the judgment, communication, and confidence to move people forward.",
-    src: "/tranning1.jpeg",
+    src: trainingPhoto1.src,
     accent: RED,
     stat: "5+ batches",
   },
@@ -76,7 +82,7 @@ const programs = [
     category: "Teaching",
     title: "Teach for impact",
     copy: "Turn expertise into learning experiences that stay with people.",
-    src: "/tranning3.jpeg",
+    src: trainingPhoto3.src,
     accent: RED_DEEP,
     stat: "Ongoing support",
   },
@@ -84,7 +90,7 @@ const programs = [
     category: "Community",
     title: "Grow together",
     copy: "Create stronger communities through empathy, collaboration, and action.",
-    src: "/tranning4.jpeg",
+    src: trainingPhoto4.src,
     accent: RED_DEEP,
     stat: "Year round",
   },
@@ -92,7 +98,7 @@ const programs = [
     category: "Career",
     title: "Build what is next",
     copy: "Develop practical skills for a changing world of work.",
-    src: "/tranning5.jpeg",
+    src: trainingPhoto5.src,
     accent: RED,
     stat: "Job-ready skills",
   },
@@ -135,7 +141,7 @@ const TEAM_MEMBERS = [
     id: "founder",
     name: "",
     role: "Founder",
-    photo: "/team/founder.jpg",
+    photo: founderPhotoAsset.src,
     socials: {
       facebook: "https://facebook.com/nextacademy",
       instagram: "https://instagram.com/nextacademy",
@@ -147,7 +153,7 @@ const TEAM_MEMBERS = [
     id: "co-founder",
     name: "",
     role: "Co-founder",
-    photo: "/team/co-founder.jpg",
+    photo: coFounderPhotoAsset.src,
     socials: {
       facebook: "https://facebook.com/nextacademy",
       instagram: "https://instagram.com/nextacademy",
