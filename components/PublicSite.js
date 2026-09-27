@@ -19,6 +19,11 @@ import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
 import HeroVideo from "./brand/HeroVideo";
 import founderPhotoAsset from "../public/team/founder.jpg";
 import coFounderPhotoAsset from "../public/team/co-founder.jpg";
+import jewelShahinPhotoAsset from "../public/team/jewel-shahin.jpg";
+import amzadHossainPhotoAsset from "../public/team/amzad-hossain.jpg";
+import akhidulHasanPhotoAsset from "../public/team/akhidul-hasan.jpg";
+import aktaruzzamanPhotoAsset from "../public/team/aktaruzzamman.jpg";
+import joyAhmedPhotoAsset from "../public/team/joy-ahmed.jpg";
 import trainingPhoto1 from "../public/tranning1.jpeg";
 import trainingPhoto2 from "../public/tranning2.jpeg";
 import trainingPhoto3 from "../public/tranning3.jpeg";
@@ -166,9 +171,9 @@ const TEAM_MEMBERS = [
   },
   {
     id: "teacher-1",
-    name: "",
+    name: "Jewel Shahin",
     role: "Teacher",
-    photo: image("photo-1580489944761-15a19d654956", 480),
+    photo: jewelShahinPhotoAsset.src,
     socials: {
       facebook: "https://facebook.com/nextacademy",
       instagram: "https://instagram.com/nextacademy",
@@ -177,10 +182,10 @@ const TEAM_MEMBERS = [
     },
   },
   {
-    id: "teacher-2",
-    name: "",
+    id: "teacher-4",
+    name: "Aktaruzzamman",
     role: "Teacher",
-    photo: image("photo-1531384441138-2736e62e0919", 480),
+    photo: aktaruzzamanPhotoAsset.src,
     socials: {
       facebook: "https://facebook.com/nextacademy",
       instagram: "https://instagram.com/nextacademy",
@@ -189,10 +194,34 @@ const TEAM_MEMBERS = [
     },
   },
   {
-    id: "teacher-3",
-    name: "",
+    id: "teacher-5",
+    name: "Joy Ahmed",
     role: "Teacher",
-    photo: image("photo-1573497019940-1c28c88b4f3e", 480),
+    photo: joyAhmedPhotoAsset.src,
+    socials: {
+      facebook: "https://facebook.com/nextacademy",
+      instagram: "https://instagram.com/nextacademy",
+      linkedin: "https://linkedin.com/company/nextacademy",
+      twitter: "https://x.com/nextacademy",
+    },
+  },
+  {
+    id: "coordinator-1",
+    name: "AMZAD HOSSAIN",
+    role: "Training Coordinator",
+    photo: amzadHossainPhotoAsset.src,
+    socials: {
+      facebook: "https://facebook.com/nextacademy",
+      instagram: "https://instagram.com/nextacademy",
+      linkedin: "https://linkedin.com/company/nextacademy",
+      twitter: "https://x.com/nextacademy",
+    },
+  },
+  {
+    id: "coordinator-2",
+    name: "AKHIDUL HASAN",
+    role: "Training Coordinator",
+    photo: akhidulHasanPhotoAsset.src,
     socials: {
       facebook: "https://facebook.com/nextacademy",
       instagram: "https://instagram.com/nextacademy",
@@ -500,10 +529,11 @@ function TeamCard({ member, index }) {
     <Reveal
       as="article"
       index={index}
-      className="group rounded-2xl border border-[#E5E7EB] bg-white p-6 text-center shadow-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+      className="group relative flex min-h-[320px] w-full max-w-[260px] basis-[calc(50%_-_0.625rem)] flex-col items-center overflow-hidden rounded-3xl border border-[#E5E7EB] bg-white px-5 pb-5 pt-7 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-[#E53935]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] sm:basis-[calc(33.333%_-_0.84rem)] lg:min-h-[350px] lg:basis-[calc(25%_-_0.94rem)]"
     >
-      <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border-4 border-[#FAFAF7] shadow-sm ring-1 ring-[#E5E7EB] transition duration-300 group-hover:ring-[#E53935]/40">
-        {imgFailed ? (
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#E53935] via-[#fb7185] to-[#f59e0b]" />
+      <div className="h-28 w-28 shrink-0 overflow-hidden rounded-full border-4 border-white bg-[#FAFAF7] shadow-[0_4px_18px_rgba(15,23,42,0.12)] ring-1 ring-[#E5E7EB] transition duration-300 group-hover:ring-[#E53935]/40 lg:h-36 lg:w-36">
+        {!member.photo || imgFailed ? (
           <span className="grid h-full w-full place-items-center bg-[#FAFAF7] text-lg font-black text-[#B91C1C]">
             {initials}
           </span>
@@ -517,13 +547,13 @@ function TeamCard({ member, index }) {
         )}
       </div>
       {member.name && (
-        <h3 className="mt-4 text-base font-bold text-[#111827]">{member.name}</h3>
+        <h3 className="mt-4 flex min-h-12 items-center justify-center text-base font-bold leading-tight text-[#111827]">{member.name}</h3>
       )}
-      <p className={`${member.name ? "mt-1" : "mt-4"} text-xs font-bold uppercase tracking-widest text-[#E53935]`}>
+      <p className={`${member.name ? "mt-1" : "mt-4"} inline-flex rounded-full bg-[#FFF1F0] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#C62828]`}>
         {member.role}
       </p>
       {activeSocials.length > 0 && (
-        <div className="mt-4 flex items-center justify-center gap-3">
+        <div className="mt-auto flex items-center justify-center gap-3 pt-5">
           {activeSocials.map(({ key, label, Icon }) => (
             <a
               key={key}
@@ -1074,12 +1104,12 @@ export default function PublicSite() {
             The people behind Next Academy.
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6B7280]">
-            Founders and teachers building practical, human-centered learning
+            Founders, teachers, and coordinators building practical, human-centered learning
             for every student who walks through our doors.
           </p>
         </Reveal>
 
-        <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="mt-8 flex flex-wrap justify-center gap-5">
           {TEAM_MEMBERS.map((member, index) => (
             <TeamCard key={member.id} member={member} index={index} />
           ))}
