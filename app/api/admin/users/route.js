@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const managers = new Set(["Admin", "Director"]);
-const assignableRoles = new Set(["Student", "Teacher", "Admin", "Director"]);
+const assignableRoles = new Set(["Student", "Volunteer", "Teacher", "Admin", "Director"]);
 
 function failure(stage, error) {
   console.error("[users-api] request failed", {

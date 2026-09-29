@@ -17,9 +17,9 @@ import TeacherAssignment from "../teacher-assignment/TeacherAssignment";
 // teacher management itself changed, only where it's reached from.
 const USER_TABS = ["All Users", "Students", "Teachers"];
 
-const assignableRoles = ["Student", "Teacher", "Admin", "Director"];
+const assignableRoles = ["Student", "Volunteer", "Teacher", "Admin", "Director"];
 const dash = "—";
-const ROLE_TONE = { Director: "purple", Admin: "red", Teacher: "blue", Student: "green", Guest: "orange" };
+const ROLE_TONE = { Director: "purple", Admin: "red", Teacher: "blue", Volunteer: "orange", Student: "green", Guest: "orange" };
 
 function Dialog({ title, children, onClose }) {
   return (
