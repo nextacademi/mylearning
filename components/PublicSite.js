@@ -220,7 +220,7 @@ const TEAM_MEMBERS = [
   },
   {
     id: "coordinator-2",
-    name: "AKHIDUL HASAN",
+    name: "Akhidul Hasan",
     role: "Training Coordinator",
     photo: akhidulHasanPhotoAsset.src,
     socials: {
