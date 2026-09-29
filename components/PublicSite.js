@@ -542,10 +542,10 @@ function TeamCard({ member, index }) {
     <Reveal
       as="article"
       index={index}
-      className="group relative flex h-full min-h-[320px] w-[220px] shrink-0 snap-start flex-col items-center overflow-hidden rounded-3xl border border-[#E5E7EB] bg-white px-5 pb-5 pt-7 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-[#E53935]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] sm:w-[240px] lg:min-h-[350px] lg:w-[260px]"
+      className="group relative flex h-full min-h-[210px] w-full min-w-0 shrink-0 flex-col items-center overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white px-1.5 pb-3 pt-4 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-[#E53935]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] sm:min-h-[320px] sm:w-[240px] sm:rounded-3xl sm:px-5 sm:pb-5 sm:pt-7 lg:min-h-[350px] lg:w-[260px]"
     >
       <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#E53935] via-[#fb7185] to-[#f59e0b]" />
-      <div className="h-28 w-28 shrink-0 overflow-hidden rounded-full border-4 border-white bg-[#FAFAF7] shadow-[0_4px_18px_rgba(15,23,42,0.12)] ring-1 ring-[#E5E7EB] transition duration-300 group-hover:ring-[#E53935]/40 lg:h-36 lg:w-36">
+      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white bg-[#FAFAF7] shadow-[0_4px_18px_rgba(15,23,42,0.12)] ring-1 ring-[#E5E7EB] transition duration-300 group-hover:ring-[#E53935]/40 sm:h-28 sm:w-28 sm:border-4 lg:h-36 lg:w-36">
         {!member.photo || imgFailed ? (
           <span className="grid h-full w-full place-items-center bg-[#FAFAF7] text-lg font-black text-[#B91C1C]">
             {initials}
@@ -560,13 +560,13 @@ function TeamCard({ member, index }) {
         )}
       </div>
       {member.name && (
-        <h3 className="mt-4 flex min-h-12 items-center justify-center whitespace-nowrap text-base font-bold leading-tight text-[#111827]">{member.name}</h3>
+        <h3 className="mt-2 flex min-h-8 items-center justify-center text-center text-[10px] font-bold leading-tight text-[#111827] sm:mt-4 sm:min-h-12 sm:whitespace-nowrap sm:text-base">{member.name}</h3>
       )}
-      <p className={`${member.name ? "mt-1" : "mt-4"} inline-flex rounded-full bg-[#FFF1F0] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#C62828]`}>
+      <p className={`${member.name ? "mt-1" : "mt-3"} inline-flex max-w-full rounded-full bg-[#FFF1F0] px-1.5 py-1 text-center text-[8px] font-bold uppercase leading-tight tracking-wide text-[#C62828] sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-[0.14em]`}>
         {member.role}
       </p>
       {activeSocials.length > 0 && (
-        <div className="mt-auto flex items-center justify-center gap-3 pt-5">
+        <div className="mt-auto flex items-center justify-center gap-1 pt-3 sm:gap-3 sm:pt-5">
           {activeSocials.map(({ key, label, Icon }) => (
             <a
               key={key}
@@ -574,7 +574,7 @@ function TeamCard({ member, index }) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${member.name || member.role} on ${label}`}
-              className="grid h-8 w-8 place-items-center rounded-full bg-[#FAFAF7] text-[#6B7280] transition duration-200 hover:scale-110 hover:bg-[#E53935] hover:text-white"
+              className="grid h-5 w-5 place-items-center rounded-full bg-[#FAFAF7] text-[#6B7280] transition duration-200 hover:scale-110 hover:bg-[#E53935] hover:text-white sm:h-8 sm:w-8 [&_svg]:h-3 [&_svg]:w-3 sm:[&_svg]:h-[18px] sm:[&_svg]:w-[18px]"
             >
               <Icon />
             </a>
@@ -614,11 +614,18 @@ function TeamSlider({ members }) {
   function scrollByCard(direction) {
     const el = scrollerRef.current;
     if (!el) return;
+    const mobile = window.matchMedia("(max-width: 639px)").matches;
+    if (mobile) {
+      el.scrollBy({ left: direction * el.clientWidth, behavior: "smooth" });
+      return;
+    }
     const card = el.querySelector("[data-team-card]");
-    const gap = 20;
-    const amount = card ? card.getBoundingClientRect().width + gap : Math.round(el.clientWidth * 0.8);
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
+    const amount = card ? card.getBoundingClientRect().width + gap : el.clientWidth;
     el.scrollBy({ left: direction * amount, behavior: "smooth" });
   }
+
+  const arrowClass = "grid h-9 w-9 place-items-center rounded-full border border-[#E5E7EB] bg-white text-xl text-[#111827] shadow-md transition hover:border-[#E53935] hover:text-[#E53935] disabled:pointer-events-none disabled:opacity-40";
 
   return (
     <div className="relative mt-8">
@@ -627,17 +634,17 @@ function TeamSlider({ members }) {
           type="button"
           onClick={() => scrollByCard(-1)}
           aria-label="Previous team members"
-          className="absolute -left-2 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-[#E5E7EB] bg-white text-xl text-[#111827] shadow-md transition hover:border-[#E53935] hover:text-[#E53935] md:-left-4"
+          className="absolute -left-2 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 sm:grid md:-left-4"
         >
-          ‹
+          <span className={`${arrowClass} h-10 w-10`}>‹</span>
         </button>
       )}
       <div
         ref={scrollerRef}
-        className="flex gap-5 overflow-x-auto overflow-y-hidden scroll-smooth px-1 py-2 [scrollbar-width:thin] snap-x snap-mandatory"
+        className="flex gap-2 overflow-x-auto overflow-y-hidden scroll-smooth py-2 [scrollbar-width:none] snap-x snap-mandatory sm:gap-5 sm:[scrollbar-width:thin] [&::-webkit-scrollbar]:hidden sm:[&::-webkit-scrollbar]:block"
       >
         {members.map((member, index) => (
-          <div key={member.id} data-team-card className="snap-start">
+          <div key={member.id} data-team-card className="w-[calc((100%-1rem)/3)] shrink-0 snap-start sm:w-auto">
             <TeamCard member={member} index={index} />
           </div>
         ))}
@@ -647,11 +654,19 @@ function TeamSlider({ members }) {
           type="button"
           onClick={() => scrollByCard(1)}
           aria-label="Next team members"
-          className="absolute -right-2 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-[#E5E7EB] bg-white text-xl text-[#111827] shadow-md transition hover:border-[#E53935] hover:text-[#E53935] md:-right-4"
+          className="absolute -right-2 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 sm:grid md:-right-4"
         >
-          ›
+          <span className={`${arrowClass} h-10 w-10`}>›</span>
         </button>
       )}
+      <div className="mt-3 flex justify-center gap-3 sm:hidden">
+        <button type="button" onClick={() => scrollByCard(-1)} disabled={!canPrev} aria-label="Previous team members" className={arrowClass}>
+          ‹
+        </button>
+        <button type="button" onClick={() => scrollByCard(1)} disabled={!canNext} aria-label="Next team members" className={arrowClass}>
+          ›
+        </button>
+      </div>
     </div>
   );
 }
