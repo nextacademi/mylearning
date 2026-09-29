@@ -24,6 +24,7 @@ import amzadHossainPhotoAsset from "../public/team/amzad-hossain.jpg";
 import akhidulHasanPhotoAsset from "../public/team/akhidul-hasan.jpg";
 import aktaruzzamanPhotoAsset from "../public/team/aktaruzzamman.jpg";
 import joyAhmedPhotoAsset from "../public/team/joy-ahmed.jpg";
+import mithunDebnathPhotoAsset from "../public/team/mitun.jpg";
 import trainingPhoto1 from "../public/tranning1.jpeg";
 import trainingPhoto2 from "../public/tranning2.jpeg";
 import trainingPhoto3 from "../public/tranning3.jpeg";
@@ -222,6 +223,18 @@ const TEAM_MEMBERS = [
     name: "AKHIDUL HASAN",
     role: "Training Coordinator",
     photo: akhidulHasanPhotoAsset.src,
+    socials: {
+      facebook: "https://facebook.com/nextacademy",
+      instagram: "https://instagram.com/nextacademy",
+      linkedin: "https://linkedin.com/company/nextacademy",
+      twitter: "https://x.com/nextacademy",
+    },
+  },
+  {
+    id: "facilitator-1",
+    name: "Mithun Debnath",
+    role: "Facilitator",
+    photo: mithunDebnathPhotoAsset.src,
     socials: {
       facebook: "https://facebook.com/nextacademy",
       instagram: "https://instagram.com/nextacademy",
@@ -529,7 +542,7 @@ function TeamCard({ member, index }) {
     <Reveal
       as="article"
       index={index}
-      className="group relative flex min-h-[320px] w-full max-w-[260px] basis-[calc(50%_-_0.625rem)] flex-col items-center overflow-hidden rounded-3xl border border-[#E5E7EB] bg-white px-5 pb-5 pt-7 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-[#E53935]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] sm:basis-[calc(33.333%_-_0.84rem)] lg:min-h-[350px] lg:basis-[calc(25%_-_0.94rem)]"
+      className="group relative flex h-full min-h-[320px] w-[220px] shrink-0 snap-start flex-col items-center overflow-hidden rounded-3xl border border-[#E5E7EB] bg-white px-5 pb-5 pt-7 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-[#E53935]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] sm:w-[240px] lg:min-h-[350px] lg:w-[260px]"
     >
       <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#E53935] via-[#fb7185] to-[#f59e0b]" />
       <div className="h-28 w-28 shrink-0 overflow-hidden rounded-full border-4 border-white bg-[#FAFAF7] shadow-[0_4px_18px_rgba(15,23,42,0.12)] ring-1 ring-[#E5E7EB] transition duration-300 group-hover:ring-[#E53935]/40 lg:h-36 lg:w-36">
@@ -547,7 +560,7 @@ function TeamCard({ member, index }) {
         )}
       </div>
       {member.name && (
-        <h3 className="mt-4 flex min-h-12 items-center justify-center text-base font-bold leading-tight text-[#111827]">{member.name}</h3>
+        <h3 className="mt-4 flex min-h-12 items-center justify-center whitespace-nowrap text-base font-bold leading-tight text-[#111827]">{member.name}</h3>
       )}
       <p className={`${member.name ? "mt-1" : "mt-4"} inline-flex rounded-full bg-[#FFF1F0] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#C62828]`}>
         {member.role}
@@ -569,6 +582,77 @@ function TeamCard({ member, index }) {
         </div>
       )}
     </Reveal>
+  );
+}
+
+// One horizontal row. Extra members stay off-screen and scroll (arrows,
+// trackpad, or touch) instead of wrapping onto a second line.
+function TeamSlider({ members }) {
+  const scrollerRef = useRef(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
+  function updateArrows() {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 4);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }
+
+  useEffect(() => {
+    updateArrows();
+    const el = scrollerRef.current;
+    if (!el) return undefined;
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, [members.length]);
+
+  function scrollByCard(direction) {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const card = el.querySelector("[data-team-card]");
+    const gap = 20;
+    const amount = card ? card.getBoundingClientRect().width + gap : Math.round(el.clientWidth * 0.8);
+    el.scrollBy({ left: direction * amount, behavior: "smooth" });
+  }
+
+  return (
+    <div className="relative mt-8">
+      {canPrev && (
+        <button
+          type="button"
+          onClick={() => scrollByCard(-1)}
+          aria-label="Previous team members"
+          className="absolute -left-2 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-[#E5E7EB] bg-white text-xl text-[#111827] shadow-md transition hover:border-[#E53935] hover:text-[#E53935] md:-left-4"
+        >
+          ‹
+        </button>
+      )}
+      <div
+        ref={scrollerRef}
+        className="flex gap-5 overflow-x-auto overflow-y-hidden scroll-smooth px-1 py-2 [scrollbar-width:thin] snap-x snap-mandatory"
+      >
+        {members.map((member, index) => (
+          <div key={member.id} data-team-card className="snap-start">
+            <TeamCard member={member} index={index} />
+          </div>
+        ))}
+      </div>
+      {canNext && (
+        <button
+          type="button"
+          onClick={() => scrollByCard(1)}
+          aria-label="Next team members"
+          className="absolute -right-2 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-[#E5E7EB] bg-white text-xl text-[#111827] shadow-md transition hover:border-[#E53935] hover:text-[#E53935] md:-right-4"
+        >
+          ›
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -1104,16 +1188,12 @@ export default function PublicSite() {
             The people behind Next Academy.
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#6B7280]">
-            Founders, teachers, and coordinators building practical, human-centered learning
+            Founders, teachers, facilitators, and coordinators building practical, human-centered learning
             for every student who walks through our doors.
           </p>
         </Reveal>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-5">
-          {TEAM_MEMBERS.map((member, index) => (
-            <TeamCard key={member.id} member={member} index={index} />
-          ))}
-        </div>
+        <TeamSlider members={TEAM_MEMBERS} />
       </section>
 
       {/* TRAINING / PROGRAMS — "What We Do" */}
