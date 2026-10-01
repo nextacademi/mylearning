@@ -150,6 +150,11 @@ function PromoRow({ promo, onViewQr, onDelete, selected, onToggleSelect }) {
   );
 }
 
+const PROMO_TABS = [
+  { id: "single", label: "Single Codes", icon: Tag },
+  { id: "bulk", label: "Bulk Codes", icon: UsersRound },
+];
+
 const VIEW_MODES = [
   { id: "grid", label: "Grid", icon: LayoutGrid },
   { id: "list", label: "List", icon: List },
@@ -186,14 +191,22 @@ export default function PromoCodeView() {
   };
   useEffect(() => { void Promise.resolve().then(load); }, []);
 
+  // Bulk-generated codes carry a batchId; hand-made promos do not.
+  const [tab, setTab] = useState("single");
+  const tabCounts = useMemo(() => {
+    const bulk = promos.filter((promo) => promo.batchId).length;
+    return { single: promos.length - bulk, bulk };
+  }, [promos]);
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return promos.filter((promo) => {
+      const matchesTab = tab === "bulk" ? Boolean(promo.batchId) : !promo.batchId;
       const matchesQuery = !query || promo.code.toLowerCase().includes(query) || promo.description.toLowerCase().includes(query);
       const matchesType = typeFilter === "all" || promo.type === typeFilter;
-      return matchesQuery && matchesType;
+      return matchesTab && matchesQuery && matchesType;
     });
-  }, [promos, search, typeFilter]);
+  }, [promos, search, typeFilter, tab]);
 
   // ---- Multi-select + bulk delete ----
   const [selectedIds, setSelectedIds] = useState(() => new Set());
@@ -302,6 +315,7 @@ export default function PromoCodeView() {
       await createPromoCode(createForm);
       toast.success("Promotion created successfully");
       setCreating(false);
+      setTab("single");
       load();
     } catch (err) {
       setCreateMessage(err.message || "Unable to create this promotion.");
@@ -333,6 +347,7 @@ export default function PromoCodeView() {
       const result = await bulkGeneratePromoCodes({ ...bulkForm, count });
       toast.success(`Generated ${result.count} individual codes successfully`);
       setBulking(false);
+      setTab("bulk");
       load();
     } catch (err) {
       setBulkMessage(err.message || "Unable to generate codes.");
@@ -376,7 +391,7 @@ export default function PromoCodeView() {
           <h2 className="mt-1 text-2xl font-black text-ink">Promo Codes</h2>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={openBulk} className="inline-flex items-center gap-2 rounded-xl bg-success px-4 py-2.5 text-xs font-bold text-white shadow-sm">
+          <button type="button" onClick={openBulk} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm">
             <UsersRound className="h-4 w-4" aria-hidden="true" />
             Generate Bulk
           </button>
@@ -431,8 +446,24 @@ export default function PromoCodeView() {
       </section>
 
       <section className="space-y-4">
+        <div role="tablist" aria-label="Promo code kind" className="flex gap-1 border-b border-border-subtle">
+          {PROMO_TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => { setTab(id); clearSelection(); }}
+              className={`-mb-px inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-bold ${tab === id ? "border-primary text-primary" : "border-transparent text-ink/70 hover:text-ink"}`}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {label}
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tab === id ? "bg-active text-primary" : "bg-page text-ink"}`}>{tabCounts[id]}</span>
+            </button>
+          ))}
+        </div>
         <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-          <h3 className="text-lg font-bold text-ink">Active &amp; Scheduled Promotions</h3>
+          <h3 className="text-lg font-bold text-ink">{tab === "bulk" ? "Bulk Generated Codes" : "Single Promotions"}</h3>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <label className="relative min-w-[180px] flex-1">
               <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-subtle" aria-hidden="true" />
@@ -555,11 +586,11 @@ export default function PromoCodeView() {
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-8">
           <div className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><UsersRound className="h-5 w-5 text-success" aria-hidden="true" /> Generate Org Promos</h3>
+              <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><UsersRound className="h-5 w-5 text-orange-500" aria-hidden="true" /> Generate Org Promos</h3>
               <button type="button" onClick={() => setBulking(false)} className="text-xl text-muted" aria-label="Close">×</button>
             </div>
             <p className="mb-4 text-xs font-medium text-ink/70">
-              Batch-generates unique 8-character promo codes (format <code className="rounded bg-page px-1.5 py-0.5 font-mono text-success">NEXTXXXX</code>) for team members or clients — one use each.
+              Batch-generates unique 8-character promo codes (format <code className="rounded bg-page px-1.5 py-0.5 font-mono text-orange-600">NEXTXXXX</code>) for team members or clients — one use each.
             </p>
             <div className="space-y-4">
               <label className="grid gap-1 text-xs font-bold text-ink">
@@ -571,14 +602,14 @@ export default function PromoCodeView() {
                   step="1"
                   value={bulkForm.count}
                   onChange={(e) => setBulkForm({ ...bulkForm, count: e.target.value })}
-                  className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-success"
+                  className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-orange-500"
                 />
                 <span className="font-semibold normal-case text-muted">Up to {MAX_BULK_COUNT} codes at a time.</span>
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <label className="grid gap-1 text-xs font-bold text-ink">
                   Discount Type
-                  <select value={bulkForm.type} onChange={(e) => setBulkForm({ ...bulkForm, type: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-success">
+                  <select value={bulkForm.type} onChange={(e) => setBulkForm({ ...bulkForm, type: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-orange-500">
                     <option value="percentage">Percentage Off (25%)</option>
                     <option value="fixed">Fixed Amount ({formatMoney(20)})</option>
                     <option value="shipping">Free Shipping</option>
@@ -586,17 +617,17 @@ export default function PromoCodeView() {
                 </label>
                 <label className="grid gap-1 text-xs font-bold text-ink">
                   Organization Name
-                  <input value={bulkForm.orgName} onChange={(e) => setBulkForm({ ...bulkForm, orgName: e.target.value })} placeholder="e.g. Enterprise Partner" className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-success" />
+                  <input value={bulkForm.orgName} onChange={(e) => setBulkForm({ ...bulkForm, orgName: e.target.value })} placeholder="e.g. Enterprise Partner" className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-orange-500" />
                 </label>
               </div>
               <label className="grid gap-1 text-xs font-bold text-ink">
                 Expiration Date
-                <input type="date" value={bulkForm.expiry} onChange={(e) => setBulkForm({ ...bulkForm, expiry: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-success" />
+                <input type="date" value={bulkForm.expiry} onChange={(e) => setBulkForm({ ...bulkForm, expiry: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-orange-500" />
               </label>
               {bulkMessage && <p className="text-xs text-primary">{bulkMessage}</p>}
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setBulking(false)} disabled={savingBulk} className="rounded-xl border border-border-subtle px-5 py-2.5 text-sm font-medium text-ink">Cancel</button>
-                <button type="button" onClick={submitBulk} disabled={savingBulk} className="inline-flex items-center gap-2 rounded-xl bg-success px-5 py-2.5 text-sm font-medium text-white shadow-md disabled:opacity-60">{savingBulk ? "Generating…" : `Generate ${bulkForm.count || 0} Codes`}</button>
+                <button type="button" onClick={submitBulk} disabled={savingBulk} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-medium text-white shadow-md disabled:opacity-60">{savingBulk ? "Generating…" : `Generate ${bulkForm.count || 0} Codes`}</button>
               </div>
             </div>
           </div>
