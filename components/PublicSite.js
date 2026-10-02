@@ -946,8 +946,8 @@ export default function PublicSite() {
 
   const heroStats = [
     { label: "Students Trained", value: 450, suffix: "+" },
-    { label: "Expert Teachers", value: 420, suffix: "+" },
-    { label: "Courses Offered", value: 460, suffix: "+" },
+    { label: "Expert Teachers", value: 10, suffix: "+" },
+    { label: "Courses Offered", value: 5, suffix: "+" },
     { label: "Total Enrollments", value: 440, suffix: "+" },
   ];
 
