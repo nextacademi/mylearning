@@ -923,6 +923,23 @@ export default function PublicSite() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
+  // Admin-managed homepage cards (Dashboard > Website); empty lists fall
+  // back to the built-in defaults above.
+  const [siteContent, setSiteContent] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/site-content")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => { if (!cancelled && data) setSiteContent(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const withSrc = (list) => list.map((item) => ({ ...item, src: item.photo }));
+  const programList = siteContent?.program?.length ? withSrc(siteContent.program) : programs.slice(0, 2);
+  const galleryList = siteContent?.gallery?.length ? withSrc(siteContent.gallery) : galleryItems;
+  const sessionList = siteContent?.session?.length ? withSrc(siteContent.session) : undefined;
   const verifiedUser = Boolean(user);
 
   function goToLearning() {
@@ -1225,13 +1242,13 @@ export default function PublicSite() {
 
           <div className="mt-4 grid gap-5 md:grid-cols-2">
             <div className="space-y-5">
-              {programs.slice(0, 2).map((program, index) => (
+              {programList.map((program, index) => (
                 <Reveal
                   as="article"
                   index={index}
                   className="group overflow-hidden rounded-2xl border border-[#E5E7EB] border-t-4 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
-                  style={{ borderTopColor: program.accent }}
-                  key={program.title}
+                  style={{ borderTopColor: program.accent || (index % 2 ? RED_DEEP : RED) }}
+                  key={program.id || program.title}
                 >
                   <div className="h-52 overflow-hidden md:h-56">
                     <img
@@ -1428,11 +1445,11 @@ export default function PublicSite() {
           </p>
         </Reveal>
         <Reveal index={1} className="mt-5">
-          <PhotoGallery items={galleryItems} />
+          <PhotoGallery items={galleryList} />
         </Reveal>
       </section>
 
-      <VideoLibrarySection />
+      <VideoLibrarySection clips={sessionList} />
 
       {/* GRADIENT CTA BANNER */}
       <section className="mx-auto max-w-7xl px-5 py-3 md:px-10 md:py-4">

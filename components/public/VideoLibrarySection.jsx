@@ -18,7 +18,7 @@ const CLIPS = [
   { src: trainingPhoto195.src, title: "Classroom Highlights" },
 ];
 
-export default function VideoLibrarySection() {
+export default function VideoLibrarySection({ clips = CLIPS }) {
   return (
     <section className="bg-[#0B0D10] py-14 md:py-16">
       <div className="mx-auto max-w-7xl px-5 md:px-10">
@@ -30,8 +30,8 @@ export default function VideoLibrarySection() {
         </p>
 
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {CLIPS.map((clip) => (
-            <div key={clip.title} className="group relative aspect-video overflow-hidden rounded-xl bg-black">
+          {clips.map((clip) => (
+            <div key={clip.id || clip.title} className="group relative aspect-video overflow-hidden rounded-xl bg-black">
               <img
                 src={clip.src}
                 alt={clip.title}

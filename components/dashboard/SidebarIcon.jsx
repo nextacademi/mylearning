@@ -1,5 +1,5 @@
 ﻿import {
-  Award, BookOpen, FileText, CalendarCheck, CalendarDays, ClipboardList, Contact, DoorOpen, Files, GraduationCap,
+  Award, BookOpen, Globe, FileText, CalendarCheck, CalendarDays, ClipboardList, Contact, DoorOpen, Files, GraduationCap,
   LayoutDashboard, Mail, Megaphone, MessageCircle, Presentation, QrCode, ScanQrCode,
   Settings, ShoppingBag, Sparkles, Ticket, Trophy, UserRound, UsersRound, WalletCards,
 } from "lucide-react";
@@ -14,7 +14,7 @@ const icons = {
   "QR Scanner": QrCode, Attendance: Award, Certificates: Award,
   Settings, Activities: Award, Promote: Megaphone, "AI Assistant": Sparkles,
   "Contact Inquiries": Mail, "Model Test": ClipboardList, "Promo Codes": Ticket,
-  Appointments: CalendarCheck, Forms: FileText, Team: UsersRound,
+  Appointments: CalendarCheck, Forms: FileText, Team: UsersRound, Website: Globe,
 };
 
 export default function SidebarIcon({ name, className = "h-5 w-5" }) {

@@ -35,6 +35,7 @@ import Shop from "../../../components/shop/Shop";
 import PromoCodeView from "../../../components/promo/PromoCodeView";
 import FormsView from "../../../components/forms/FormsView";
 import TeamManagement from "../../../components/team/TeamManagement";
+import WebsiteContent from "../../../components/team/WebsiteContent";
 import AppointmentScheduler from "../../../components/appointments/AppointmentScheduler";
 import AchievementManagement from "../../../components/achievement/AchievementManagement";
 import StudentAchievements from "../../../components/achievement/StudentAchievements";
@@ -143,6 +144,7 @@ export const roleConfig = {
       "Promo Codes",
       "Forms",
       "Team",
+      "Website",
       "User",
       "Chat",
       "Achievement",
@@ -165,6 +167,7 @@ export const roleConfig = {
       "My Shop",
       "Forms",
       "Team",
+      "Website",
       "User",
       "Chat",
       "Achievement",
@@ -279,6 +282,8 @@ function DirectorDashboard({ profile, user }) {
               <Shop role="Director" uid={user.uid} />
             ) : active === "Promo Codes" ? (
               <PromoCodeView />
+            ) : active === "Website" ? (
+              <WebsiteContent />
             ) : active === "Team" ? (
               <TeamManagement />
             ) : active === "Forms" ? (
@@ -468,6 +473,8 @@ function DashboardContent({ role, profile, user }) {
               <Shop role={role} uid={user.uid} />
             ) : role === "Admin" && active === "Achievement" ? (
               <AchievementManagement />
+            ) : role === "Admin" && active === "Website" ? (
+              <WebsiteContent />
             ) : role === "Admin" && active === "Team" ? (
               <TeamManagement />
             ) : role === "Admin" && active === "Forms" ? (
