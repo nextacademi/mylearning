@@ -106,7 +106,10 @@ export default function AuthPage({ mode = "login" }) {
 
   useEffect(() => {
     if (!auth.loading && auth.user && auth.profile?.role) {
-      router.replace(`/dashboard/${auth.profile.role.toLowerCase()}`);
+      // A shared link (e.g. a form) sends people to /login?next=/path — go
+      // back there after sign-in; same-site paths only.
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : `/dashboard/${auth.profile.role.toLowerCase()}`);
     }
   }, [auth.loading, auth.profile?.role, auth.user, router]);
 
@@ -296,11 +299,11 @@ export default function AuthPage({ mode = "login" }) {
                   <span className="relative block">
                     <input
                       required
-                      minLength={6}
+                      minLength={4}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       className={`${fieldInput} pr-12`}
-                      placeholder="At least 6 characters"
+                      placeholder="At least 4 characters"
                       type={showPassword ? "text" : "password"}
                       autoComplete={
                         mode === "register" ? "new-password" : "current-password"

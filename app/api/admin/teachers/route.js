@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { generateUserId } from "../../../../lib/server/user-id";
+import { MIN_PASSWORD_LENGTH, toAuthPassword } from "../../../../lib/password-pin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,10 +46,10 @@ export async function POST(request) {
       return NextResponse.json({ message: "Name, email, phone, department, designation, joining date, status, and password are required." }, { status: 400 });
     }
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) return NextResponse.json({ message: "Enter a valid email address." }, { status: 400 });
-    if (password.length < 6) return NextResponse.json({ message: "Use a password with at least six characters." }, { status: 400 });
+    if (password.length < MIN_PASSWORD_LENGTH) return NextResponse.json({ message: "Use a password with at least four characters." }, { status: 400 });
     if (!["Active", "Inactive"].includes(status)) return NextResponse.json({ message: "Status must be Active or Inactive." }, { status: 400 });
 
-    createdUser = await access.auth.createUser({ email: normalizedEmail, password, displayName: displayName.trim(), disabled: status === "Inactive" });
+    createdUser = await access.auth.createUser({ email: normalizedEmail, password: toAuthPassword(password), displayName: displayName.trim(), disabled: status === "Inactive" });
     try {
       const userId = await generateUserId(access.db, new Date());
       const now = FieldValue.serverTimestamp();
@@ -81,7 +82,7 @@ export async function POST(request) {
       throw error;
     }
   } catch (error) {
-    const known = { "auth/email-already-exists": "An account already exists for this email.", "auth/invalid-email": "Enter a valid email address.", "auth/invalid-password": "Use a password with at least six characters." };
+    const known = { "auth/email-already-exists": "An account already exists for this email.", "auth/invalid-email": "Enter a valid email address.", "auth/invalid-password": "Use a password with at least four characters." };
     return known[error?.code] ? NextResponse.json({ message: known[error.code] }, { status: 400 }) : failure(createdUser ? "teacher-profile creation" : "teacher-account creation", error);
   }
 }

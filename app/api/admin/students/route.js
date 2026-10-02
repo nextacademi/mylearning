@@ -5,6 +5,7 @@ import { getCachedUserSnapshot, invalidateUserProfileCache } from "../../../../l
 import { cached, cacheDel } from "../../../../lib/redis-cache";
 import { attendancePercent } from "../../../../lib/attendance";
 import { generateUserId, ensureUserId } from "../../../../lib/server/user-id";
+import { MIN_PASSWORD_LENGTH, toAuthPassword } from "../../../../lib/password-pin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,11 +79,11 @@ export async function POST(request) {
     const { displayName, email, phone, courseId, password } = await request.json(); const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
     if (!displayName?.trim() || !normalizedEmail || !phone?.trim() || !courseId || !password) return NextResponse.json({ message: "Name, email, phone number, course, and password are required." }, { status: 400 });
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) return NextResponse.json({ message: "Enter a valid email address." }, { status: 400 });
-    if (password.length < 6) return NextResponse.json({ message: "Use a password with at least six characters." }, { status: 400 });
+    if (password.length < MIN_PASSWORD_LENGTH) return NextResponse.json({ message: "Use a password with at least four characters." }, { status: 400 });
     const course = await access.db.collection("courses").doc(courseId).get(); if (!course.exists) return NextResponse.json({ message: "Choose an existing course." }, { status: 400 });
     const selectedClass = (await access.db.collection("classes").where("courseId", "==", courseId).get()).docs.map(plain).filter((item) => !inactiveClasses.has(item.status)).sort((a, b) => a.id.localeCompare(b.id))[0];
     if (!selectedClass) return NextResponse.json({ message: "This course has no active class available for enrollment." }, { status: 400 });
-    createdUser = await access.auth.createUser({ email: normalizedEmail, password, displayName: displayName.trim(), disabled: false });
+    createdUser = await access.auth.createUser({ email: normalizedEmail, password: toAuthPassword(password), displayName: displayName.trim(), disabled: false });
     try {
       const userId = await generateUserId(access.db, new Date()), now = FieldValue.serverTimestamp(), teacherIds = [...new Set([...(course.data().teacherIds || []), ...(selectedClass.teacherIds || [])])], batch = access.db.batch();
       batch.create(access.db.collection("users").doc(createdUser.uid), { uid: createdUser.uid, userId, email: createdUser.email || normalizedEmail, displayName: displayName.trim(), phone: phone.trim(), photoURL: "", role: "Student", active: true, status: "active", teacherIds, createdAt: now, updatedAt: now });
@@ -90,7 +91,7 @@ export async function POST(request) {
       await batch.commit(); await cacheDel("admin-students:list"); return NextResponse.json({ uid: createdUser.uid, userId }, { status: 201 });
     } catch (error) { try { await access.auth.deleteUser(createdUser.uid); } catch (rollbackError) { console.error("[students-api] rollback failed", { code: rollbackError?.code || "unknown" }); } throw error; }
   } catch (error) {
-    const known = { "auth/email-already-exists": "An account already exists for this email.", "auth/invalid-email": "Enter a valid email address.", "auth/invalid-password": "Use a password with at least six characters." };
+    const known = { "auth/email-already-exists": "An account already exists for this email.", "auth/invalid-email": "Enter a valid email address.", "auth/invalid-password": "Use a password with at least four characters." };
     return known[error?.code] ? NextResponse.json({ message: known[error.code] }, { status: 400 }) : failure(createdUser ? "student-profile or enrollment creation" : "student-account creation", error);
   }
 }

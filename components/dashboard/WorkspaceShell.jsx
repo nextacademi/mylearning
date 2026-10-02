@@ -78,7 +78,7 @@ export default function WorkspaceShell({
   }
 
   return (
-    <main className="min-h-screen bg-page text-ink md:flex">
+    <main className="teacher-workspace min-h-screen bg-page text-ink md:flex">
       <aside
         className={`${mobileOpen ? "translate-x-0" : "-translate-x-full"} fixed inset-y-0 left-0 z-40 flex h-screen w-[280px] flex-col border-r border-border-subtle bg-card shadow-2xl transition-transform duration-300 md:sticky md:top-0 md:translate-x-0 md:shadow-none`}
       >

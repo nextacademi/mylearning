@@ -8,10 +8,9 @@ import {
 } from "lucide-react";
 import StatCard from "../finance/StatCard";
 import { formatDate, formatMoney } from "../training/PaymentHistoryTable";
-import {
-  bulkGeneratePromoCodes, createPromoCode, deletePromoCode, loadPromoCodes, redeemPromoCode,
-} from "../../lib/services/promo-service";
-import { PROMO_TYPES } from "../../lib/promo-shared";
+import { deletePromoCode, loadPromoCodes, redeemPromoCode } from "../../lib/services/promo-service";
+import PromoCreateForm from "./PromoCreateForm";
+import PromoBulkForm from "./PromoBulkForm";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { SkeletonGrid } from "../ui/Skeleton";
@@ -160,12 +159,6 @@ const VIEW_MODES = [
   { id: "list", label: "List", icon: List },
 ];
 
-const blankPromo = { code: "", type: "percentage", value: "20", limit: "100", expiry: "", description: "" };
-const blankBulk = { type: "percentage", orgName: "Org Member Batch", expiry: "", count: "100" };
-// Mirrors lib/server/promo-core.js's MAX_BULK_COUNT — the 4-digit code
-// suffix only has 9,000 possible draws, so this stays well under that.
-const MAX_BULK_COUNT = 2000;
-
 // Real, Firestore-backed promo code manager — Director "Promo Codes" tab.
 // No mock data anywhere: every stat, code, and redemption below is read
 // from / written to /api/admin/promo-codes (lib/server/promo-core.js).
@@ -296,65 +289,9 @@ export default function PromoCodeView() {
     }
   }
 
-  // ---- Create promo ----
+  // ---- Create / bulk-generate forms (see PromoCreateForm / PromoBulkForm) ----
   const [creating, setCreating] = useState(false);
-  const [createForm, setCreateForm] = useState(blankPromo);
-  const [savingCreate, setSavingCreate] = useState(false);
-  const [createMessage, setCreateMessage] = useState("");
-
-  function openCreate() {
-    setCreateForm(blankPromo);
-    setCreateMessage("");
-    setCreating(true);
-  }
-  async function submitCreate(event) {
-    event.preventDefault();
-    setSavingCreate(true);
-    setCreateMessage("");
-    try {
-      await createPromoCode(createForm);
-      toast.success("Promotion created successfully");
-      setCreating(false);
-      setTab("single");
-      load();
-    } catch (err) {
-      setCreateMessage(err.message || "Unable to create this promotion.");
-    } finally {
-      setSavingCreate(false);
-    }
-  }
-
-  // ---- Bulk generate ----
   const [bulking, setBulking] = useState(false);
-  const [bulkForm, setBulkForm] = useState(blankBulk);
-  const [savingBulk, setSavingBulk] = useState(false);
-  const [bulkMessage, setBulkMessage] = useState("");
-
-  function openBulk() {
-    setBulkForm(blankBulk);
-    setBulkMessage("");
-    setBulking(true);
-  }
-  async function submitBulk() {
-    const count = Number(bulkForm.count);
-    if (!Number.isInteger(count) || count < 1 || count > MAX_BULK_COUNT) {
-      setBulkMessage(`Enter a whole number between 1 and ${MAX_BULK_COUNT}.`);
-      return;
-    }
-    setSavingBulk(true);
-    setBulkMessage("");
-    try {
-      const result = await bulkGeneratePromoCodes({ ...bulkForm, count });
-      toast.success(`Generated ${result.count} individual codes successfully`);
-      setBulking(false);
-      setTab("bulk");
-      load();
-    } catch (err) {
-      setBulkMessage(err.message || "Unable to generate codes.");
-    } finally {
-      setSavingBulk(false);
-    }
-  }
 
   // ---- Delete ----
   function remove(promo) {
@@ -391,11 +328,11 @@ export default function PromoCodeView() {
           <h2 className="mt-1 text-2xl font-black text-ink">Promo Codes</h2>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={openBulk} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm">
+          <button type="button" onClick={() => setBulking(true)} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-white shadow-sm">
             <UsersRound className="h-4 w-4" aria-hidden="true" />
             Generate Bulk
           </button>
-          <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm">
+          <button type="button" onClick={() => setCreating(true)} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm">
             <Plus className="h-4 w-4" aria-hidden="true" />
             Create Promo
           </button>
@@ -535,103 +472,27 @@ export default function PromoCodeView() {
       </section>
 
       {creating && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-8">
-          <div className="w-full max-w-lg rounded-3xl bg-card p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-ink">Create New Promotion</h3>
-              <button type="button" onClick={() => setCreating(false)} className="text-xl text-muted" aria-label="Close">×</button>
-            </div>
-            <form onSubmit={submitCreate} className="space-y-4">
-              <label className="grid gap-1 text-xs font-bold text-ink">
-                Coupon Code
-                <input required value={createForm.code} onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })} placeholder="e.g. SUMMER50" className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm font-mono uppercase text-ink outline-none focus:ring-2 focus:ring-primary" />
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <label className="grid gap-1 text-xs font-bold text-ink">
-                  Discount Type
-                  <select value={createForm.type} onChange={(e) => setCreateForm({ ...createForm, type: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary">
-                    {PROMO_TYPES.map((type) => <option key={type} value={type}>{type === "percentage" ? "Percentage Off (%)" : type === "fixed" ? "Fixed Amount" : "Free Shipping"}</option>)}
-                  </select>
-                </label>
-                <label className="grid gap-1 text-xs font-bold text-ink">
-                  {createForm.type === "percentage" ? "Discount Percentage" : createForm.type === "fixed" ? "Discount Amount" : "Value (N/A)"}
-                  <input type="number" min="1" disabled={createForm.type === "shipping"} required={createForm.type !== "shipping"} value={createForm.value} onChange={(e) => setCreateForm({ ...createForm, value: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary disabled:opacity-50" />
-                </label>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <label className="grid gap-1 text-xs font-bold text-ink">
-                  Usage Limit
-                  <input type="number" min="1" required value={createForm.limit} onChange={(e) => setCreateForm({ ...createForm, limit: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary" />
-                </label>
-                <label className="grid gap-1 text-xs font-bold text-ink">
-                  Expiration Date
-                  <input type="date" required value={createForm.expiry} onChange={(e) => setCreateForm({ ...createForm, expiry: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary" />
-                </label>
-              </div>
-              <label className="grid gap-1 text-xs font-bold text-ink">
-                Description / Tag
-                <input value={createForm.description} onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })} placeholder="e.g. Summer sale special for all users" className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary" />
-              </label>
-              {createMessage && <p className="text-xs text-primary">{createMessage}</p>}
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setCreating(false)} disabled={savingCreate} className="rounded-xl border border-border-subtle px-5 py-2.5 text-sm font-medium text-ink">Cancel</button>
-                <button type="submit" disabled={savingCreate} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-white shadow-md disabled:opacity-60">{savingCreate ? "Saving…" : "Save Promotion"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <PromoCreateForm
+          onClose={() => setCreating(false)}
+          onCreated={() => {
+            toast.success("Promotion created successfully");
+            setCreating(false);
+            setTab("single");
+            load();
+          }}
+        />
       )}
 
       {bulking && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 py-8">
-          <div className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><UsersRound className="h-5 w-5 text-orange-500" aria-hidden="true" /> Generate Org Promos</h3>
-              <button type="button" onClick={() => setBulking(false)} className="text-xl text-muted" aria-label="Close">×</button>
-            </div>
-            <p className="mb-4 text-xs font-medium text-ink/70">
-              Batch-generates unique 8-character promo codes (format <code className="rounded bg-page px-1.5 py-0.5 font-mono text-orange-600">NEXTXXXX</code>) for team members or clients — one use each.
-            </p>
-            <div className="space-y-4">
-              <label className="grid gap-1 text-xs font-bold text-ink">
-                Quantity
-                <input
-                  type="number"
-                  min="1"
-                  max={MAX_BULK_COUNT}
-                  step="1"
-                  value={bulkForm.count}
-                  onChange={(e) => setBulkForm({ ...bulkForm, count: e.target.value })}
-                  className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-orange-500"
-                />
-                <span className="font-semibold normal-case text-muted">Up to {MAX_BULK_COUNT} codes at a time.</span>
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <label className="grid gap-1 text-xs font-bold text-ink">
-                  Discount Type
-                  <select value={bulkForm.type} onChange={(e) => setBulkForm({ ...bulkForm, type: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-orange-500">
-                    <option value="percentage">Percentage Off (25%)</option>
-                    <option value="fixed">Fixed Amount ({formatMoney(20)})</option>
-                    <option value="shipping">Free Shipping</option>
-                  </select>
-                </label>
-                <label className="grid gap-1 text-xs font-bold text-ink">
-                  Organization Name
-                  <input value={bulkForm.orgName} onChange={(e) => setBulkForm({ ...bulkForm, orgName: e.target.value })} placeholder="e.g. Enterprise Partner" className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-orange-500" />
-                </label>
-              </div>
-              <label className="grid gap-1 text-xs font-bold text-ink">
-                Expiration Date
-                <input type="date" value={bulkForm.expiry} onChange={(e) => setBulkForm({ ...bulkForm, expiry: e.target.value })} className="rounded-xl border border-border-subtle bg-page px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-orange-500" />
-              </label>
-              {bulkMessage && <p className="text-xs text-primary">{bulkMessage}</p>}
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setBulking(false)} disabled={savingBulk} className="rounded-xl border border-border-subtle px-5 py-2.5 text-sm font-medium text-ink">Cancel</button>
-                <button type="button" onClick={submitBulk} disabled={savingBulk} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-medium text-white shadow-md disabled:opacity-60">{savingBulk ? "Generating…" : `Generate ${bulkForm.count || 0} Codes`}</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PromoBulkForm
+          onClose={() => setBulking(false)}
+          onGenerated={(result) => {
+            toast.success(`Generated ${result.count} individual codes successfully`);
+            setBulking(false);
+            setTab("bulk");
+            load();
+          }}
+        />
       )}
 
       {viewing && (

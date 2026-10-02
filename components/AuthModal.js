@@ -124,11 +124,11 @@ export default function AuthModal({ onClose, required = false }) {
           {mode !== "reset" && (
             <input
               required
-              minLength={6}
+              minLength={4}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="h-11 rounded-md border border-[#d8e0db] px-3 text-xs"
-              placeholder="Password (6+ characters)"
+              placeholder="Password (4+ characters)"
               type="password"
             />
           )}

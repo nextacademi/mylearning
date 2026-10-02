@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import { MIN_PASSWORD_LENGTH, toAuthPassword } from "../../lib/password-pin";
 import { Award, Camera, Check, Contact, Download, KeyRound, Moon, Sun, X } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import { useTheme } from "../../lib/theme-context";
@@ -287,8 +288,8 @@ export default function SettingsPage() {
   async function handleChangePassword(event) {
     event.preventDefault();
     if (passwordSaving) return;
-    if (newPassword.length < 6) {
-      setPasswordError("New password must be at least 6 characters.");
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setPasswordError("New password must be at least 4 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -301,8 +302,8 @@ export default function SettingsPage() {
       // Firebase requires a recent login before updatePassword — re-verify
       // with the current password first rather than asking the user to
       // sign out and back in.
-      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
-      await updatePassword(user, newPassword);
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, toAuthPassword(currentPassword)));
+      await updatePassword(user, toAuthPassword(newPassword));
       closePasswordModal();
       setToast("🔑 Password updated");
       setTimeout(() => setToast(""), 2500);
@@ -857,11 +858,11 @@ export default function SettingsPage() {
                     <input
                       type="password"
                       required
-                      minLength={6}
+                      minLength={4}
                       autoComplete="new-password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="At least 6 characters"
+                      placeholder="At least 4 characters"
                       className={FIELD_CLASS}
                     />
                   </label>

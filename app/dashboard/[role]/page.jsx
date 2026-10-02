@@ -33,6 +33,7 @@ import { useNewInquiryCount } from "../../../lib/contact-inquiries-data";
 import IdCardPrint from "../../../components/teacher/IdCardPrint";
 import Shop from "../../../components/shop/Shop";
 import PromoCodeView from "../../../components/promo/PromoCodeView";
+import FormsView from "../../../components/forms/FormsView";
 import AppointmentScheduler from "../../../components/appointments/AppointmentScheduler";
 import AchievementManagement from "../../../components/achievement/AchievementManagement";
 import StudentAchievements from "../../../components/achievement/StudentAchievements";
@@ -139,6 +140,7 @@ export const roleConfig = {
       "Documents",
       "My Shop",
       "Promo Codes",
+      "Forms",
       "User",
       "Chat",
       "Achievement",
@@ -159,6 +161,7 @@ export const roleConfig = {
       "Finance",
       "Documents",
       "My Shop",
+      "Forms",
       "User",
       "Chat",
       "Achievement",
@@ -273,6 +276,8 @@ function DirectorDashboard({ profile, user }) {
               <Shop role="Director" uid={user.uid} />
             ) : active === "Promo Codes" ? (
               <PromoCodeView />
+            ) : active === "Forms" ? (
+              <FormsView />
             ) : active === "Achievement" ? (
               <AchievementManagement />
             ) : active === "Model Test" ? (
@@ -458,6 +463,8 @@ function DashboardContent({ role, profile, user }) {
               <Shop role={role} uid={user.uid} />
             ) : role === "Admin" && active === "Achievement" ? (
               <AchievementManagement />
+            ) : role === "Admin" && active === "Forms" ? (
+              <FormsView />
             ) : role === "Admin" && active === "Model Test" ? (
               <TeacherExams teacherId={user.uid} isManager />
             ) : role === "Admin" && active === "Scan QR Code" ? (
