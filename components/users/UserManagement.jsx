@@ -15,7 +15,7 @@ import TeacherAssignment from "../teacher-assignment/TeacherAssignment";
 // person in the academy. Each tab renders the exact same, already-working
 // component those sidebar items used to point at — nothing about student/
 // teacher management itself changed, only where it's reached from.
-const USER_TABS = ["All Users", "Students", "Teachers"];
+const USER_TABS = ["All Users", "Students", "Teachers", "Volunteers"];
 
 const assignableRoles = ["Student", "Volunteer", "Teacher", "Admin", "Director"];
 const dash = "—";
@@ -173,13 +173,13 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
 
     {tab === "Students" && <StudentManagement role={role} />}
     {tab === "Teachers" && <TeacherAssignment onNavigate={onNavigate} />}
-    {tab === "All Users" && (
+    {(tab === "All Users" || tab === "Volunteers") && (
       <>
         {notice && <p className="rounded-xl bg-success-soft px-4 py-3 text-sm text-success">{notice}</p>}
         {error && !changing && <div className="rounded-xl bg-active px-4 py-3 text-sm text-primary"><b>Unable to load users. Please try again.</b><p>{error}</p></div>}
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student], ["Guests", counts.Guest]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>{loading ? <SkeletonBar className="mt-2 h-7 w-12" /> : <p className="mt-2 text-2xl font-extrabold text-ink">{value}</p>}</article>)}</section>
+        {tab === "All Users" && <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student], ["Guests", counts.Guest]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>{loading ? <SkeletonBar className="mt-2 h-7 w-12" /> : <p className="mt-2 text-2xl font-extrabold text-ink">{value}</p>}</article>)}</section>}
         <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
-          <div className="mb-4"><h3 className="font-bold text-ink">All Users</h3><p className="mt-1 text-xs text-muted">Search by user ID, name, email, or phone · filter by role or status · export the current view.</p></div>
+          <div className="mb-4"><h3 className="font-bold text-ink">{tab === "Volunteers" ? "Volunteers" : "All Users"}</h3><p className="mt-1 text-xs text-muted">Search by user ID, name, email, or phone · filter by role or status · export the current view.</p></div>
           {loading ? (
             <SkeletonList count={8} />
           ) : (
@@ -187,11 +187,11 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
               title="users"
               name="users"
               columns={columns}
-              rows={users}
+              rows={tab === "Volunteers" ? users.filter((user) => user.role === "Volunteer") : users}
               loading={loading}
               initialSort={{ key: "createdAt", dir: "desc" }}
               pageSize={10}
-              emptyLabel="No users found."
+              emptyLabel={tab === "Volunteers" ? "No volunteers found." : "No users found."}
               rowActions={(user) => (
                 <>
                   <button type="button" onClick={() => setViewing(user)} className="inline-flex items-center gap-1 rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90"><Eye className="h-3.5 w-3.5" /> View</button>

@@ -23,7 +23,7 @@ function Avatar({ teacher, size = "h-10 w-10", text = "text-xs" }) {
     return <img src={teacher.photoURL} alt={teacher.displayName || "Teacher"} className={`${size} shrink-0 rounded-full object-cover`} />;
   }
   return (
-    <span className={`grid ${size} shrink-0 place-items-center rounded-full bg-success-soft ${text} font-black text-success`}>
+    <span className={`grid ${size} shrink-0 place-items-center rounded-full bg-deep-orange-soft ${text} font-black text-deep-orange`}>
       {initials(teacher)}
     </span>
   );
@@ -32,7 +32,7 @@ function Avatar({ teacher, size = "h-10 w-10", text = "text-xs" }) {
 // Workload tier from the teacher's real assigned load.
 function tierOf(teacher) {
   const load = (teacher.courseCount || 0) + (teacher.classCount || 0);
-  if (load <= 2) return { key: "low", label: "Low", cls: "bg-success-soft text-success" };
+  if (load <= 2) return { key: "low", label: "Low", cls: "bg-deep-orange-soft text-deep-orange" };
   if (load <= 5) return { key: "medium", label: "Medium", cls: "bg-warning-soft text-warning" };
   return { key: "high", label: "High", cls: "bg-active text-primary" };
 }
@@ -51,7 +51,7 @@ function WorkloadBadge({ teacher }) {
 
 function StatusBadge({ active }) {
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${active ? "bg-success-soft text-success" : "bg-page text-muted"}`}>
+    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${active ? "bg-deep-orange-soft text-deep-orange" : "bg-page text-muted"}`}>
       {active ? "Active" : "Inactive"}
     </span>
   );
@@ -59,7 +59,7 @@ function StatusBadge({ active }) {
 
 function CourseChip({ children, tone = "success" }) {
   const tones = {
-    success: "bg-success-soft text-success",
+    success: "bg-deep-orange-soft text-deep-orange",
     info: "bg-info-soft text-info",
     purple: "bg-purple-soft text-purple",
   };
@@ -91,7 +91,7 @@ function TeacherPicker({ teachers, exclude = [], onPick, busy, compact }) {
           value={query}
           onChange={(event) => { setQuery(event.target.value); setPreview(null); }}
           placeholder="Search teacher by name, email or ID…"
-          className="w-full rounded-xl border border-border-subtle bg-card py-2.5 pl-9 pr-3 text-sm shadow-sm outline-none focus:ring-2 focus:ring-success"
+          className="w-full rounded-xl border border-border-subtle bg-card py-2.5 pl-9 pr-3 text-sm shadow-sm outline-none focus:ring-2 focus:ring-deep-orange"
         />
       </label>
 
@@ -104,7 +104,7 @@ function TeacherPicker({ teachers, exclude = [], onPick, busy, compact }) {
               key={teacher.id}
               type="button"
               onClick={() => setPreview(teacher)}
-              className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-success-soft ${preview?.id === teacher.id ? "bg-success-soft" : ""}`}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-deep-orange-soft ${preview?.id === teacher.id ? "bg-deep-orange-soft" : ""}`}
             >
               <Avatar teacher={teacher} size="h-8 w-8" text="text-[10px]" />
               <span className="min-w-0 flex-1">
@@ -118,7 +118,7 @@ function TeacherPicker({ teachers, exclude = [], onPick, busy, compact }) {
       )}
 
       {preview && (
-        <div className={`rounded-xl border border-success/40 bg-success-soft/40 p-3 ${compact ? "" : "sm:flex sm:items-center sm:justify-between"}`}>
+        <div className={`rounded-xl border border-deep-orange/40 bg-deep-orange-soft/40 p-3 ${compact ? "" : "sm:flex sm:items-center sm:justify-between"}`}>
           <div className="flex items-center gap-3">
             <Avatar teacher={preview} />
             <div className="min-w-0">
@@ -134,7 +134,7 @@ function TeacherPicker({ teachers, exclude = [], onPick, busy, compact }) {
             type="button"
             disabled={busy}
             onClick={() => onPick(preview)}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-success px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:opacity-60 sm:mt-0"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-deep-orange px-4 py-2 text-xs font-bold text-white hover:opacity-90 disabled:opacity-60 sm:mt-0"
           >
             <UserPlus className="h-3.5 w-3.5" /> Assign this teacher
           </button>
@@ -246,7 +246,7 @@ function DirectoryTab({ data, loading, onView, onNavigate }) {
         <p className="mt-3 text-lg font-black text-ink">No active teacher accounts exist yet</p>
         <p className="mt-1 text-sm text-muted">Create a Teacher account first, then assign them to courses or classes.</p>
         {onNavigate && (
-          <button type="button" onClick={() => onNavigate("User")} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-success px-4 py-2.5 text-xs font-bold text-white hover:opacity-90">
+          <button type="button" onClick={() => onNavigate("User")} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-deep-orange px-4 py-2.5 text-xs font-bold text-white hover:opacity-90">
             <UserPlus className="h-4 w-4" /> Create Teacher Account
           </button>
         )}
@@ -299,7 +299,7 @@ function CoursesTab({ data, busy, onAssign, onRemove }) {
       <div className="space-y-4">
         <label className="grid gap-1 text-xs font-bold text-muted">
           Select course / training
-          <select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-success">
+          <select value={courseId} onChange={(event) => setCourseId(event.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-deep-orange">
             <option value="">Choose a course…</option>
             {data.courses.map((item) => <option key={item.id} value={item.id}>{item.title}{item.courseCode ? ` (${item.courseCode})` : ""}</option>)}
           </select>
@@ -337,7 +337,7 @@ function CoursesTab({ data, busy, onAssign, onRemove }) {
                       <span className="min-w-0 flex-1">
                         <b className="block truncate text-xs text-ink">
                           {teacher.displayName || "Unnamed teacher"}
-                          {course.primaryTeacherId === teacher.id && <span className="ml-1.5 rounded-full bg-success-soft px-1.5 py-0.5 text-[9px] font-black uppercase text-success">Primary</span>}
+                          {course.primaryTeacherId === teacher.id && <span className="ml-1.5 rounded-full bg-deep-orange-soft px-1.5 py-0.5 text-[9px] font-black uppercase text-deep-orange">Primary</span>}
                         </b>
                         <small className="block truncate text-[11px] text-muted">{teacher.email}</small>
                       </span>
@@ -407,7 +407,7 @@ function ClassesTab({ data, busy, onAssignClass, onChangeClass, onRemove }) {
                   {assigned.length ? (
                     <div className="flex flex-wrap items-center gap-1.5">
                       {assigned.map((teacher) => (
-                        <span key={teacher.id} className="inline-flex items-center gap-1.5 rounded-full bg-success-soft px-2 py-1 text-[11px] font-bold text-success">
+                        <span key={teacher.id} className="inline-flex items-center gap-1.5 rounded-full bg-deep-orange-soft px-2 py-1 text-[11px] font-bold text-deep-orange">
                           <Avatar teacher={teacher} size="h-5 w-5" text="text-[8px]" /> {teacher.displayName || teacher.email}
                         </span>
                       ))}
@@ -424,7 +424,7 @@ function ClassesTab({ data, busy, onAssignClass, onChangeClass, onRemove }) {
                         <button type="button" disabled={busy} onClick={() => onRemove({ type: "class", target: cls, teacher: assigned[0], all: true })} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-active disabled:opacity-60">Remove</button>
                       </>
                     ) : (
-                      <button type="button" disabled={busy} onClick={() => onAssignClass(cls)} className="rounded-lg bg-success px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90 disabled:opacity-60">Assign Teacher</button>
+                      <button type="button" disabled={busy} onClick={() => onAssignClass(cls)} className="rounded-lg bg-deep-orange px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90 disabled:opacity-60">Assign Teacher</button>
                     )}
                   </div>
                 </td>
@@ -551,7 +551,7 @@ export default function TeacherAssignment({ onNavigate }) {
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-[#bfe6cf] bg-[linear-gradient(120deg,#eafaf1_0%,#f4fbf7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
-        <h2 className="flex items-center gap-1.5 text-lg font-black md:text-xl"><GraduationCap className="h-5 w-5 text-success" aria-hidden="true" /> Teacher Assignment</h2>
+        <h2 className="flex items-center gap-1.5 text-lg font-black md:text-xl"><GraduationCap className="h-5 w-5 text-deep-orange" aria-hidden="true" /> Teacher Assignment</h2>
         <p className="mt-1 text-xs text-muted">Assign real, active Teacher accounts to your existing courses and classes. Workload updates automatically from live enrollment data.</p>
         {!loading && (
           <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
@@ -570,7 +570,7 @@ export default function TeacherAssignment({ onNavigate }) {
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors ${tab === key ? "bg-success text-white shadow-sm" : "bg-page text-muted hover:text-ink"}`}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors ${tab === key ? "bg-deep-orange text-white shadow-sm" : "bg-page text-muted hover:text-ink"}`}
           >
             <Icon className="h-4 w-4" /> {label}
           </button>
