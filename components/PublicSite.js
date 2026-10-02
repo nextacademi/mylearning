@@ -208,7 +208,7 @@ const TEAM_MEMBERS = [
   },
   {
     id: "coordinator-1",
-    name: "AMZAD HOSSAIN",
+    name: "Amzad Hossain",
     role: "Training Coordinator",
     photo: amzadHossainPhotoAsset.src,
     socials: {
@@ -542,7 +542,7 @@ function TeamCard({ member, index }) {
     <Reveal
       as="article"
       index={index}
-      className="group relative flex h-full min-h-[220px] w-full shrink-0 flex-col items-center overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white px-1.5 pb-3 pt-3 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-[#E53935]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] sm:min-h-[320px] sm:w-[240px] sm:rounded-3xl sm:px-5 sm:pb-5 sm:pt-7 lg:min-h-[350px] lg:w-[260px]"
+      className="group relative flex h-full min-h-[220px] w-full shrink-0 flex-col items-center overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white px-1.5 pb-3 pt-3 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-[#E53935]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] sm:min-h-[320px] sm:rounded-3xl sm:px-5 sm:pb-5 sm:pt-7 lg:min-h-[350px]"
     >
       <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#E53935] via-[#fb7185] to-[#f59e0b]" />
       <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-white bg-[#FAFAF7] shadow-[0_4px_18px_rgba(15,23,42,0.12)] ring-1 ring-[#E5E7EB] transition duration-300 group-hover:ring-[#E53935]/40 sm:h-28 sm:w-28 sm:border-4 lg:h-36 lg:w-36">
@@ -634,10 +634,10 @@ function TeamSlider({ members }) {
       )}
       <div
         ref={scrollerRef}
-        className="flex gap-3 overflow-x-auto overflow-y-hidden scroll-smooth py-2 [scrollbar-width:thin] snap-x snap-mandatory sm:gap-5"
+        className="flex gap-3 overflow-x-auto overflow-y-hidden scroll-smooth py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory sm:gap-5"
       >
         {members.map((member, index) => (
-          <div key={member.id} data-team-card className="w-[calc((100%-1.5rem)/3)] shrink-0 snap-start sm:w-auto">
+          <div key={member.id} data-team-card className="w-[calc((100%-1.5rem)/3)] shrink-0 snap-start sm:w-[calc((100%-1.25rem)/2)] md:w-[calc((100%-2.5rem)/3)] lg:w-[calc((100%-3.75rem)/4)]">
             <TeamCard member={member} index={index} />
           </div>
         ))}
@@ -912,6 +912,17 @@ export default function PublicSite() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [events, setEvents] = useState([]);
   const [eventsLoaded, setEventsLoaded] = useState(false);
+  // Admin-managed team (Dashboard > Team); falls back to the built-in list.
+  const [teamMembers, setTeamMembers] = useState(TEAM_MEMBERS);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/team")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => { if (!cancelled && data?.members?.length) setTeamMembers(data.members); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
   const verifiedUser = Boolean(user);
 
   function goToLearning() {
@@ -1201,7 +1212,7 @@ export default function PublicSite() {
           </p>
         </Reveal>
 
-        <TeamSlider members={TEAM_MEMBERS} />
+        <TeamSlider members={teamMembers} />
       </section>
 
       {/* TRAINING / PROGRAMS — "What We Do" */}

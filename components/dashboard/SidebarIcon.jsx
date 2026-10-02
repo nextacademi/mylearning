@@ -14,7 +14,7 @@ const icons = {
   "QR Scanner": QrCode, Attendance: Award, Certificates: Award,
   Settings, Activities: Award, Promote: Megaphone, "AI Assistant": Sparkles,
   "Contact Inquiries": Mail, "Model Test": ClipboardList, "Promo Codes": Ticket,
-  Appointments: CalendarCheck, Forms: FileText,
+  Appointments: CalendarCheck, Forms: FileText, Team: UsersRound,
 };
 
 export default function SidebarIcon({ name, className = "h-5 w-5" }) {
