@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { deleteContent, loadContent, reorderContent, saveContent } from "../../lib/services/site-content-service";
+import { resolvePhoto } from "../../lib/public-assets";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
 
@@ -128,7 +129,7 @@ function SectionManager({ kind }) {
           {items.map((item, index) => (
             <div key={item.id} className="flex items-center gap-3 p-3 sm:p-4">
               <span className="grid h-14 w-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-page text-xs font-black text-subtle">
-                {item.photo ? <img src={item.photo} alt="" className="h-full w-full object-cover" /> : "No photo"}
+                {item.photo ? <img src={resolvePhoto(item.photo)} alt="" className="h-full w-full object-cover" /> : "No photo"}
               </span>
               <div className="min-w-0 flex-1">
                 <b className="block truncate text-sm text-ink">{item.title}</b>

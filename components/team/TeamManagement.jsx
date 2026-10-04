@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { deleteTeamMember, loadTeam, reorderTeam, saveTeamMember } from "../../lib/services/team-service";
+import { resolvePhoto } from "../../lib/public-assets";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
 
@@ -129,7 +130,7 @@ export default function TeamManagement() {
           {members.map((member, index) => (
             <div key={member.id} className="flex items-center gap-3 p-3 sm:p-4">
               <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-page text-sm font-black text-primary">
-                {member.photo ? <img src={member.photo} alt="" className="h-full w-full object-cover" /> : (member.name || "?")[0]}
+                {member.photo ? <img src={resolvePhoto(member.photo)} alt="" className="h-full w-full object-cover" /> : (member.name || "?")[0]}
               </span>
               <div className="min-w-0 flex-1">
                 <b className="block truncate text-sm text-ink">{member.name}</b>

@@ -13,6 +13,7 @@ import { computeEventStatus, isRegistrationOpen } from "../lib/events-shared";
 import TestimonialCarousel from "./public/TestimonialCarousel";
 import AppointmentBookingWidget from "./public/AppointmentBookingWidget";
 import SmoothScroll from "./public/SmoothScroll";
+import { resolvePhoto } from "../lib/public-assets";
 import PhotoGallery from "./public/PhotoGallery";
 import VideoLibrarySection from "./public/VideoLibrarySection";
 import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
@@ -919,7 +920,7 @@ export default function PublicSite() {
     let cancelled = false;
     fetch("/api/team")
       .then((response) => (response.ok ? response.json() : null))
-      .then((data) => { if (!cancelled && data?.members?.length) setTeamMembers(data.members); })
+      .then((data) => { if (!cancelled && data?.members?.length) setTeamMembers(data.members.map((member) => ({ ...member, photo: resolvePhoto(member.photo) }))); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
@@ -936,7 +937,7 @@ export default function PublicSite() {
     return () => { cancelled = true; };
   }, []);
 
-  const withSrc = (list) => list.map((item) => ({ ...item, src: item.photo }));
+  const withSrc = (list) => list.map((item) => ({ ...item, src: resolvePhoto(item.photo) }));
   const programList = siteContent?.program?.length ? withSrc(siteContent.program) : programs.slice(0, 2);
   const galleryList = siteContent?.gallery?.length ? withSrc(siteContent.gallery) : galleryItems;
   const sessionList = siteContent?.session?.length ? withSrc(siteContent.session) : undefined;
