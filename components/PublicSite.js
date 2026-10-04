@@ -615,9 +615,8 @@ function TeamSlider({ members }) {
   function scrollByCard(direction) {
     const el = scrollerRef.current;
     if (!el) return;
-    const card = el.querySelector("[data-team-card]");
     const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
-    const amount = card ? card.getBoundingClientRect().width + gap : el.clientWidth;
+    const amount = el.clientWidth + gap; // one full page (4 on desktop), not one card
     el.scrollBy({ left: direction * amount, behavior: "smooth" });
   }
 
