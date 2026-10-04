@@ -6,18 +6,22 @@ import { getFormForStudent, submitResponse } from "../../../../lib/server/forms-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Any signed-in, active account can open and fill a form it has the link to
-// (the form id is the secret). Name/email on the response come from the
-// account, never from the request body, so who filled it in can't be faked.
-async function signedIn(request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!token) return { denied: NextResponse.json({ message: "Sign in to open this form." }, { status: 401 }) };
+// A form link is public: anyone who has it (the form id is the secret) can open
+// and fill it. When the request carries a valid sign-in, name/email come from
+// that account, never from the body; otherwise the visitor supplies them.
+async function identify(request) {
   const db = getAdminDb();
-  const decoded = await getAdminAuth().verifyIdToken(token);
-  const snap = await getCachedUserSnapshot(db, decoded.uid);
-  const profile = snap.data() || {};
-  if (!snap.exists || profile.active === false) return { denied: NextResponse.json({ message: "Account access is required." }, { status: 403 }) };
-  return { db, uid: decoded.uid, profile: { ...profile, email: profile.email || decoded.email || "" } };
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) return { db };
+  try {
+    const decoded = await getAdminAuth().verifyIdToken(token);
+    const snap = await getCachedUserSnapshot(db, decoded.uid);
+    const profile = snap.data() || {};
+    if (!snap.exists || profile.active === false) return { db };
+    return { db, uid: decoded.uid, name: profile.displayName || profile.email || decoded.email || "", email: profile.email || decoded.email || "", role: profile.role || "" };
+  } catch {
+    return { db };
+  }
 }
 
 function respondError(error) {
@@ -28,8 +32,7 @@ function respondError(error) {
 
 export async function GET(request, context) {
   try {
-    const a = await signedIn(request);
-    if (a.denied) return a.denied;
+    const a = await identify(request);
     const { id } = await context.params;
     return NextResponse.json({ form: await getFormForStudent(a.db, id, a.uid) });
   } catch (error) {
@@ -39,11 +42,11 @@ export async function GET(request, context) {
 
 export async function POST(request, context) {
   try {
-    const a = await signedIn(request);
-    if (a.denied) return a.denied;
+    const a = await identify(request);
     const { id } = await context.params;
-    const { answers } = await request.json();
-    return NextResponse.json(await submitResponse(a.db, id, a.uid, a.profile, answers), { status: 201 });
+    const body = await request.json();
+    const identity = a.uid ? a : { name: body.name, email: body.email };
+    return NextResponse.json(await submitResponse(a.db, id, identity, body.answers), { status: 201 });
   } catch (error) {
     return respondError(error);
   }
