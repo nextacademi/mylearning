@@ -1238,6 +1238,7 @@ function AssignTab({ course }) {
               .map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.displayName || t.email}
+                  {t.role && t.role !== "Teacher" ? ` (${t.role})` : ""}
                 </option>
               ))}
           </select>
@@ -1255,6 +1256,7 @@ function AssignTab({ course }) {
               .map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.displayName || t.email}
+                  {t.role && t.role !== "Teacher" ? ` (${t.role})` : ""}
                 </option>
               ))}
           </select>

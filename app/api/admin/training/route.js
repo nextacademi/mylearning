@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
+import { INSTRUCTOR_ROLES, isInstructorRole } from "../../../../lib/server/instructor-roles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,7 +89,7 @@ async function backfillCourseCodes(db, courses) {
 
 async function loadTeachers(db, courses, includeDirectory) {
   if (includeDirectory) {
-    const snapshots = await db.collection("users").where("role", "==", "Teacher").get();
+    const snapshots = await db.collection("users").where("role", "in", INSTRUCTOR_ROLES).get();
     return snapshots.docs.map(plain);
   }
   const teacherIds = [...new Set(courses.flatMap((course) => course.teacherIds || []))];
@@ -97,7 +98,7 @@ async function loadTeachers(db, courses, includeDirectory) {
     ...teacherIds.map((teacherId) => db.collection("users").doc(teacherId)),
   );
   return snapshots
-    .filter((snapshot) => snapshot.exists && snapshot.data().role === "Teacher")
+    .filter((snapshot) => snapshot.exists && isInstructorRole(snapshot.data().role))
     .map(plain);
 }
 
@@ -160,8 +161,8 @@ async function validateInstructors(db, body) {
   }
   const ids = [primaryTeacherId, ...(assistantTeacherId ? [assistantTeacherId] : [])];
   const docs = await db.getAll(...ids.map((id) => db.collection("users").doc(id)));
-  if (docs.some((item) => !item.exists || item.data().role !== "Teacher")) {
-    throw new Error("Choose only active users with the Teacher role.");
+  if (docs.some((item) => !item.exists || !isInstructorRole(item.data().role))) {
+    throw new Error("Choose only users with the Teacher, Director or Volunteer role.");
   }
   return { primaryTeacherId, assistantTeacherId, teacherIds: [...new Set(ids)] };
 }
@@ -275,7 +276,7 @@ export async function GET(request) {
     const teacherMap = new Map(
       teacherRows.map((teacher) => [
         teacher.id,
-        { id: teacher.id, uid: teacher.uid || teacher.id, displayName: teacher.displayName || teacher.name || "", email: teacher.email || "" },
+        { id: teacher.id, uid: teacher.uid || teacher.id, displayName: teacher.displayName || teacher.name || "", email: teacher.email || "", role: teacher.role || "" },
       ]),
     );
     const rows = courses

@@ -8,6 +8,11 @@ const statuses = ["Draft", "Upcoming", "Active", "Completed", "Archived"];
 const levels = ["Beginner", "Intermediate", "Advanced"];
 const enrollmentStatuses = ["Open", "Closed"];
 const currencySymbols = { SGD: "S$" };
+// Directors and Volunteers can also be instructors — tag them in the list.
+const instructorLabel = (teacher) => {
+  const name = teacher.displayName || teacher.email || teacher.id;
+  return teacher.role && teacher.role !== "Teacher" ? `${name} (${teacher.role})` : name;
+};
 
 // This is a long, multi-section form (Basic Info, Pricing, Schedule,
 // Instructor, Classroom, Enrollment, Assessment, plus the nested Enrollment
@@ -207,7 +212,7 @@ export default function TrainingForm({
           <select value={form.primaryTeacherId} onChange={set("primaryTeacherId")} required className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm">
             <option value="">Choose primary teacher</option>
             {primaryOptions.map((teacher) => (
-              <option key={teacher.id} value={teacher.id}>{teacher.displayName || teacher.email || teacher.id}</option>
+              <option key={teacher.id} value={teacher.id}>{instructorLabel(teacher)}</option>
             ))}
           </select>
         </label>
@@ -216,7 +221,7 @@ export default function TrainingForm({
           <select value={form.assistantTeacherId} onChange={set("assistantTeacherId")} className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm">
             <option value="">None</option>
             {assistantOptions.map((teacher) => (
-              <option key={teacher.id} value={teacher.id}>{teacher.displayName || teacher.email || teacher.id}</option>
+              <option key={teacher.id} value={teacher.id}>{instructorLabel(teacher)}</option>
             ))}
           </select>
         </label>

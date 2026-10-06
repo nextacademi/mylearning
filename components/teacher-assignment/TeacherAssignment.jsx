@@ -159,7 +159,7 @@ function TeacherView({ teacher, courses, classes, onClose }) {
             <Avatar teacher={teacher} size="h-14 w-14" text="text-base" />
             <div className="min-w-0">
               <b className="block truncate text-lg text-ink">{teacher.displayName || "Unnamed teacher"}</b>
-              <span className="block truncate text-sm text-muted">{teacher.designation || teacher.department || "Teacher"}</span>
+              <span className="block truncate text-sm text-muted">{teacher.designation || teacher.department || teacher.role || "Teacher"}</span>
             </div>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-muted hover:bg-page" aria-label="Close"><X className="h-5 w-5" /></button>

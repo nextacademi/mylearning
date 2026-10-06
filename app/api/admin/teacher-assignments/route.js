@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { ensureUserId } from "../../../../lib/server/user-id";
+import { INSTRUCTOR_ROLES, isInstructorRole } from "../../../../lib/server/instructor-roles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +41,7 @@ function teacherProfile(doc) {
     uid: doc.uid || doc.id,
     displayName: doc.displayName || "",
     email: doc.email || "",
+    role: doc.role || "",
     phone: doc.phone || "",
     photoURL: doc.photoURL || "",
     userId: doc.userId || null,
@@ -63,7 +65,7 @@ export async function GET(request) {
     const { db } = access;
 
     const [teacherDocs, courseDocs, classDocs, enrollmentDocs] = await Promise.all([
-      db.collection("users").where("role", "==", "Teacher").get(),
+      db.collection("users").where("role", "in", INSTRUCTOR_ROLES).get(),
       db.collection("courses").get(),
       db.collection("classes").get(),
       db.collection("enrollments").get(),
@@ -149,7 +151,7 @@ async function assertTeacher(db, teacherId) {
   const snap = await db.collection("users").doc(teacherId).get();
   if (!snap.exists) throw Object.assign(new Error("That teacher account no longer exists."), { statusCode: 404 });
   const data = snap.data();
-  if (data.role !== "Teacher") throw Object.assign(new Error("Only accounts with the Teacher role can be assigned."), { statusCode: 400 });
+  if (!isInstructorRole(data.role)) throw Object.assign(new Error("Only Teacher, Director or Volunteer accounts can be assigned."), { statusCode: 400 });
   if (data.active === false) throw Object.assign(new Error("That teacher account is inactive."), { statusCode: 400 });
 }
 
@@ -215,7 +217,7 @@ export async function PATCH(request) {
     const unique = [...new Set(teacherIds)];
     if (unique.length) {
       const docs = await db.getAll(...unique.map((teacherId) => db.collection("users").doc(teacherId)));
-      if (docs.some((teacher) => !teacher.exists || teacher.data().role !== "Teacher" || teacher.data().active === false)) {
+      if (docs.some((teacher) => !teacher.exists || !isInstructorRole(teacher.data().role) || teacher.data().active === false)) {
         return NextResponse.json({ message: "Choose only active teacher accounts." }, { status: 400 });
       }
     }
