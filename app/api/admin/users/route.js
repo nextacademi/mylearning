@@ -79,16 +79,50 @@ function userRow(snapshot) {
   };
 }
 
+async function listAuthUsers(auth) {
+  const users = [];
+  let pageToken;
+  do {
+    const page = await auth.listUsers(1000, pageToken);
+    users.push(...page.users);
+    pageToken = page.pageToken;
+  } while (pageToken);
+  return users;
+}
+
+// A sign-in account whose users/{uid} profile was never written (e.g. the
+// client-side profile write failed at registration and they never signed in
+// again to self-heal). Without this row they'd be invisible to managers.
+function orphanRow(authUser) {
+  return {
+    id: authUser.uid,
+    uid: authUser.uid,
+    userId: null,
+    displayName: authUser.displayName || "",
+    email: authUser.email || "",
+    phone: authUser.phoneNumber || "",
+    role: "",
+    active: !authUser.disabled,
+    createdAt: authUser.metadata?.creationTime ? new Date(authUser.metadata.creationTime).toISOString() : null,
+    missingProfile: true,
+  };
+}
+
 export async function GET(request) {
   try {
     const access = await requireManager(request);
     if (access.denied) return access.denied;
-    const users = await access.db.collection("users").get();
+    const [users, authUsers] = await Promise.all([
+      access.db.collection("users").get(),
+      listAuthUsers(getAdminAuth()),
+    ]);
     const rows = users.docs.map(userRow);
     // Belt-and-suspenders backfill for any account still missing the
     // unified User ID (legacy accounts pre-dating this field) — same
     // pattern as lib/server/enrollment-core.js.
     await Promise.all(rows.filter((row) => !row.userId).map((row) => ensureUserId(access.db, row.id).then((userId) => { row.userId = userId; })));
+    const profileIds = new Set(rows.map((row) => row.id));
+    rows.push(...authUsers.filter((authUser) => !profileIds.has(authUser.uid)).map(orphanRow));
     return NextResponse.json({
       users: rows.sort((a, b) => (a.displayName || a.email || a.uid).localeCompare(b.displayName || b.email || b.uid)),
     });
@@ -97,11 +131,45 @@ export async function GET(request) {
   }
 }
 
+// Fixes a mistyped name/phone. Kept in the profile doc and, for the name,
+// the Auth account too, so both stay in sync. Same Director rule as role
+// changes: only a Director may edit a Director.
+async function updateDetails(access, body) {
+  const { uid } = body;
+  if (typeof uid !== "string" || !uid) {
+    return NextResponse.json({ message: "User ID is required." }, { status: 400 });
+  }
+  const displayName = typeof body.displayName === "string" ? body.displayName.trim() : "";
+  const phone = typeof body.phone === "string" ? body.phone.trim() : "";
+  if (!displayName) return NextResponse.json({ message: "Enter a name." }, { status: 400 });
+  if (displayName.length > 100) return NextResponse.json({ message: "Name can be up to 100 characters." }, { status: 400 });
+  if (phone.length > 30) return NextResponse.json({ message: "Phone can be up to 30 characters." }, { status: 400 });
+
+  const targetRef = access.db.collection("users").doc(uid);
+  const target = await targetRef.get();
+  if (!target.exists) {
+    return NextResponse.json({ message: "This account has no profile yet — set its role first." }, { status: 404 });
+  }
+  if (access.actorRole !== "Director" && target.data().role === "Director") {
+    return NextResponse.json({ message: "Only a Director can edit another Director." }, { status: 403 });
+  }
+  await targetRef.update({ displayName, phone, updatedAt: FieldValue.serverTimestamp() });
+  try {
+    await getAdminAuth().updateUser(uid, { displayName });
+  } catch (authError) {
+    if (authError?.code !== "auth/user-not-found") throw authError;
+  }
+  await invalidateUserProfileCache(uid);
+  return NextResponse.json({ ok: true });
+}
+
 export async function PATCH(request) {
   try {
     const access = await requireManager(request);
     if (access.denied) return access.denied;
-    const { uid, role } = await request.json();
+    const body = await request.json();
+    if (body?.action === "details") return await updateDetails(access, body);
+    const { uid, role } = body;
     if (typeof uid !== "string" || !uid) {
       return NextResponse.json({ message: "User ID is required." }, { status: 400 });
     }
@@ -118,7 +186,37 @@ export async function PATCH(request) {
     const targetRef = access.db.collection("users").doc(uid);
     const target = await targetRef.get();
     if (!target.exists) {
-      return NextResponse.json({ message: "User not found." }, { status: 404 });
+      // Sign-in account with no profile: choosing a role creates the
+      // profile, same shape as a self-registered one (auth-context.js).
+      let authUser;
+      try {
+        authUser = await getAdminAuth().getUser(uid);
+      } catch (authError) {
+        if (authError?.code === "auth/user-not-found") {
+          return NextResponse.json({ message: "User not found." }, { status: 404 });
+        }
+        throw authError;
+      }
+      if (access.actorRole !== "Director" && role === "Director") {
+        return NextResponse.json(
+          { message: "Only a Director can assign the Director role." },
+          { status: 403 },
+        );
+      }
+      const now = FieldValue.serverTimestamp();
+      await targetRef.create({
+        uid,
+        email: authUser.email || "",
+        displayName: authUser.displayName || "",
+        photoURL: authUser.photoURL || "",
+        role,
+        status: "active",
+        createdAt: authUser.metadata?.creationTime ? new Date(authUser.metadata.creationTime) : now,
+        updatedAt: now,
+      });
+      await ensureUserId(access.db, uid);
+      await invalidateUserProfileCache(uid);
+      return NextResponse.json({ ok: true, created: true });
     }
     const currentRole = target.data().role;
     if (access.actorRole !== "Director" && currentRole === "Director") {
@@ -178,10 +276,9 @@ export async function DELETE(request) {
 
     const targetRef = access.db.collection("users").doc(uid);
     const target = await targetRef.get();
-    if (!target.exists) {
-      return NextResponse.json({ message: "User not found." }, { status: 404 });
-    }
-    const currentRole = target.data().role;
+    // No profile doc is fine (a sign-in account that never got one) — the
+    // Auth account below is still deleted.
+    const currentRole = target.exists ? target.data().role : "";
     if (access.actorRole !== "Director" && currentRole === "Director") {
       return NextResponse.json({ message: "Only a Director can delete another Director's account." }, { status: 403 });
     }

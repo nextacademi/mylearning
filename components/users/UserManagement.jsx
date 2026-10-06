@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, MoreVertical, Trash2 } from "lucide-react";
-import { changeUserRole, deleteUserAccount, loadUsersCached } from "../../lib/services/user-service";
+import { Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { changeUserRole, deleteUserAccount, loadUsersCached, updateUserDetails } from "../../lib/services/user-service";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
@@ -41,10 +41,10 @@ function displayDate(value) {
   return Number.isNaN(date.getTime()) ? dash : new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
 }
 
-// The three-dot secondary-actions menu — currently just Delete, kept
-// behind a menu (rather than a third always-visible button) since it's the
-// one destructive, rarely-used action on this row.
-function RowMenu({ onDelete }) {
+// The three-dot secondary-actions menu — Edit details and Delete, kept
+// behind a menu (rather than more always-visible buttons) since they're
+// rarely-used actions on this row.
+function RowMenu({ onEdit, onDelete }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -64,6 +64,15 @@ function RowMenu({ onDelete }) {
       </button>
       {open && (
         <div className="absolute right-0 top-8 z-20 w-44 rounded-xl border border-border-subtle bg-card p-1 shadow-2xl">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => { setOpen(false); onEdit(); }}
+              className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-semibold text-ink hover:bg-active"
+            >
+              <Pencil className="h-3.5 w-3.5" aria-hidden="true" /> Edit details
+            </button>
+          )}
           <button
             type="button"
             onClick={() => { setOpen(false); onDelete(); }}
@@ -78,7 +87,7 @@ function RowMenu({ onDelete }) {
 }
 
 function UserDetails({ user }) {
-  const rows = [["User ID", user.userId || dash], ["Name", user.displayName], ["Email", user.email], ["Phone", user.phone], ["Role", user.role], ["Status", user.active === null ? null : user.active ? "Active" : "Inactive"], ["Joined", displayDate(user.createdAt)]];
+  const rows = [["User ID", user.userId || dash], ["Name", user.displayName], ["Email", user.email], ["Phone", user.phone], ["Role", user.missingProfile ? "No profile yet — use Change role to create it" : user.role], ["Status", user.active === null ? null : user.active ? "Active" : "Inactive"], ["Joined", displayDate(user.createdAt)]];
   return <dl className="grid gap-4 text-sm">{rows.map(([label, value]) => <div key={label}><dt className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</dt><dd className="mt-1 break-all font-medium text-muted">{value || dash}</dd></div>)}</dl>;
 }
 
@@ -91,6 +100,8 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
   const [viewing, setViewing] = useState(null);
   const [changing, setChanging] = useState(null);
   const [nextRole, setNextRole] = useState("");
+  const [editing, setEditing] = useState(null); // user whose name/phone is being edited
+  const [details, setDetails] = useState({ displayName: "", phone: "" });
   const [saving, setSaving] = useState(false);
   const confirm = useConfirm();
   const toast = useToast();
@@ -119,7 +130,8 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
     { key: "displayName", header: "Name", sortable: true, accessor: (u) => u.displayName || "", render: (u) => <b className="text-ink">{u.displayName || dash}</b> },
     { key: "email", header: "Email", sortable: true, accessor: (u) => u.email || "" },
     { key: "phone", header: "Phone", accessor: (u) => u.phone || "" },
-    { key: "role", header: "Role", sortable: true, filter: {}, accessor: (u) => u.role || "", render: (u) => <StatusBadge tone={ROLE_TONE[u.role] || "gray"}>{u.role || dash}</StatusBadge> },
+    // A sign-in account with no users/{uid} profile — "Change role" creates it.
+    { key: "role", header: "Role", sortable: true, filter: {}, accessor: (u) => (u.missingProfile ? "No profile" : u.role || ""), render: (u) => <StatusBadge tone={u.missingProfile ? "red" : ROLE_TONE[u.role] || "gray"}>{u.missingProfile ? "No profile — set role" : u.role || dash}</StatusBadge> },
     { key: "status", header: "Status", sortable: true, filter: {}, accessor: (u) => (u.active === null ? "Unknown" : u.active ? "Active" : "Inactive"), render: (u) => <StatusBadge tone={u.active === false ? "gray" : "green"}>{u.active === null ? dash : u.active ? "Active" : "Inactive"}</StatusBadge> },
     { key: "createdAt", header: "Joined", sortable: true, sortValue: (u) => u.createdAt || "", exportValue: (u) => displayDate(u.createdAt), render: (u) => <span className="text-xs text-muted">{displayDate(u.createdAt)}</span> },
   ], []);
@@ -139,6 +151,28 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
         await load({ force: true });
       },
     });
+  }
+
+  function startEdit(user) {
+    setEditing(user);
+    setDetails({ displayName: user.displayName || "", phone: user.phone || "" });
+    setError("");
+  }
+
+  async function saveDetails(event) {
+    event.preventDefault();
+    if (!editing) return;
+    setSaving(true);
+    try {
+      await updateUserDetails(editing.uid, details);
+      setEditing(null);
+      toast.success("User details updated.");
+      await load({ force: true });
+    } catch (saveError) {
+      setError(saveError.message || "Unable to update the user details.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function updateRole(event) {
@@ -176,7 +210,7 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
     {(tab === "All Users" || tab === "Volunteers") && (
       <>
         {notice && <p className="rounded-xl bg-success-soft px-4 py-3 text-sm text-success">{notice}</p>}
-        {error && !changing && <div className="rounded-xl bg-active px-4 py-3 text-sm text-primary"><b>Unable to load users. Please try again.</b><p>{error}</p></div>}
+        {error && !changing && !editing && <div className="rounded-xl bg-active px-4 py-3 text-sm text-primary"><b>Unable to load users. Please try again.</b><p>{error}</p></div>}
         {tab === "All Users" && <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">{[["Total Users", users.length], ["Directors", counts.Director], ["Admins", counts.Admin], ["Teachers", counts.Teacher], ["Students", counts.Student], ["Guests", counts.Guest]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle/70 bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>{loading ? <SkeletonBar className="mt-2 h-7 w-12" /> : <p className="mt-2 text-2xl font-extrabold text-ink">{value}</p>}</article>)}</section>}
         <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
           <div className="mb-4"><h3 className="font-bold text-ink">{tab === "Volunteers" ? "Volunteers" : "All Users"}</h3><p className="mt-1 text-xs text-muted">Search by user ID, name, email, or phone · filter by role or status · export the current view.</p></div>
@@ -195,8 +229,8 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
               rowActions={(user) => (
                 <>
                   <button type="button" onClick={() => setViewing(user)} className="inline-flex items-center gap-1 rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90"><Eye className="h-3.5 w-3.5" /> View</button>
-                  {canChange(user) && <button type="button" onClick={() => { setChanging(user); setNextRole(user.role); setError(""); }} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page">Change role</button>}
-                  {canChange(user) && <RowMenu onDelete={() => deleteUser(user)} />}
+                  {canChange(user) && <button type="button" onClick={() => { setChanging(user); setNextRole(user.role || "Student"); setError(""); }} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page">Change role</button>}
+                  {canChange(user) && <RowMenu onEdit={user.missingProfile ? null : () => startEdit(user)} onDelete={() => deleteUser(user)} />}
                 </>
               )}
             />
@@ -205,6 +239,24 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
       </>
     )}
     {viewing && <Dialog title="User details" onClose={() => setViewing(null)}><UserDetails user={viewing} /></Dialog>}
+    {editing && (
+      <Dialog title="Edit user details" onClose={() => !saving && setEditing(null)}>
+        <form onSubmit={saveDetails} className="space-y-4">
+          <p className="text-sm text-muted">Fix the details for <b>{editing.email || editing.displayName || editing.uid}</b>. Email and role aren&apos;t changed here.</p>
+          <label className="block text-sm font-semibold text-muted">Name
+            <input required maxLength={100} value={details.displayName} onChange={(event) => setDetails({ ...details, displayName: event.target.value })} className="mt-2 w-full rounded-xl border border-border-subtle bg-card px-3 py-2.5 font-normal outline-none focus:ring-2 focus:ring-primary" />
+          </label>
+          <label className="block text-sm font-semibold text-muted">Phone
+            <input type="tel" maxLength={30} value={details.phone} onChange={(event) => setDetails({ ...details, phone: event.target.value })} className="mt-2 w-full rounded-xl border border-border-subtle bg-card px-3 py-2.5 font-normal outline-none focus:ring-2 focus:ring-primary" />
+          </label>
+          {error && <p className="rounded-xl bg-active px-3 py-2 text-sm text-primary">{error}</p>}
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={() => setEditing(null)} disabled={saving} className="rounded-xl px-4 py-2 text-sm font-bold text-muted">Cancel</button>
+            <button disabled={saving} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Saving..." : "Save changes"}</button>
+          </div>
+        </form>
+      </Dialog>
+    )}
     {changing && <Dialog title="Change user role" onClose={() => !saving && setChanging(null)}><form onSubmit={updateRole} className="space-y-5"><p className="text-sm text-muted">Change the role for <b>{changing.displayName || changing.email || changing.uid}</b>. This takes effect immediately after confirmation.</p><label className="block text-sm font-semibold text-muted">Role<select value={nextRole} onChange={(event) => setNextRole(event.target.value)} className="mt-2 w-full rounded-xl border border-border-subtle bg-card px-3 py-2.5 font-normal outline-none focus:ring-2 focus:ring-primary">{assignableRoles.filter((item) => role === "Director" || item !== "Director").map((item) => <option key={item} value={item}>{item}</option>)}</select></label>{error && <p className="rounded-xl bg-active px-3 py-2 text-sm text-primary">{error}</p>}<div className="flex justify-end gap-3"><button type="button" onClick={() => setChanging(null)} disabled={saving} className="rounded-xl px-4 py-2 text-sm font-bold text-muted">Cancel</button><button disabled={saving || !canChange(changing)} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Updating role..." : "Confirm role change"}</button></div></form></Dialog>}
   </div>;
 }

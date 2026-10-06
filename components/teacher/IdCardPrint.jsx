@@ -221,17 +221,21 @@ export default function IdCardPrint({
     );
   }
 
-  const name = state.subject?.displayName || fallbackName || "Unnamed";
+  // "self" mode: the props come from the caller's own live profile
+  // (auth-context keeps it in sync with Firestore), so they win over the
+  // cached subject — otherwise a fixed name/photo/status stayed stale on
+  // the card for up to REFRESH_AFTER_MS. The cached QR token is unaffected.
+  const self = mode !== "student";
+  const name = (self && fallbackName) || state.subject?.displayName || fallbackName || "Unnamed";
   const email = state.subject?.email || fallbackEmail || "";
   const userId = state.subject?.userId || "—";
-  // The server-returned subject (the real target account — the student
-  // being viewed in "student" mode, or the caller themselves in "self"
-  // mode) always wins over the caller-supplied fallback props, so a
-  // Teacher viewing a student's card sees that STUDENT's real photo/status,
-  // never the teacher's own.
-  const resolvedPhoto = state.subject?.photoURL || photoURL;
-  const resolvedActive = state.subject ? state.subject.active !== false : active !== false;
-  const resolvedStatus = state.subject?.status || status;
+  // "student" mode: the server-returned subject (the real target account)
+  // always wins over the caller-supplied fallback props, so a Teacher
+  // viewing a student's card sees that STUDENT's real photo/status, never
+  // the teacher's own.
+  const resolvedPhoto = (self && photoURL) || state.subject?.photoURL || photoURL;
+  const resolvedActive = self && active !== undefined ? active !== false : state.subject ? state.subject.active !== false : active !== false;
+  const resolvedStatus = (self && status) || state.subject?.status || status;
   const isActive = resolvedActive && resolvedStatus !== "pending" && resolvedStatus !== "rejected";
   const statusLabel = resolvedStatus === "pending" ? "Pending" : resolvedStatus === "rejected" ? "Rejected" : isActive ? "Active" : "Inactive";
   const showingOffline = state.stale || !online;
