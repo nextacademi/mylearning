@@ -1,5 +1,20 @@
 import PublicSite from "../components/PublicSite";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "../lib/seo";
+import { getAdminDb } from "../lib/firebase-admin";
+import { getHero } from "../lib/server/site-content-core";
+
+// ISR: the hero header (Website content → Header) is read here so the
+// edited headline/numbers are in the first paint, not swapped in after
+// load. Saving the header also calls revalidatePath("/").
+export const revalidate = 60;
+
+async function loadHero() {
+  try {
+    return await getHero(getAdminDb());
+  } catch {
+    return null; // e.g. no Admin credentials at build time — PublicSite uses its defaults
+  }
+}
 
 export const metadata = {
   title: SITE_TAGLINE,
@@ -32,14 +47,15 @@ function websiteJsonLd() {
   };
 }
 
-export default function Home() {
+export default async function Home() {
+  const hero = await loadHero();
   return (
     <>
       {/* eslint-disable-next-line react/no-danger -- static, server-built JSON-LD, not user input */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }} />
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }} />
-      <PublicSite />
+      <PublicSite initialHero={hero} />
     </>
   );
 }

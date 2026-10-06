@@ -6,6 +6,7 @@ import { deleteTeamMember, loadTeam, reorderTeam, saveTeamMember } from "../../l
 import { resolvePhoto } from "../../lib/public-assets";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
+import PhotoField from "./PhotoField";
 
 // Director / Admin "Team" tab — manages the people shown in the public
 // homepage's "Our Team" slider (add, edit, reorder, remove).
@@ -34,9 +35,7 @@ function MemberForm({ initial, saving, onSave, onCancel }) {
         <label className="block text-xs font-bold text-muted">Role
           <input required value={form.role} placeholder="Teacher, Founder, Facilitator…" onChange={(e) => setForm({ ...form, role: e.target.value })} className={field} />
         </label>
-        <label className="block text-xs font-bold text-muted">Photo URL
-          <input value={form.photo} placeholder="https://… or /team/name.jpg" onChange={(e) => setForm({ ...form, photo: e.target.value })} className={field} />
-        </label>
+        <PhotoField folder="team" value={form.photo} placeholder="https://… or /team/name.jpg" onChange={(photo) => setForm((current) => ({ ...current, photo }))} inputClassName={field} />
         <div className="grid gap-3 sm:grid-cols-2">
           {SOCIALS.map(([key, label]) => (
             <label key={key} className="block text-xs font-bold text-muted">{label} link
@@ -54,7 +53,9 @@ function MemberForm({ initial, saving, onSave, onCancel }) {
   );
 }
 
-export default function TeamManagement() {
+// `embedded`: rendered as the "Team" sub-tab inside Website content, which
+// already provides the page heading.
+export default function TeamManagement({ embedded = false }) {
   const toast = useToast();
   const confirm = useConfirm();
   const [members, setMembers] = useState([]);
@@ -114,7 +115,7 @@ export default function TeamManagement() {
     <section className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-ink">Team</h2>
+          {!embedded && <h2 className="text-xl font-black text-ink">Team</h2>}
           <p className="text-xs text-muted">People shown in the “Our Team” slider on the homepage. The order here is the order on the site.</p>
         </div>
         <button type="button" onClick={() => setEditing("new")} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white hover:opacity-90">

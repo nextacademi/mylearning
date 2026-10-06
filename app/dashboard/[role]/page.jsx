@@ -34,7 +34,6 @@ import IdCardPrint from "../../../components/teacher/IdCardPrint";
 import Shop from "../../../components/shop/Shop";
 import PromoCodeView from "../../../components/promo/PromoCodeView";
 import FormsView from "../../../components/forms/FormsView";
-import TeamManagement from "../../../components/team/TeamManagement";
 import WebsiteContent from "../../../components/team/WebsiteContent";
 import AppointmentScheduler from "../../../components/appointments/AppointmentScheduler";
 import AchievementManagement from "../../../components/achievement/AchievementManagement";
@@ -143,7 +142,6 @@ export const roleConfig = {
       "My Shop",
       "Promo Codes",
       "Forms",
-      "Team",
       "Website",
       "User",
       "Chat",
@@ -166,7 +164,6 @@ export const roleConfig = {
       "Documents",
       "My Shop",
       "Forms",
-      "Team",
       "Website",
       "User",
       "Chat",
@@ -284,8 +281,6 @@ function DirectorDashboard({ profile, user }) {
               <PromoCodeView />
             ) : active === "Website" ? (
               <WebsiteContent />
-            ) : active === "Team" ? (
-              <TeamManagement />
             ) : active === "Forms" ? (
               <FormsView />
             ) : active === "Achievement" ? (
@@ -475,8 +470,6 @@ function DashboardContent({ role, profile, user }) {
               <AchievementManagement />
             ) : role === "Admin" && active === "Website" ? (
               <WebsiteContent />
-            ) : role === "Admin" && active === "Team" ? (
-              <TeamManagement />
             ) : role === "Admin" && active === "Forms" ? (
               <FormsView />
             ) : role === "Admin" && active === "Model Test" ? (

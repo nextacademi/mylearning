@@ -14,6 +14,7 @@ import TestimonialCarousel from "./public/TestimonialCarousel";
 import AppointmentBookingWidget from "./public/AppointmentBookingWidget";
 import SmoothScroll from "./public/SmoothScroll";
 import { resolvePhoto } from "../lib/public-assets";
+import { HERO_DEFAULTS } from "../lib/site-hero";
 import PhotoGallery from "./public/PhotoGallery";
 import VideoLibrarySection from "./public/VideoLibrarySection";
 import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
@@ -726,7 +727,7 @@ function HeroStatsRow({ items }) {
     >
       {items.map((stat, index) => (
         <div
-          key={stat.label}
+          key={`${index}-${stat.label}`}
           className={`${index !== 0 ? "sm:border-l sm:border-white/10 sm:pl-6" : ""}`}
         >
           <strong className="block text-4xl font-black text-white md:text-5xl">
@@ -905,7 +906,7 @@ function ContactForm() {
   );
 }
 
-export default function PublicSite() {
+export default function PublicSite({ initialHero = null }) {
   const router = useRouter();
   const { user, profile, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -965,12 +966,10 @@ export default function PublicSite() {
     );
   }, []);
 
-  const heroStats = [
-    { label: "Students Trained", value: 450, suffix: "+" },
-    { label: "Expert Teachers", value: 10, suffix: "+" },
-    { label: "Courses Offered", value: 5, suffix: "+" },
-    { label: "Total Enrollments", value: 440, suffix: "+" },
-  ];
+  // Editable in the dashboard: Website content → Header.
+  const hero = siteContent?.hero || initialHero || HERO_DEFAULTS;
+  const heroLines = [hero.line1, hero.line2].filter(Boolean);
+  const heroStats = hero.stats || [];
 
   const upcomingEvents = events
     .map((event) => ({ ...event, computedStatus: computeEventStatus(event) }))
@@ -1124,22 +1123,25 @@ export default function PublicSite() {
           <div className="grid items-center gap-6 md:grid-cols-2 md:gap-6">
             <div>
               <Eyebrow light tone="amber" className="text-xs">
-                <BrandShimmer>Next Academy</BrandShimmer> · Learning Platform
+                <BrandShimmer>Next Academy</BrandShimmer>
+                {hero.tagline ? ` · ${hero.tagline}` : ""}
               </Eyebrow>
 
               <h1 className={`${displayFont.className} mt-4 max-w-xl text-5xl font-black leading-[1.03] tracking-[-.03em] text-white md:text-6xl lg:text-7xl`}>
-                Learn today.
-                <br />
-                Grow your career.
-                <br />
-                <span className="text-[#F04438]">Lead tomorrow.</span>
+                {heroLines.map((line, index) => (
+                  <span key={index}>
+                    {line}
+                    <br />
+                  </span>
+                ))}
+                {hero.line3 && <span className="text-[#F04438]">{hero.line3}</span>}
               </h1>
 
-              <p className="mt-4 max-w-lg text-base leading-7 text-white/60 md:text-lg">
-                Next Academy trains real students with real teachers, across
-                real courses and batches — practical skills that turn straight
-                into better jobs and stronger careers.
-              </p>
+              {hero.description && (
+                <p className="mt-4 max-w-lg text-base leading-7 text-white/60 md:text-lg">
+                  {hero.description}
+                </p>
+              )}
 
               <div className="mt-6 flex flex-wrap gap-4">
                 <a
@@ -1170,7 +1172,7 @@ export default function PublicSite() {
           {/* Full-width stat strip below both columns — matches the
                 24asia.pages.dev reference's edge-to-edge divided row,
                 rather than being squeezed into just the text column. */}
-          <HeroStatsRow items={heroStats} />
+          {heroStats.length > 0 && <HeroStatsRow items={heroStats} />}
         </div>
       </section>
 

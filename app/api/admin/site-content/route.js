@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
-import { deleteContent, listContentSeeded, reorderContent, saveContent } from "../../../../lib/server/site-content-core";
+import { deleteContent, getHero, listContentSeeded, reorderContent, saveContent, saveHero } from "../../../../lib/server/site-content-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,13 +27,15 @@ async function access(request) {
   return { db };
 }
 
-// GET ?kind=program|gallery|session; POST saves {kind, ...fields, id?};
-// PUT reorders {ids}; DELETE removes {id}.
+// GET ?kind=program|gallery|session|hero; POST saves {kind, ...fields, id?};
+// PUT reorders {ids}; DELETE removes {id}. `hero` is the single homepage
+// header settings object rather than a list.
 export async function GET(request) {
   try {
     const a = await access(request);
     if (a.denied) return a.denied;
     const kind = new URL(request.url).searchParams.get("kind");
+    if (kind === "hero") return NextResponse.json({ hero: await getHero(a.db) });
     return NextResponse.json({ items: await listContentSeeded(a.db, kind) });
   } catch (error) {
     return respondError("list", error);
@@ -44,6 +47,11 @@ export async function POST(request) {
     const a = await access(request);
     if (a.denied) return a.denied;
     const body = await request.json();
+    if (body.kind === "hero") {
+      const hero = await saveHero(a.db, body);
+      revalidatePath("/"); // homepage is ISR — show the new header right away
+      return NextResponse.json({ ok: true, hero });
+    }
     return NextResponse.json({ ok: true, ...(await saveContent(a.db, body.kind, body)) });
   } catch (error) {
     return respondError("save", error);

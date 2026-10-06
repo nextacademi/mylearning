@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
-import { deleteContent, loadContent, reorderContent, saveContent } from "../../lib/services/site-content-service";
+import { deleteContent, loadContent, loadHero, reorderContent, saveContent, saveHero } from "../../lib/services/site-content-service";
 import { resolvePhoto } from "../../lib/public-assets";
+import { HERO_DEFAULTS, HERO_MAX_STATS, HERO_TEXT_LIMITS } from "../../lib/site-hero";
 import { useToast } from "../ui/Toast";
+import TeamManagement from "./TeamManagement";
+import PhotoField from "./PhotoField";
 import { useConfirm } from "../ui/ConfirmDialog";
 
-// Director / Admin "Website" tab — manages the cards on the public homepage:
-// "What we do", "Activities / gallery" and "Our training sessions".
+// Director / Admin "Website" tab — manages the public homepage: the hero
+// "Header" (headline + stat numbers), the cards in "What we do",
+// "Activities / gallery" and "Our training sessions", and the "Team"
+// slider (formerly its own sidebar item).
+const HEADER_TAB = { label: "Header" };
+const TEAM_TAB = { label: "Team" };
 const SECTIONS = {
   program: {
     label: "What we do",
@@ -39,7 +46,9 @@ function ItemForm({ kind, initial, saving, onSave, onCancel }) {
         className="max-h-[92vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl"
       >
         <h2 className="text-lg font-bold text-ink">{initial?.id ? "Edit" : "Add"} · {SECTIONS[kind].label}</h2>
-        {fields.map(([key, label, placeholder]) => (
+        {fields.map(([key, label, placeholder]) => key === "photo" ? (
+          <PhotoField key={key} value={form.photo} onChange={(photo) => setForm((current) => ({ ...current, photo }))} placeholder={placeholder} inputClassName={inputClass} />
+        ) : (
           <label key={key} className="block text-xs font-bold text-muted">{label}
             {key === "copy" ? (
               <textarea rows={3} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className={inputClass} />
@@ -151,16 +160,110 @@ function SectionManager({ kind }) {
   );
 }
 
+const emptyStat = { label: "", value: "", suffix: "+" };
+
+function HeaderManager() {
+  const toast = useToast();
+  const [form, setForm] = useState(null);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadHero()
+      .then((data) => setForm(data.hero || HERO_DEFAULTS))
+      .catch((err) => setError(err.message || "Unable to load."));
+  }, []);
+
+  const setField = (key) => (event) => setForm({ ...form, [key]: event.target.value });
+  const setStat = (index, key) => (event) =>
+    setForm({ ...form, stats: form.stats.map((stat, i) => (i === index ? { ...stat, [key]: event.target.value } : stat)) });
+  const removeStat = (index) => setForm({ ...form, stats: form.stats.filter((_, i) => i !== index) });
+  const addStat = () => setForm({ ...form, stats: [...form.stats, { ...emptyStat }] });
+
+  async function save(event) {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const data = await saveHero(form);
+      setForm(data.hero);
+      toast.success("Header saved. The homepage is updated.");
+    } catch (err) {
+      toast.error(err.message || "Unable to save.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (error) return <p className="rounded-xl bg-active px-4 py-3 text-sm text-primary">{error}</p>;
+  if (!form) return <p className="text-sm text-muted">Loading…</p>;
+
+  const text = (key, label, placeholder) => (
+    <label className="block text-xs font-bold text-muted">{label}
+      <input value={form[key]} onChange={setField(key)} maxLength={HERO_TEXT_LIMITS[key]} placeholder={placeholder} className={inputClass} />
+    </label>
+  );
+
+  return (
+    <form onSubmit={save} className="space-y-5">
+      <p className="text-xs text-muted">The big headline and number row at the top of the homepage.</p>
+      <div className="space-y-4 rounded-3xl border border-border-subtle bg-card p-5 shadow-sm">
+        <h3 className="text-sm font-black text-ink">Headline</h3>
+        {text("tagline", "Small label after “Next Academy ·”", HERO_DEFAULTS.tagline)}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {text("line1", "Line 1", HERO_DEFAULTS.line1)}
+          {text("line2", "Line 2", HERO_DEFAULTS.line2)}
+          {text("line3", "Line 3 (shown in red)", HERO_DEFAULTS.line3)}
+        </div>
+        <label className="block text-xs font-bold text-muted">Description
+          <textarea rows={3} value={form.description} onChange={setField("description")} maxLength={HERO_TEXT_LIMITS.description} className={inputClass} />
+        </label>
+      </div>
+
+      <div className="space-y-4 rounded-3xl border border-border-subtle bg-card p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-black text-ink">Numbers</h3>
+          {form.stats.length < HERO_MAX_STATS && (
+            <button type="button" onClick={addStat} className="inline-flex items-center gap-1 rounded-xl border border-border-subtle px-3 py-2 text-xs font-bold text-primary hover:bg-active">
+              <Plus className="h-4 w-4" aria-hidden="true" /> Add number
+            </button>
+          )}
+        </div>
+        {form.stats.map((stat, index) => (
+          <div key={index} className="grid grid-cols-[1fr_5rem_auto] items-end gap-3 sm:grid-cols-[6rem_4rem_1fr_auto]">
+            <label className="block text-xs font-bold text-muted">Number
+              <input type="number" min="0" required value={stat.value} onChange={setStat(index, "value")} className={inputClass} />
+            </label>
+            <label className="block text-xs font-bold text-muted">After
+              <input value={stat.suffix} onChange={setStat(index, "suffix")} maxLength={4} placeholder="+" className={inputClass} />
+            </label>
+            <label className="col-span-2 block text-xs font-bold text-muted sm:col-span-1">Label
+              <input required value={stat.label} onChange={setStat(index, "label")} maxLength={40} placeholder="Students Trained" className={inputClass} />
+            </label>
+            <button type="button" onClick={() => removeStat(index)} aria-label={`Remove ${stat.label || "number"}`} className="row-start-1 col-start-3 rounded-lg p-2.5 text-primary hover:bg-active sm:col-start-4">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+        {!form.stats.length && <p className="text-sm text-muted">No numbers — the number row will be hidden.</p>}
+      </div>
+
+      <div className="flex justify-end">
+        <button disabled={saving} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">{saving ? "Saving..." : "Save header"}</button>
+      </div>
+    </form>
+  );
+}
+
 export default function WebsiteContent() {
-  const [kind, setKind] = useState("program");
+  const [kind, setKind] = useState("hero");
   return (
     <section className="space-y-5">
       <div>
         <h2 className="text-xl font-black text-ink">Website content</h2>
-        <p className="text-xs text-muted">Edit the cards shown on the public homepage.</p>
+        <p className="text-xs text-muted">Edit the header, cards and team shown on the public homepage.</p>
       </div>
       <nav className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-2 shadow-sm">
-        {Object.entries(SECTIONS).map(([key, { label }]) => (
+        {Object.entries({ hero: HEADER_TAB, ...SECTIONS, team: TEAM_TAB }).map(([key, { label }]) => (
           <button
             key={key}
             type="button"
@@ -171,7 +274,7 @@ export default function WebsiteContent() {
           </button>
         ))}
       </nav>
-      <SectionManager key={kind} kind={kind} />
+      {kind === "hero" ? <HeaderManager /> : kind === "team" ? <TeamManagement embedded /> : <SectionManager key={kind} kind={kind} />}
     </section>
   );
 }
