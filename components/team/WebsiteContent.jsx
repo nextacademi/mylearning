@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { deleteContent, loadContent, loadHero, reorderContent, saveContent, saveHero } from "../../lib/services/site-content-service";
 import { resolvePhoto } from "../../lib/public-assets";
+import { toVideoEmbedUrl, youTubeThumbnailUrl } from "../../lib/lesson-embed";
 import { HERO_DEFAULTS, HERO_MAX_STATS, HERO_TEXT_LIMITS } from "../../lib/site-hero";
 import { useToast } from "../ui/Toast";
 import TeamManagement from "./TeamManagement";
@@ -12,7 +13,7 @@ import { useConfirm } from "../ui/ConfirmDialog";
 
 // Director / Admin "Website" tab — manages the public homepage: the hero
 // "Header" (headline + stat numbers), the cards in "What we do",
-// "Activities / gallery" and "Our training sessions", and the "Team"
+// "Activities / gallery" and "Exciting New Videos", and the "Team"
 // slider (formerly its own sidebar item).
 const HEADER_TAB = { label: "Header" };
 const TEAM_TAB = { label: "Team" };
@@ -28,9 +29,9 @@ const SECTIONS = {
     fields: [["category", "Category", "Education"], ["title", "Title", ""], ["photo", "Photo URL", "https://… or /tranning2.jpeg"]],
   },
   session: {
-    label: "Our training sessions",
-    hint: "Thumbnails in the “Our training sessions” strip.",
-    fields: [["title", "Title", ""], ["photo", "Photo URL", "https://… or /tranning2.jpeg"]],
+    label: "Exciting New Videos",
+    hint: "Cards in the “Exciting New Videos” strip. Add a picture, a YouTube / Facebook / Google Drive video link, or both — a card with a link plays the video when clicked (a YouTube link with no picture uses the video's own thumbnail).",
+    fields: [["title", "Title", ""], ["photo", "Picture", "https://… or /tranning2.jpeg"], ["videoUrl", "Video link (YouTube, Facebook or Google Drive)", "https://youtu.be/…"]],
   },
 };
 const inputClass = "mt-1 w-full rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
@@ -53,7 +54,10 @@ function ItemForm({ kind, initial, saving, onSave, onCancel }) {
             {key === "copy" ? (
               <textarea rows={3} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className={inputClass} />
             ) : (
-              <input required={key === "title"} value={form[key]} placeholder={placeholder} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className={inputClass} />
+              <input required={key === "title"} type={key === "videoUrl" ? "url" : "text"} value={form[key]} placeholder={placeholder} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className={inputClass} />
+            )}
+            {key === "videoUrl" && form.videoUrl && !toVideoEmbedUrl(form.videoUrl) && (
+              <span className="mt-1 block font-semibold text-primary">Use a YouTube, Facebook or Google Drive video link.</span>
             )}
           </label>
         ))}
@@ -138,7 +142,7 @@ function SectionManager({ kind }) {
           {items.map((item, index) => (
             <div key={item.id} className="flex items-center gap-3 p-3 sm:p-4">
               <span className="grid h-14 w-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-page text-xs font-black text-subtle">
-                {item.photo ? <img src={resolvePhoto(item.photo)} alt="" className="h-full w-full object-cover" /> : "No photo"}
+                {item.photo || youTubeThumbnailUrl(item.videoUrl) ? <img src={item.photo ? resolvePhoto(item.photo) : youTubeThumbnailUrl(item.videoUrl)} alt="" className="h-full w-full object-cover" /> : item.videoUrl ? "Video" : "No photo"}
               </span>
               <div className="min-w-0 flex-1">
                 <b className="block truncate text-sm text-ink">{item.title}</b>

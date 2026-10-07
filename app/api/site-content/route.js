@@ -12,7 +12,7 @@ export async function GET() {
   try {
     const db = getAdminDb();
     const [all, hero] = await Promise.all([listAllContent(db), getHero(db)]);
-    const strip = (list) => list.map(({ id, category, title, copy, stat, photo }) => ({ id, category, title, copy, stat, photo }));
+    const strip = (list) => list.map(({ id, category, title, copy, stat, photo, videoUrl }) => ({ id, category, title, copy, stat, photo, videoUrl: videoUrl || "" }));
     return NextResponse.json(
       { program: strip(all.program), gallery: strip(all.gallery), session: strip(all.session), hero },
       { headers: { "Cache-Control": "public, max-age=60" } },

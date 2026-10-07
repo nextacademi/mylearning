@@ -9,11 +9,11 @@ import { capacityLabel, capacityRemainingLabel, isFull } from "../../lib/enrollm
 import { enrollStudent, loadEnrollments, unenrollStudent } from "../../lib/services/enrollment-service";
 import { loadTeacherEnrollments, teacherEnrollStudent } from "../../lib/services/teacher-enrollment-service";
 import { collectPayment, loadPaymentHistory } from "../../lib/services/payment-service";
+import { usePaymentMethods } from "../../lib/services/payment-methods-service";
 import PaymentHistoryTable, { PaymentStatusBadge, formatMoney } from "./PaymentHistoryTable";
 import { useConfirm } from "../ui/ConfirmDialog";
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : "—");
-const paymentMethods = ["Cash", "Bank Transfer", "bKash", "Rocket", "Card", "Other"];
 
 function CapacityBar({ enrolledCount, capacity }) {
   const full = isFull(enrolledCount, capacity);
@@ -208,7 +208,11 @@ function AdmissionDetailModal({ student, courseTitle, courseCode, showPayments, 
 // (lib/server/payment-core.js) so a stale due here can never overpay.
 function CollectPaymentModal({ student, courseTitle, onCollected, close }) {
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState("Cash");
+  const [chosenMethod, setMethod] = useState("Cash");
+  // Admin-editable list (Finance → Payment Methods); derived fallback to
+  // its first method if "Cash" was removed.
+  const paymentMethods = usePaymentMethods();
+  const method = paymentMethods.includes(chosenMethod) ? chosenMethod : paymentMethods[0] || "";
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");

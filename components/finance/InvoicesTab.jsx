@@ -15,6 +15,7 @@ import {
 } from "../../lib/services/invoice-service";
 import { downloadInvoicePdf } from "../../lib/services/finance-service";
 import { collectPayment } from "../../lib/services/payment-service";
+import { usePaymentMethods } from "../../lib/services/payment-methods-service";
 import { loadStudentDirectoryCached } from "../../lib/services/student-service";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
@@ -22,9 +23,9 @@ import { SkeletonList } from "../ui/Skeleton";
 
 // Client mirror of the server allowlists (lib/server/invoice-core.js /
 // payment-core.js) — same pattern as every other Finance tab's SOURCES/
-// METHODS constants. Server re-validates everything.
+// METHODS constants. Server re-validates everything. Payment methods are
+// the admin-editable list (Finance → Payment Methods).
 const INVOICE_TYPES = ["Registration Fee", "Material Fee", "Exam Fee", "Other"];
-const PAYMENT_METHODS = ["Cash", "Bank Transfer", "bKash", "Rocket", "Card", "Other"];
 
 const statusTone = { Unpaid: "orange", Partial: "purple", Paid: "green", Cancelled: "gray" };
 function InvoiceStatusBadge({ row }) {
@@ -165,6 +166,9 @@ export default function InvoicesTab() {
   const [viewingRow, setViewingRow] = useState(null);
   const [payingRow, setPayingRow] = useState(null);
   const [paymentForm, setPaymentForm] = useState(blankPayment);
+  const paymentMethods = usePaymentMethods();
+  // Derived: falls back to the list's first method if "Cash" was removed.
+  const paymentMethod = paymentMethods.includes(paymentForm.paymentMethod) ? paymentForm.paymentMethod : paymentMethods[0] || "";
   const [busyId, setBusyId] = useState("");
 
   function openCreate() {
@@ -253,9 +257,9 @@ export default function InvoicesTab() {
     setMessage("");
     try {
       if (payingRow.kind === "enrollment") {
-        await collectPayment(payingRow.courseId, payingRow.studentId, paymentForm);
+        await collectPayment(payingRow.courseId, payingRow.studentId, { ...paymentForm, paymentMethod });
       } else {
-        await recordInvoicePayment(payingRow.id, paymentForm);
+        await recordInvoicePayment(payingRow.id, { ...paymentForm, paymentMethod });
       }
       toast.success("Payment recorded successfully");
       setPayingRow(null);
@@ -552,8 +556,8 @@ export default function InvoicesTab() {
             <div className="grid grid-cols-2 gap-3">
               <label className="grid gap-1 text-xs font-bold text-muted">
                 Method
-                <select value={paymentForm.paymentMethod} onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })} className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal">
-                  {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+                <select value={paymentMethod} onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })} className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal">
+                  {paymentMethods.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               </label>
               <label className="grid gap-1 text-xs font-bold text-muted">

@@ -310,7 +310,7 @@ export default function ClassSessionsPanel({ course, classes, canManage, isAssig
             <div className="flex justify-end gap-3 pt-1">
               <button onClick={close} disabled={saving} className="px-4 py-2 text-sm font-bold text-muted">Cancel</button>
               <button onClick={save} disabled={saving} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">
-                {saving ? "Saving..." : "Create Class"}
+                {saving ? "Saving..." : editing.isNew ? "Create Class" : "Save changes"}
               </button>
             </div>
           </div>

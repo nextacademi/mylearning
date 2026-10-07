@@ -924,6 +924,31 @@ export default function PublicSite({ initialHero = null }) {
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
+  // Real trainings (the `courses` the dashboard manages) for the "Current
+  // Training" / "Up-coming Training" lists — see /api/public/trainings.
+  // Mapped into the same row shape EventListRow already renders.
+  const [trainings, setTrainings] = useState([]);
+  const [trainingsLoaded, setTrainingsLoaded] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/public/trainings")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setTrainings((data?.trainings || []).map((course) => ({
+          id: `course-${course.id}`,
+          name: course.title,
+          eventDate: course.startDate,
+          startTime: course.startTime,
+          location: course.location,
+          type: course.category || "Training",
+          current: course.current,
+        })));
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setTrainingsLoaded(true); });
+    return () => { cancelled = true; };
+  }, []);
   // Admin-managed homepage cards (Dashboard > Website); empty lists fall
   // back to the built-in defaults above.
   const [siteContent, setSiteContent] = useState(null);
@@ -1046,11 +1071,18 @@ export default function PublicSite({ initialHero = null }) {
                 <div className="relative">
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
-                    className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/10 text-xs font-bold text-white"
+                    className="grid h-9 w-9 place-items-center overflow-hidden rounded-full border border-white/15 bg-white/10 text-xs font-bold text-white"
+                    aria-label="Account menu"
+                    title={profile?.displayName || user.email || ""}
                   >
-                    {(profile?.displayName || user.email || "NA")
-                      .slice(0, 2)
-                      .toUpperCase()}
+                    {profile?.photoURL ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={profile.photoURL} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      (profile?.displayName || user.email || "NA")
+                        .slice(0, 2)
+                        .toUpperCase()
+                    )}
                   </button>
                   {profileOpen && (
                     <div className="absolute right-0 top-12 w-48 rounded-lg border border-[#E5E7EB] bg-white p-3 text-[#111827] shadow-xl">
@@ -1285,17 +1317,25 @@ export default function PublicSite({ initialHero = null }) {
                 <TrainingListCard
                   title="Current Training:"
                   tone="dark"
-                  events={upcomingEvents.filter((event) => event.computedStatus === "Ongoing")}
+                  events={[
+                    ...trainings.filter((item) => item.current),
+                    ...upcomingEvents.filter((event) => event.computedStatus === "Ongoing"),
+                  ].slice(0, 6)}
                   emptyText="No training running right now."
-                  loading={!eventsLoaded}
+                  loading={!eventsLoaded || !trainingsLoaded}
                 />
               </Reveal>
               <Reveal index={2}>
                 <TrainingListCard
                   title="Up-coming Training:"
-                  events={upcomingEvents.filter((event) => event.computedStatus === "Upcoming")}
+                  events={[
+                    ...trainings.filter((item) => !item.current),
+                    ...upcomingEvents.filter((event) => event.computedStatus === "Upcoming"),
+                  ]
+                    .sort((a, b) => (a.eventDate || "").localeCompare(b.eventDate || ""))
+                    .slice(0, 6)}
                   emptyText="No upcoming training scheduled yet."
-                  loading={!eventsLoaded}
+                  loading={!eventsLoaded || !trainingsLoaded}
                 />
               </Reveal>
             </div>

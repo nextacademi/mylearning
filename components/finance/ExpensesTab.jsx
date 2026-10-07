@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import { stopEnterSubmit } from "../../lib/ui/keyboard";
 import { createAsset, createExpense, deleteExpense as deleteExpenseRequest, updateExpense } from "../../lib/services/finance-service";
 import { formatDate, formatMoney } from "../training/PaymentHistoryTable";
+import { usePaymentMethods } from "../../lib/services/payment-methods-service";
 import { useConfirm } from "../ui/ConfirmDialog";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
 
 const categories = ["Rent", "Salary", "Utilities", "Equipment", "Marketing", "Transport", "Maintenance", "Software", "Training Materials", "Food and Drinks", "Assets", "Other"];
-const methods = ["Cash", "Bank Transfer", "Card", "Other"];
 
 function Dialog({ title, children, close }) {
   return (
@@ -30,6 +30,12 @@ function ExpenseForm({ initial, saving, onCancel, onSubmit }) {
   );
   const [error, setError] = useState("");
   const set = (key) => (event) => setForm({ ...form, [key]: event.target.value });
+  // Admin-editable list (Finance → Payment Methods). A stored method that's
+  // since been removed stays selectable on its own record; a new expense
+  // falls back to the first method if "Cash" was removed.
+  const listed = usePaymentMethods();
+  const methods = initial?.paymentMethod && !listed.includes(initial.paymentMethod) ? [...listed, initial.paymentMethod] : listed;
+  const paymentMethod = methods.includes(form.paymentMethod) ? form.paymentMethod : methods[0] || "";
 
   const amountNum = form.amount === "" ? null : Number(form.amount);
   const amountError = amountNum !== null && amountNum <= 0 ? "Expense amount must be greater than zero." : null;
@@ -41,7 +47,7 @@ function ExpenseForm({ initial, saving, onCancel, onSubmit }) {
     if (!form.expenseDate) return setError("Expense date is required.");
     setError("");
     try {
-      await onSubmit({ ...form, amount: amountNum });
+      await onSubmit({ ...form, paymentMethod, amount: amountNum });
     } catch (err) {
       setError(err.message || "Unable to save this expense.");
     }
@@ -78,7 +84,7 @@ function ExpenseForm({ initial, saving, onCancel, onSubmit }) {
       </label>
       <label className="grid gap-1 text-xs font-bold text-muted">
         Payment Method
-        <select value={form.paymentMethod} onChange={set("paymentMethod")} className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm">
+        <select value={paymentMethod} onChange={set("paymentMethod")} className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm">
           {methods.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
       </label>

@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BookOpen, GraduationCap, Layers, Mail, Phone, Search, UserPlus, Users, X,
+  BookOpen, CalendarCheck, GraduationCap, Layers, Mail, Phone, Search, UserPlus, Users, X,
 } from "lucide-react";
+import { TeacherAttendanceOverview, TeacherAttendanceSummary } from "../attendance/TeacherAttendance";
+import { useSessionTab } from "../../lib/page-refresh";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
 import DataTable from "../data-table/DataTable";
@@ -196,6 +198,10 @@ function TeacherView({ teacher, courses, classes, onClose }) {
             {myClasses.length ? (
               <div className="flex flex-wrap gap-1.5">{myClasses.map((cls) => <CourseChip key={cls.id} tone="info">{cls.name}</CourseChip>)}</div>
             ) : <p className="text-xs text-muted">None yet.</p>}
+          </div>
+          <div>
+            <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-subtle">Attendance</p>
+            <TeacherAttendanceSummary teacherId={teacher.id} />
           </div>
         </div>
       </div>
@@ -462,7 +468,7 @@ export default function TeacherAssignment({ onNavigate }) {
   const [data, setData] = useState({ teachers: [], courses: [], classes: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState("directory");
+  const [tab, setTab] = useSessionTab("teachers", "directory", ["directory", "courses", "classes", "attendance"]);
   const [viewing, setViewing] = useState(null);
   const [classModal, setClassModal] = useState(null); // { cls, mode: "assign" | "change" }
   const [busy, setBusy] = useState(false);
@@ -546,6 +552,7 @@ export default function TeacherAssignment({ onNavigate }) {
     ["directory", "Teacher Directory", Users],
     ["courses", "Courses", BookOpen],
     ["classes", "Classes", Layers],
+    ["attendance", "Attendance", CalendarCheck],
   ];
 
   return (
@@ -590,6 +597,9 @@ export default function TeacherAssignment({ onNavigate }) {
             onChangeClass={(cls) => setClassModal({ cls, mode: "change" })}
             onRemove={remove}
           />)}
+      {tab === "attendance" && (loading
+        ? <SkeletonList count={4} />
+        : <TeacherAttendanceOverview teachers={data.teachers} />)}
 
       {viewing && <TeacherView teacher={viewing} courses={data.courses} classes={data.classes} onClose={() => setViewing(null)} />}
       {classModal && (

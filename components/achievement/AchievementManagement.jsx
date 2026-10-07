@@ -18,6 +18,7 @@ import {
   uploadTemplateBackground,
 } from "../../lib/achievement-data";
 import { loadStudentDirectoryCached } from "../../lib/services/student-service";
+import { useSessionTab } from "../../lib/page-refresh";
 import { AWARD_TYPES, CERTIFICATE_TYPES } from "../../lib/achievement-shared";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
@@ -38,7 +39,7 @@ const DYNAMIC_VARIABLES = [
 ];
 
 export default function AchievementManagement() {
-  const [tab, setTab] = useState("Overview");
+  const [tab, setTab] = useSessionTab("achievement", "Overview", tabs);
   const [templates, setTemplates] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [awards, setAwards] = useState([]);

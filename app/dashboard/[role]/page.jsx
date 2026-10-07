@@ -30,6 +30,7 @@ import LoadingScreen from "../../../components/dashboard/LoadingScreen";
 import ChatHub from "../../../components/chat/ChatHub";
 import SettingsPage from "../../../components/settings/SettingsPage";
 import { useNewInquiryCount } from "../../../lib/contact-inquiries-data";
+import { useUnreadNotificationsByType } from "../../../lib/notification-data";
 import IdCardPrint from "../../../components/teacher/IdCardPrint";
 import Shop from "../../../components/shop/Shop";
 import PromoCodeView from "../../../components/promo/PromoCodeView";
@@ -245,6 +246,9 @@ function DirectorDashboard({ profile, user }) {
     "Director";
   const initials = name.slice(0, 2).toUpperCase();
   const newInquiryCount = useNewInquiryCount();
+  // Appointments now live under Chat (components/chat/ChatHub.jsx), so new
+  // bookings count toward Chat's sidebar badge too.
+  const newAppointmentCount = useUnreadNotificationsByType(user.uid, "appointment").length;
 
   return (
     <DirectorShell
@@ -259,7 +263,7 @@ function DirectorDashboard({ profile, user }) {
       headerTitle={active === "Dashboard" ? "Director Dashboard" : active}
       headerSubtitle="Organization overview"
       onLogout={logout}
-      badges={{ Chat: newInquiryCount }}
+      badges={{ Chat: newInquiryCount + newAppointmentCount }}
     >
             {active === "Dashboard" ? (
               <DirectorOverview onNavigate={setActive} />

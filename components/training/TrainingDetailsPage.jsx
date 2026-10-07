@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ChevronRight, ChevronUp, Circle, FileText, Link2, Pencil, PlayCircle, Trash2, Type } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Circle, FileText, Link2, Pencil, PlayCircle, Search, Trash2, Type } from "lucide-react";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../lib/auth-context";
 import AttendanceStatusPicker from "./AttendanceStatusPicker";
+import { TeacherAttendancePanel } from "../attendance/TeacherAttendance";
 import ClassSessionsPanel from "./ClassSessionsPanel";
 import { subscribeCourseClassSessions } from "../../lib/class-sessions-data";
 import {
@@ -34,6 +35,7 @@ import {
 } from "../../lib/teacher-assessments";
 import { checkCertificateEligibility } from "../../lib/teacher-data";
 import { stopEnterSubmit } from "../../lib/ui/keyboard";
+import { useSessionTab } from "../../lib/page-refresh";
 import { TeacherShell } from "../TeacherWorkspacePage";
 import DirectorShell from "../dashboard/DirectorShell";
 import AdminShell from "../dashboard/AdminShell";
@@ -175,6 +177,7 @@ export default function TrainingDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [studentEnrolled, setStudentEnrolled] = useState(null); // null = still checking
+  const [editingClass, setEditingClass] = useState(null);
 
   const canManage = profile?.role === "Admin" || profile?.role === "Director";
   const isAssignedTeacher =
@@ -464,7 +467,18 @@ export default function TrainingDetailsPage() {
                           look like a phantom, action-less "Class 1"
                           session. Removed; no data changed, `index` is no
                           longer needed here. */}
-                      <b className="block text-sm">{item.name || "Batch"}</b>
+                      <div className="flex items-start justify-between gap-2">
+                        <b className="block text-sm">{item.name || "Batch"}</b>
+                        {canManage && (
+                          <button
+                            type="button"
+                            onClick={() => setEditingClass(item)}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border-subtle px-2.5 py-1 text-xs font-bold text-ink hover:bg-active"
+                          >
+                            <Pencil className="h-3 w-3" aria-hidden="true" /> Edit
+                          </button>
+                        )}
+                      </div>
                       <span className="text-xs text-muted">
                         {[item.campus, item.building, item.floor, item.room]
                           .filter(Boolean)
@@ -500,6 +514,13 @@ export default function TrainingDetailsPage() {
                   currentUid={user?.uid}
                 />
               )}
+              {editingClass && (
+                <ClassEditDialog
+                  course={course}
+                  classItem={editingClass}
+                  onClose={() => setEditingClass(null)}
+                />
+              )}
             </Panel>
           )}
 
@@ -529,6 +550,8 @@ export default function TrainingDetailsPage() {
 
           {tab === "Attendance" && (
             <AttendanceTab
+              course={course}
+              canManage={canManage}
               courseId={course.id}
               classes={classes}
               students={students}
@@ -622,6 +645,7 @@ export default function TrainingDetailsPage() {
         getHref={() => "/dashboard/director"}
         name={name}
         initials={name.slice(0, 2).toUpperCase()}
+        photoURL={profile?.photoURL}
         userEmail={user?.email}
         headerTitle="Training"
         headerSubtitle="Organization overview"
@@ -642,6 +666,7 @@ export default function TrainingDetailsPage() {
         getHref={() => "/dashboard/admin"}
         name={name}
         initials={name.slice(0, 2).toUpperCase()}
+        photoURL={profile?.photoURL}
         userEmail={user?.email}
         headerTitle="Training"
         onLogout={logout}
@@ -707,7 +732,52 @@ function TeachersTab({ course }) {
   );
 }
 
-function AttendanceTab({
+// Matches a student against the Attendance search box by name, email or
+// phone. Phone also matches on digits only, so "91234567" finds
+// "+65 9123 4567".
+function studentMatches(student, query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const text = [student.displayName, student.email, student.phone].some((value) =>
+    String(value || "").toLowerCase().includes(q),
+  );
+  const digits = q.replace(/\D/g, "");
+  return text || (digits.length >= 3 && String(student.phone || "").replace(/\D/g, "").includes(digits));
+}
+
+const contactLine = (person) => [person?.email, person?.phone].filter(Boolean).join(" · ");
+
+function AttendanceTab({ course, canManage, ...props }) {
+  // Students | Teachers — teacher attendance lives in its own collection
+  // (see components/attendance/TeacherAttendance.jsx), shown here so a
+  // training's whole attendance picture is in one tab.
+  const [view, setView] = useSessionTab("training-attendance", "Students", ["Students", "Teachers"]);
+  return (
+    <div className="space-y-4">
+      <nav className="flex w-fit gap-1 rounded-2xl border border-border-subtle bg-card p-1 shadow-sm">
+        {["Students", "Teachers"].map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setView(item)}
+            className={`rounded-xl px-4 py-1.5 text-xs font-bold ${view === item ? "bg-primary text-white" : "text-muted hover:bg-active"}`}
+          >
+            {item === "Students" ? "Student Attendance" : "Teacher Attendance"}
+          </button>
+        ))}
+      </nav>
+      {view === "Students" ? (
+        <StudentAttendanceTab {...props} />
+      ) : (
+        <Panel title="Teacher Attendance">
+          <TeacherAttendancePanel course={course} classes={props.classes} canMark={canManage} />
+        </Panel>
+      )}
+    </div>
+  );
+}
+
+function StudentAttendanceTab({
   courseId,
   classes,
   students,
@@ -715,6 +785,18 @@ function AttendanceTab({
   teacherId,
   canMark,
 }) {
+  const [search, setSearch] = useState("");
+  const visibleStudents = useMemo(
+    () => students.filter((student) => studentMatches(student, search)),
+    [students, search],
+  );
+  const visibleIds = useMemo(() => new Set(visibleStudents.map((item) => item.id)), [visibleStudents]);
+  const visibleAttendance = useMemo(
+    () => (search.trim() ? attendance.filter((item) => visibleIds.has(item.studentId)) : attendance),
+    [attendance, visibleIds, search],
+  );
+  const studentById = useMemo(() => new Map(students.map((item) => [item.id, item])), [students]);
+
   // Optional: pick a real, pre-scheduled Class Session instead of a
   // freeform class+date — auto-fills class/date/location and tags the
   // saved attendance records with sessionId, so they're associated with
@@ -815,6 +897,22 @@ function AttendanceTab({
         <Empty>No enrolled students found</Empty>
       ) : (
         <>
+          <label className="relative mb-4 block">
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-subtle" aria-hidden="true" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onKeyDown={stopEnterSubmit}
+              placeholder="Search students by name, phone, or email…"
+              className="w-full rounded-xl border border-border-subtle bg-card py-2 pl-9 pr-3 text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary"
+            />
+          </label>
+          {search.trim() && (
+            <p className="mb-3 text-[11px] text-muted">
+              Showing {visibleStudents.length} of {students.length} students
+              {canMark ? " — Save Attendance still saves the whole class." : "."}
+            </p>
+          )}
           {canMark && (
             <AttendanceMarkGrid
               key={`${classId}_${effectiveDate}_${sessionId}`}
@@ -824,6 +922,7 @@ function AttendanceTab({
               sessionId={selectedSession?.id || null}
               location={selectedSession?.location || ""}
               students={students}
+              visibleIds={visibleIds}
               attendance={attendance}
               teacherId={teacherId}
             />
@@ -832,7 +931,8 @@ function AttendanceTab({
             Attendance summary
           </p>
           <div className="space-y-2">
-            {students.map((student) => {
+            {!visibleStudents.length && <p className="text-xs text-muted">No students match your search.</p>}
+            {visibleStudents.map((student) => {
               const status = latestStatus[student.id];
               const label = status
                 ? status[0].toUpperCase() + status.slice(1)
@@ -840,10 +940,13 @@ function AttendanceTab({
               return (
                 <div
                   key={student.id}
-                  className="flex items-center justify-between rounded-xl bg-page p-3 text-xs"
+                  className="flex items-center justify-between gap-3 rounded-xl bg-page p-3 text-xs"
                 >
-                  <b>{student.displayName || student.email}</b>
-                  <span className="font-bold text-primary">
+                  <span className="min-w-0">
+                    <b className="block">{student.displayName || student.email}</b>
+                    <span className="block truncate text-[11px] text-muted">{contactLine(student)}</span>
+                  </span>
+                  <span className="shrink-0 font-bold text-primary">
                     {status && rate[student.id] != null
                       ? `${label} · ${rate[student.id]}%`
                       : label}
@@ -860,12 +963,14 @@ function AttendanceTab({
               name={`attendance-${courseId}`}
               columns={[
                 { key: "student", header: "Student", sortable: true, accessor: (r) => studentName(r.studentId), render: (r) => <b className="text-ink">{studentName(r.studentId)}</b> },
+                { key: "email", header: "Email", sortable: true, accessor: (r) => studentById.get(r.studentId)?.email || "" },
+                { key: "phone", header: "Phone", accessor: (r) => studentById.get(r.studentId)?.phone || "" },
                 { key: "date", header: "Date", sortable: true, accessor: (r) => r.date || "" },
                 { key: "status", header: "Status", sortable: true, filter: {}, accessor: (r) => (r.status ? r.status[0].toUpperCase() + r.status.slice(1) : ""), render: (r) => <TableBadge tone={{ present: "green", absent: "red", late: "orange", excused: "blue" }[r.status] || "gray"}>{r.status || "—"}</TableBadge> },
                 { key: "class", header: "Class", sortable: true, filter: {}, accessor: (r) => className(r.classId) },
                 { key: "markedByName", header: "Marked By", accessor: (r) => r.markedByName || r.teacherName || "" },
               ]}
-              rows={attendance}
+              rows={visibleAttendance}
               getRowId={(r) => r.id || `${r.studentId}_${r.date}_${r.classId}`}
               initialSort={{ key: "date", dir: "desc" }}
               pageSize={10}
@@ -888,6 +993,7 @@ function AttendanceMarkGrid({
   sessionId,
   location,
   students,
+  visibleIds,
   attendance,
   teacherId,
 }) {
@@ -933,12 +1039,17 @@ function AttendanceMarkGrid({
 
   return (
     <div className="mb-5 space-y-2 border-b border-border-subtle pb-5">
-      {students.map((student) => (
+      {/* The search box only hides rows — every student's chosen status
+          is kept and saved, so filtering never drops anyone from Save. */}
+      {students.filter((student) => !visibleIds || visibleIds.has(student.id)).map((student) => (
         <div
           key={student.id}
           className="flex flex-col gap-2 rounded-xl border border-border-subtle bg-page p-3 text-xs sm:flex-row sm:items-center sm:justify-between"
         >
-          <b>{student.displayName || student.email}</b>
+          <span className="min-w-0">
+            <b className="block">{student.displayName || student.email}</b>
+            <span className="block truncate text-[11px] text-muted">{contactLine(student)}</span>
+          </span>
           <AttendanceStatusPicker
             value={statuses[student.id] || "present"}
             onChange={(status) => setStatuses({ ...statuses, [student.id]: status })}
@@ -1158,6 +1269,162 @@ function AssessmentTab({ courseId, students, teacherId, classId }) {
   );
 }
 
+// PATCH /api/admin/training re-validates and rewrites EVERY course field
+// (and mirrors the batch fields onto the primary class), so a partial edit
+// — reassigning teachers, editing one batch — must still send the rest of
+// the course back unchanged.
+function coursePayload(course) {
+  return {
+    id: course.id,
+    title: course.title,
+    description: course.description,
+    status: course.status,
+    category: course.category,
+    level: course.level,
+    thumbnailUrl: course.thumbnailUrl,
+    thumbnailPath: course.thumbnailPath,
+    startDate: course.startDate,
+    endDate: course.endDate,
+    startTime: course.startTime,
+    endTime: course.endTime,
+    duration: course.duration,
+    classFrequency: course.classFrequency,
+    totalClasses: course.totalClasses,
+    campus: course.campus,
+    building: course.building,
+    room: course.room,
+    floor: course.floor,
+    batchName: course.batchName,
+    maxStudents: course.maxStudents,
+    seatCapacity: course.seatCapacity,
+    enrollmentStartDate: course.enrollmentStartDate,
+    enrollmentDeadline: course.enrollmentDeadline,
+    enrollmentStatus: course.enrollmentStatus,
+    passingScore: course.passingScore,
+    certificateEnabled: course.certificateEnabled,
+    certificateMinAttendance: course.certificateMinAttendance,
+    certificateMinScore: course.certificateMinScore,
+    certificateTemplateId: course.certificateTemplateId,
+    certificateCode: course.certificateCode,
+    primaryTeacherId: course.primaryTeacherId,
+    assistantTeacherId: course.assistantTeacherId,
+  };
+}
+
+const CLASS_FIELD = "rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal";
+
+// Edits one batch's name / room / dates / times / capacity. The primary
+// class is saved through the course itself (its batch fields are the
+// source of truth — every course save rewrites the primary class from
+// them, so writing only the class doc would be undone by the next course
+// edit). Any extra, non-primary class is written directly.
+function ClassEditDialog({ course, classItem, onClose }) {
+  const isPrimary = classItem.id === course.primaryClassId;
+  const [form, setForm] = useState({
+    name: (isPrimary ? course.batchName : "") || classItem.name || "",
+    campus: classItem.campus || "",
+    building: classItem.building || "",
+    floor: classItem.floor || "",
+    room: classItem.room || "",
+    startDate: classItem.startDate || "",
+    endDate: classItem.endDate || "",
+    startTime: classItem.startTime || "",
+    endTime: classItem.endTime || "",
+    maxStudents: classItem.maxStudents ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
+
+  async function save() {
+    if (form.startDate && form.endDate && form.endDate < form.startDate) {
+      setError("End date cannot be before the start date.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const maxStudents = form.maxStudents === "" ? null : Number(form.maxStudents);
+      if (isPrimary) {
+        const { name, ...batch } = form;
+        await updateCourse({ ...coursePayload(course), ...batch, batchName: name, maxStudents });
+      } else {
+        await updateDoc(doc(db, "classes", classItem.id), {
+          ...form,
+          name: form.name.trim() || classItem.name || "Batch",
+          maxStudents,
+          updatedAt: serverTimestamp(),
+        });
+      }
+      onClose();
+    } catch (err) {
+      setError(err.message || "Unable to save this class.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" role="dialog" aria-modal="true">
+      <div className="max-h-[88vh] w-full max-w-lg space-y-3 overflow-y-auto rounded-2xl bg-card p-6 shadow-xl">
+        <h4 className="text-sm font-bold text-ink">Edit Class / Batch</h4>
+        <label className="grid gap-1 text-xs font-bold text-muted">
+          Batch Name
+          <input value={form.name} onChange={set("name")} onKeyDown={stopEnterSubmit} placeholder={course.title} className={CLASS_FIELD} />
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            Campus
+            <input value={form.campus} onChange={set("campus")} onKeyDown={stopEnterSubmit} className={CLASS_FIELD} />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            Building
+            <input value={form.building} onChange={set("building")} onKeyDown={stopEnterSubmit} className={CLASS_FIELD} />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            Floor
+            <input value={form.floor} onChange={set("floor")} onKeyDown={stopEnterSubmit} className={CLASS_FIELD} />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            Room
+            <input value={form.room} onChange={set("room")} onKeyDown={stopEnterSubmit} className={CLASS_FIELD} />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            Start Date
+            <input type="date" value={form.startDate} onChange={set("startDate")} className={CLASS_FIELD} />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            End Date
+            <input type="date" value={form.endDate} onChange={set("endDate")} className={CLASS_FIELD} />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            Start Time
+            <input type="time" value={form.startTime} onChange={set("startTime")} className={CLASS_FIELD} />
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            End Time
+            <input type="time" value={form.endTime} onChange={set("endTime")} className={CLASS_FIELD} />
+          </label>
+        </div>
+        <label className="grid gap-1 text-xs font-bold text-muted">
+          Max Students
+          <input type="number" min="0" value={form.maxStudents} onChange={set("maxStudents")} onKeyDown={stopEnterSubmit} className={CLASS_FIELD} />
+        </label>
+        {isPrimary && (
+          <p className="text-[11px] text-subtle">This is the training&apos;s main batch — changes also update the training&apos;s own schedule and room details.</p>
+        )}
+        {error && <p className="text-xs text-primary">{error}</p>}
+        <div className="flex justify-end gap-3 pt-1">
+          <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-bold text-muted">Cancel</button>
+          <button type="button" onClick={save} disabled={saving} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">
+            {saving ? "Saving..." : "Save changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AssignTab({ course }) {
   const [teachers, setTeachers] = useState([]);
   const [primaryTeacherId, setPrimaryTeacherId] = useState(
@@ -1179,41 +1446,7 @@ function AssignTab({ course }) {
     setSaving(true);
     setMessage("");
     try {
-      await updateCourse({
-        id: course.id,
-        title: course.title,
-        description: course.description,
-        status: course.status,
-        category: course.category,
-        level: course.level,
-        thumbnailUrl: course.thumbnailUrl,
-        thumbnailPath: course.thumbnailPath,
-        startDate: course.startDate,
-        endDate: course.endDate,
-        startTime: course.startTime,
-        endTime: course.endTime,
-        duration: course.duration,
-        classFrequency: course.classFrequency,
-        totalClasses: course.totalClasses,
-        campus: course.campus,
-        building: course.building,
-        room: course.room,
-        floor: course.floor,
-        batchName: course.batchName,
-        maxStudents: course.maxStudents,
-        seatCapacity: course.seatCapacity,
-        enrollmentStartDate: course.enrollmentStartDate,
-        enrollmentDeadline: course.enrollmentDeadline,
-        enrollmentStatus: course.enrollmentStatus,
-        passingScore: course.passingScore,
-        certificateEnabled: course.certificateEnabled,
-        certificateMinAttendance: course.certificateMinAttendance,
-        certificateMinScore: course.certificateMinScore,
-        certificateTemplateId: course.certificateTemplateId,
-        certificateCode: course.certificateCode,
-        primaryTeacherId,
-        assistantTeacherId,
-      });
+      await updateCourse({ ...coursePayload(course), primaryTeacherId, assistantTeacherId });
       setMessage("Teachers updated.");
     } catch (error) {
       setMessage(error.message || "Unable to update teachers.");

@@ -3,30 +3,62 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, Download, Link2 } from "lucide-react";
 import { loadFormResponses } from "../../lib/services/forms-service";
-import { OPTION_TYPES, OTHER_PREFIX, formLink } from "../../lib/forms-shared";
+import { GRID_TYPES, NO_ANSWER_TYPES, OPTION_TYPES, OTHER_PREFIX, formLink, formatFormAnswer } from "../../lib/forms-shared";
 
-const formatAnswer = (value) => (Array.isArray(value) ? value.join(", ") : value ?? "");
+// Section headers carry no answers — leave them out of summaries, the
+// individual view and the CSV.
+const answerable = (questions) => (questions || []).filter((q) => !NO_ANSWER_TYPES.includes(q.type));
 const formatWhen = (iso) => (iso ? new Date(iso).toLocaleString() : "");
 const NEWLINE = String.fromCharCode(10);
 
 function toCsv(form, responses) {
   const cell = (value) => `"${String(value ?? "").split('"').join('""')}"`;
-  const header = ["Submitted", "Name", "Email", ...form.questions.map((q) => q.label)];
-  const rows = responses.map((r) => [formatWhen(r.submittedAt), r.name, r.email, ...form.questions.map((q) => formatAnswer(r.answers?.[q.id]))]);
+  const questions = answerable(form.questions);
+  const header = ["Submitted", "Name", "Email", ...questions.map((q) => q.label)];
+  const rows = responses.map((r) => [formatWhen(r.submittedAt), r.name, r.email, ...questions.map((q) => formatFormAnswer(q, r.answers?.[q.id]))]);
   return [header, ...rows].map((row) => row.map(cell).join(",")).join(NEWLINE);
 }
 
 // One question's results: bars for choice-like questions, a plain list for text.
 function QuestionSummary({ question, responses }) {
   const values = responses.map((r) => r.answers?.[question.id]).filter((v) => v != null && v !== "" && !(Array.isArray(v) && !v.length));
-  const choiceLike = OPTION_TYPES.includes(question.type) || question.type === "scale";
+  const numeric = question.type === "scale" || question.type === "rating";
+  const choiceLike = OPTION_TYPES.includes(question.type) || numeric;
   let body;
 
-  if (choiceLike) {
-    const scaleOptions = question.type === "scale"
+  if (GRID_TYPES.includes(question.type)) {
+    // One row per grid row: how many people picked each column.
+    body = (
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full min-w-[360px] text-xs">
+          <thead>
+            <tr>
+              <th className="p-2" />
+              {(question.columns || []).map((column) => <th key={column} className="p-2 text-center font-semibold text-muted">{column}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {(question.rows || []).map((row, rowIndex) => (
+              <tr key={row} className="border-t border-border-subtle">
+                <th scope="row" className="p-2 text-left font-semibold text-ink">{row}</th>
+                {(question.columns || []).map((column) => {
+                  const n = values.filter((v) => {
+                    const picked = v?.[String(rowIndex)];
+                    return Array.isArray(picked) ? picked.includes(column) : picked === column;
+                  }).length;
+                  return <td key={column} className={`p-2 text-center ${n ? "font-bold text-ink" : "text-subtle"}`}>{n}</td>;
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  } else if (choiceLike) {
+    const scaleOptions = numeric
       ? Array.from({ length: (question.scale?.max ?? 5) - (question.scale?.min ?? 1) + 1 }, (_, i) => String((question.scale?.min ?? 1) + i))
       : [];
-    const labels = question.type === "scale" ? scaleOptions : [...question.options];
+    const labels = numeric ? scaleOptions : [...question.options];
     const counts = Object.fromEntries(labels.map((label) => [label, 0]));
     let otherCount = 0;
     values.flat().forEach((value) => {
@@ -47,7 +79,7 @@ function QuestionSummary({ question, responses }) {
             <span className="w-16 shrink-0 text-right font-semibold text-muted">{n} ({values.length ? Math.round((n / values.length) * 100) : 0}%)</span>
           </div>
         ))}
-        {question.type === "scale" && values.length > 0 && (
+        {numeric && values.length > 0 && (
           <p className="pt-1 text-xs text-muted">Average: <b className="text-ink">{(values.reduce((sum, v) => sum + Number(v), 0) / values.length).toFixed(2)}</b></p>
         )}
       </div>
@@ -150,7 +182,7 @@ export default function FormResponses({ form, onBack }) {
 
       {hasResponses && view === "summary" && (
         <div className="space-y-4">
-          {form.questions.map((q) => <QuestionSummary key={q.id} question={q} responses={responses} />)}
+          {answerable(form.questions).map((q) => <QuestionSummary key={q.id} question={q} responses={responses} />)}
         </div>
       )}
 
@@ -166,10 +198,10 @@ export default function FormResponses({ form, onBack }) {
               </button>
               {openId === response.id && (
                 <dl className="space-y-3 bg-page/60 px-5 py-4">
-                  {form.questions.map((q) => (
+                  {answerable(form.questions).map((q) => (
                     <div key={q.id}>
                       <dt className="text-xs font-bold text-ink">{q.label}</dt>
-                      <dd className="mt-0.5 whitespace-pre-wrap text-sm text-ink/80">{formatAnswer(response.answers?.[q.id]) || <span className="text-subtle">— no answer —</span>}</dd>
+                      <dd className="mt-0.5 whitespace-pre-wrap text-sm text-ink/80">{formatFormAnswer(q, response.answers?.[q.id]) || <span className="text-subtle">— no answer —</span>}</dd>
                     </div>
                   ))}
                 </dl>

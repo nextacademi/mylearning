@@ -222,6 +222,14 @@ function courseFields(body) {
   // Pricing is fixed to a single currency — not a client-editable field.
   const currency = "SGD";
 
+  // A browser date box accepts a 5–6 digit year if typed, which saved
+  // dates like "162026-11-01" that then sort/compare wrongly everywhere.
+  for (const [key, label] of [["startDate", "start date"], ["endDate", "end date"], ["enrollmentStartDate", "enrollment start date"], ["enrollmentDeadline", "enrollment deadline"]]) {
+    const value = typeof body[key] === "string" ? body[key].trim() : "";
+    if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error(`Enter a valid ${label} (the year must have 4 digits).`);
+  }
+  if (body.startDate && body.endDate && body.endDate < body.startDate) throw new Error("The end date cannot be before the start date.");
+
   return {
     title,
     description,

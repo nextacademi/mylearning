@@ -490,7 +490,7 @@ export default function EventDetailsPage() {
   if (profile?.role === "Director") {
     const name = profile?.displayName || user?.displayName || user?.email?.split("@")[0] || "Director";
     return (
-      <DirectorShell modules={managerModules} active="Event" getHref={() => "/dashboard/director"} name={name} initials={name.slice(0, 2).toUpperCase()} userEmail={user?.email} headerTitle="Events" headerSubtitle="Organization overview" onLogout={logout}>
+      <DirectorShell modules={managerModules} active="Event" getHref={() => "/dashboard/director"} name={name} initials={name.slice(0, 2).toUpperCase()} photoURL={profile?.photoURL} userEmail={user?.email} headerTitle="Events" headerSubtitle="Organization overview" onLogout={logout}>
         {paddedBody}
       </DirectorShell>
     );
@@ -498,7 +498,7 @@ export default function EventDetailsPage() {
   if (profile?.role === "Admin") {
     const name = profile?.displayName || user?.displayName || user?.email?.split("@")[0] || "Member";
     return (
-      <AdminShell role="Admin" modules={managerModules} active="Event" getHref={() => "/dashboard/admin"} name={name} initials={name.slice(0, 2).toUpperCase()} userEmail={user?.email} headerTitle="Events" onLogout={logout}>
+      <AdminShell role="Admin" modules={managerModules} active="Event" getHref={() => "/dashboard/admin"} name={name} initials={name.slice(0, 2).toUpperCase()} photoURL={profile?.photoURL} userEmail={user?.email} headerTitle="Events" onLogout={logout}>
         {paddedBody}
       </AdminShell>
     );

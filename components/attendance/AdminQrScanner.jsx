@@ -97,7 +97,7 @@ export default function AdminQrScanner() {
       <section className="rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 shadow-sm md:p-5">
         <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Attendance</p>
         <h2 className="mt-2 text-lg font-black text-ink">Scan QR Code</h2>
-        <p className="mt-1 text-xs text-muted">Check students in/out of an offline class using their D Card QR code.</p>
+        <p className="mt-1 text-xs text-muted">Check students — or the class&apos;s own teacher — in/out of an offline class using their ID Card QR code.</p>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_.8fr]">
@@ -160,6 +160,7 @@ export default function AdminQrScanner() {
             <div className={`rounded-2xl p-4 text-sm ${result.code === "already_checked_out" ? "bg-warning-soft text-warning" : "bg-success-soft text-success"}`}>
               <b className="block">{result.message}</b>
               {result.student && <p className="mt-2 text-xs">{result.student.displayName || result.student.email}</p>}
+              {result.teacher && <p className="mt-2 text-xs">Teacher: {result.teacher.displayName || result.teacher.email}</p>}
               {result.code === "checked_out" && typeof result.durationMinutes === "number" && (
                 <p className="mt-1 text-xs font-semibold">Session length: {Math.floor(result.durationMinutes / 60)}h {result.durationMinutes % 60}m</p>
               )}

@@ -7,6 +7,8 @@ import SidebarIcon, { navLabel } from "./SidebarIcon";
 import ChatButton, { useUnreadConversationCount } from "./ChatButton";
 import NotificationBell from "./NotificationBell";
 import GlobalSearch from "./GlobalSearch";
+import RefreshPageButton from "./RefreshPageButton";
+import { usePageRefresh } from "../../lib/page-refresh";
 
 const EASE = [0.22, 1, 0.36, 1];
 // See components/dashboard/WorkspaceShell.jsx for why these aren't applied
@@ -56,6 +58,7 @@ export default function AdminShell({
   badges = {},
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [refreshKey, refreshPage] = usePageRefresh();
 
   function go(module) {
     onNavigate?.(module);
@@ -151,6 +154,7 @@ export default function AdminShell({
           </div>
           <div className="flex items-center gap-3">
             <GlobalSearch role={role} uid={uid} modules={modules} onNavigate={go} />
+            <RefreshPageButton onRefresh={refreshPage} />
             <ChatButton href={chatHref} onClick={() => go("Chat")} />
             <motion.button
               whileHover={{ scale: 1.03 }}
@@ -184,7 +188,7 @@ export default function AdminShell({
           </div>
         </motion.header>
         <div className="flex-1 px-4 py-4 md:py-6 lg:py-8">
-          <div className="space-y-6">{children}</div>
+          <div key={refreshKey} className="space-y-6">{children}</div>
         </div>
       </section>
     </main>

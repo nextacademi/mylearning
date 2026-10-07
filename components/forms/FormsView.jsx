@@ -102,7 +102,10 @@ export default function FormsView() {
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${form.status === "open" ? "bg-success-soft text-success" : "bg-page text-muted"}`}>{form.status}</span>
                 </div>
                 {form.description && <p className="line-clamp-2 text-xs text-ink/70">{form.description}</p>}
-                <p className="mt-3 text-xs font-semibold text-muted">{form.questions?.length || 0} questions</p>
+                <p className="mt-3 text-xs font-semibold text-muted">
+                  {(form.questions || []).filter((q) => q.type !== "section").length} questions
+                  {form.closesAt && <span className="font-normal"> · {form.status === "open" ? "closes" : "closed"} after {form.closesAt}</span>}
+                </p>
               </div>
               <div className="mt-4 space-y-3 border-t border-border-subtle pt-4">
                 <button type="button" onClick={() => setViewing(form)} className="flex w-full items-center justify-between rounded-xl bg-active px-3 py-2 text-xs font-bold text-primary">

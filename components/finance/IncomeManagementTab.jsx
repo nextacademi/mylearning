@@ -6,6 +6,7 @@ import { stopEnterSubmit } from "../../lib/ui/keyboard";
 import { createIncome, deleteIncome as deleteIncomeRequest, updateIncome } from "../../lib/services/finance-service";
 import { loadStudentDirectory } from "../../lib/services/student-service";
 import StudentPicker from "./StudentPicker";
+import { usePaymentMethods } from "../../lib/services/payment-methods-service";
 import { formatDate, formatMoney } from "../training/PaymentHistoryTable";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
@@ -14,7 +15,8 @@ import DataTable from "../data-table/DataTable";
 
 // Client-side mirrors of the server allowlists in lib/server/finance-core.js
 // (kept in sync deliberately, same pattern as ExpensesTab). The server
-// re-validates every value, so these only drive the UI. GENERAL academy
+// re-validates every value, so these only drive the UI. Payment methods
+// are the admin-editable list (Finance → Payment Methods). GENERAL academy
 // income only — tuition (Course Fee etc.) belongs to the student Payments
 // system and would double-count if logged here too.
 const SOURCES = [
@@ -30,7 +32,6 @@ const SOURCES = [
   "Membership",
   "Other",
 ];
-const METHODS = ["Cash", "Bank Transfer", "bKash", "Nagad", "Card", "Other"];
 const STATUSES = ["Paid", "Pending"];
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -70,6 +71,15 @@ function IncomeForm({ initial, saving, onCancel, onSubmit, students, courses }) 
   );
   const [error, setError] = useState("");
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
+  // An older record may carry a method no longer on the list (removed by an
+  // admin, or a pre-Singapore "bKash") — list it so the select shows the
+  // real stored value instead of silently displaying the first option; the
+  // server accepts it only if left unchanged.
+  const listed = usePaymentMethods();
+  const methods = initial?.paymentMethod && !listed.includes(initial.paymentMethod) ? [...listed, initial.paymentMethod] : listed;
+  // Derived, not synced: a new record defaults to "Cash" — if an admin has
+  // removed Cash, fall back to the list's first method.
+  const paymentMethod = methods.includes(form.paymentMethod) ? form.paymentMethod : methods[0] || "";
 
   // Picking a real student/batch fills BOTH the id (so this income record
   // can actually be traced back to that student/training) and the display
@@ -95,10 +105,10 @@ function IncomeForm({ initial, saving, onCancel, onSubmit, students, courses }) 
     if (!form.date) return setError("Income date is required.");
     if (!form.source) return setError("Choose an income source.");
     if (amountNum === null || amountError) return setError(amountError || "Enter an amount.");
-    if (!form.paymentMethod) return setError("Choose a payment method.");
+    if (!paymentMethod) return setError("Choose a payment method.");
     setError("");
     try {
-      await onSubmit({ ...form, amount: amountNum });
+      await onSubmit({ ...form, paymentMethod, amount: amountNum });
     } catch (submitError) {
       setError(submitError.message || "Unable to save this income record.");
     }
@@ -134,8 +144,8 @@ function IncomeForm({ initial, saving, onCancel, onSubmit, students, courses }) 
         </label>
         <label className={LABEL}>
           Payment Method <span className="text-primary">*</span>
-          <select value={form.paymentMethod} onChange={set("paymentMethod")} required className={FIELD}>
-            {METHODS.map((item) => <option key={item} value={item}>{item}</option>)}
+          <select value={paymentMethod} onChange={set("paymentMethod")} required className={FIELD}>
+            {methods.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </label>
         <label className={LABEL}>

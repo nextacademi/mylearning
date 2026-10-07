@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "../../lib/auth-context";
-import { markAllNotificationsRead, useUnreadNotificationsByType } from "../../lib/notification-data";
 import { loadFinanceOverviewCached } from "../../lib/services/finance-service";
+import { useSessionTab } from "../../lib/page-refresh";
 import AdmissionsManagement from "./AdmissionsManagement";
 import InvoicesTab from "./InvoicesTab";
 import FinanceDashboardTab from "./FinanceDashboardTab";
@@ -14,31 +13,20 @@ import AssetsTab from "./AssetsTab";
 import TransactionsTab from "./TransactionsTab";
 import ProfitLossTab from "./ProfitLossTab";
 import ReportsTab from "./ReportsTab";
-import AppointmentScheduler from "../appointments/AppointmentScheduler";
+import PaymentMethodsTab from "./PaymentMethodsTab";
 
 // One sidebar entry ("Finance"), one shell — matches every other module in
 // this dashboard (Training, Users, etc. are also single sidebar items with
 // their own internal tabs, e.g. Training Details' Overview/Classes/...).
-// No second dashboard shell, no new sidebar items. Appointments moved in
-// here from its own top-level sidebar item — Director/Admin manage it as
-// part of Finance now; Student/Guest still reach the same
-// AppointmentScheduler component from their own "Appointments" module,
-// unchanged.
-const tabs = ["Dashboard", "Invoices", "Income", "Income / Payments", "Outstanding Due", "Expenses", "Assets", "Transactions", "Profit & Loss", "Appointments", "Reports"];
+// No second dashboard shell, no new sidebar items. (Appointments used to be
+// a tab here; it now lives under Chat — see components/chat/ChatHub.jsx.)
+const tabs = ["Dashboard", "Invoices", "Income", "Income / Payments", "Outstanding Due", "Expenses", "Assets", "Transactions", "Profit & Loss", "Reports", "Payment Methods"];
 
 export default function FinanceManagement() {
-  const { user } = useAuth();
-  const [tab, setTab] = useState("Dashboard");
+  const [tab, setTab] = useSessionTab("finance", "Dashboard", tabs);
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const newAppointments = useUnreadNotificationsByType(user?.uid, "appointment");
-
-  // Opening the tab is the "I've seen it" signal — same idea as Contact
-  // Inquiries' unread badge clearing once the list is opened.
-  useEffect(() => {
-    if (tab === "Appointments" && newAppointments.length) markAllNotificationsRead(newAppointments);
-  }, [tab, newAppointments]);
 
   const load = useCallback((force = false) => {
     setLoading(true);
@@ -78,11 +66,6 @@ export default function FinanceManagement() {
             className={`relative shrink-0 rounded-xl px-4 py-2 text-xs font-bold ${tab === item ? "bg-primary text-white" : "text-muted hover:bg-active"}`}
           >
             {item}
-            {item === "Appointments" && newAppointments.length > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold text-white">
-                {newAppointments.length}
-              </span>
-            )}
           </button>
         ))}
       </nav>
@@ -98,8 +81,8 @@ export default function FinanceManagement() {
       {tab === "Assets" && <AssetsTab />}
       {tab === "Transactions" && <TransactionsTab payments={overview?.payments || []} expenses={overview?.expenses || []} income={overview?.income || []} loading={loading} />}
       {tab === "Profit & Loss" && <ProfitLossTab />}
-      {tab === "Appointments" && <AppointmentScheduler />}
       {tab === "Reports" && <ReportsTab />}
+      {tab === "Payment Methods" && <PaymentMethodsTab />}
     </div>
   );
 }

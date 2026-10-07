@@ -3,6 +3,7 @@ import { getAdminAuth, getAdminDb } from "../../../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../../../lib/server/cached-profile";
 import { verifyQrToken, QrTokenError } from "../../../../../lib/qr-token";
 import { recordAttendanceScan } from "../../../../../lib/server/attendance-core";
+import { recordTeacherScan } from "../../../../../lib/server/teacher-attendance-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,11 +68,42 @@ export async function POST(request) {
     return fail("invalid", "Invalid QR code.", 400);
   }
 
+  const classSnapshot = await db.collection("classes").doc(classId).get();
+
+  // A teacher's own ID card (kind "teacher") scanned by Admin/Director
+  // records TEACHER attendance for this class's training — see
+  // lib/server/teacher-attendance-core.js. Only managers may do this; a
+  // Teacher scanning another teacher's card is still rejected below.
+  if (payload.kind === "teacher" && isManager) {
+    if (!classSnapshot.exists) return fail("not_found", "Class not found.", 404);
+    const teacherId = payload.sub;
+    if (!(classSnapshot.data().teacherIds || []).includes(teacherId)) {
+      return fail("unauthorized", "This teacher is not assigned to the selected class.", 403);
+    }
+    const teacherSnapshot = await db.collection("users").doc(teacherId).get();
+    if (!teacherSnapshot.exists) return fail("not_found", "Teacher not found.", 404);
+    const teacher = teacherSnapshot.data();
+    if ((teacher.qrVersion || 0) !== payload.v) {
+      return fail("expired", "This QR code has been replaced. Ask for a reissued ID card.", 400);
+    }
+    const result = await recordTeacherScan(db, {
+      classId,
+      courseId: classSnapshot.data().courseId || "",
+      teacherId,
+      markedBy: actingUid,
+      sessionId: session ? sessionId : undefined,
+    });
+    return NextResponse.json({
+      ...result,
+      teacher: { id: teacherId, displayName: teacher.displayName || "", email: teacher.email || "" },
+      class: { id: classId, name: classSnapshot.data().name || "class" },
+    });
+  }
+
   if (payload.kind !== "student") {
     return fail("invalid", "This QR code does not belong to a student.", 400);
   }
 
-  const classSnapshot = await db.collection("classes").doc(classId).get();
   if (!classSnapshot.exists) {
     return fail("unauthorized", "You do not have access to this class.", 403);
   }

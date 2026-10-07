@@ -7,6 +7,8 @@ import SidebarIcon, { navLabel } from "./SidebarIcon";
 import ChatButton from "./ChatButton";
 import NotificationBell from "./NotificationBell";
 import GlobalSearch from "./GlobalSearch";
+import RefreshPageButton from "./RefreshPageButton";
+import { usePageRefresh } from "../../lib/page-refresh";
 
 const EASE = [0.22, 1, 0.36, 1];
 // See components/dashboard/WorkspaceShell.jsx for why these aren't applied
@@ -56,6 +58,7 @@ export default function DirectorShell({
   badges = {},
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [refreshKey, refreshPage] = usePageRefresh();
 
   function handleNavClick(module) {
     onNavigate?.(module);
@@ -147,6 +150,7 @@ export default function DirectorShell({
           </div>
           <div className="flex items-center gap-3">
             <GlobalSearch role="Director" uid={uid} modules={modules} onNavigate={onNavigate} />
+            <RefreshPageButton onRefresh={refreshPage} />
             <ChatButton onClick={() => onNavigate?.("Chat")} />
             <motion.button
               whileHover={{ scale: 1.03 }}
@@ -180,7 +184,7 @@ export default function DirectorShell({
           </div>
         </motion.header>
         <div className="px-4 py-4 md:py-6 lg:py-8">
-          <div className="space-y-6">{children}</div>
+          <div key={refreshKey} className="space-y-6">{children}</div>
         </div>
       </section>
     </main>

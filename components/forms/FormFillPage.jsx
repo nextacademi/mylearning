@@ -2,13 +2,25 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Star } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import { loadFormToFill, submitForm } from "../../lib/services/forms-service";
-import { OTHER_PREFIX } from "../../lib/forms-shared";
+import { GRID_TYPES, OTHER_PREFIX, validateShortAnswer } from "../../lib/forms-shared";
 
 const FIELD = "w-full rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-primary";
 const isOther = (value) => typeof value === "string" && value.startsWith(OTHER_PREFIX);
+const INPUT_TYPE = { email: "email", number: "text", url: "url", phone: "tel" };
+
+// Fisher–Yates, run once when the form loads (never during render) for
+// questions with "Shuffle option order" on.
+function shuffled(list) {
+  const copy = [...list];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
 const otherText = (value) => (isOther(value) ? value.slice(OTHER_PREFIX.length) : "");
 
 function Shell({ children }) {
@@ -29,12 +41,17 @@ export default function FormFillPage({ formId }) {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [optionOrder, setOptionOrder] = useState({});
 
   useEffect(() => {
     if (loading) return undefined;
     let cancelled = false;
     loadFormToFill(formId)
-      .then((data) => { if (!cancelled) setForm(data.form); })
+      .then((data) => {
+        if (cancelled) return;
+        setForm(data.form);
+        setOptionOrder(Object.fromEntries((data.form?.questions || []).filter((q) => q.shuffle).map((q) => [q.id, shuffled(q.options)])));
+      })
       .catch((err) => { if (!cancelled) setError(err.message || "Unable to open this form."); });
     return () => { cancelled = true; };
   }, [loading, user, formId]);
@@ -44,9 +61,32 @@ export default function FormFillPage({ formId }) {
     const current = answers[id] || [];
     setAnswer(id, current.includes(option) ? current.filter((o) => o !== option) : [...current, option]);
   }
+  const optionsOf = (q) => optionOrder[q.id] || q.options;
+  // Grid answers: { [rowIndex]: column } (grid) or { [rowIndex]: [columns] } (checkgrid).
+  function setGridCell(q, rowIndex, column) {
+    const current = answers[q.id] || {};
+    const key = String(rowIndex);
+    if (q.type === "grid") {
+      setAnswer(q.id, { ...current, [key]: column });
+    } else {
+      const picked = current[key] || [];
+      setAnswer(q.id, { ...current, [key]: picked.includes(column) ? picked.filter((c) => c !== column) : [...picked, column] });
+    }
+  }
 
   async function submit(event) {
     event.preventDefault();
+    // Same checks the server runs, so the visitor sees them before sending.
+    for (const q of form.questions) {
+      const invalid = q.type === "short" ? validateShortAnswer(q.validation, answers[q.id]) : "";
+      if (invalid) return setError(`"${q.label}": ${invalid}`);
+      if (q.required && GRID_TYPES.includes(q.type)) {
+        const value = answers[q.id] || {};
+        const answered = q.rows.filter((_, i) => (q.type === "grid" ? value[String(i)] : (value[String(i)] || []).length)).length;
+        if (answered < q.rows.length) return setError(`Answer every row of "${q.label}".`);
+      }
+      if (q.required && q.type === "rating" && !answers[q.id]) return setError(`"${q.label}" is required.`);
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -97,6 +137,7 @@ export default function FormFillPage({ formId }) {
           ) : (
             <p className="mt-3 text-xs text-muted"><span className="text-primary">* Required</span></p>
           )}
+          {form.closesAt && <p className="mt-1 text-xs text-muted">Open until {form.closesAt}.</p>}
         </div>
 
         {!user && (
@@ -109,22 +150,41 @@ export default function FormFillPage({ formId }) {
           </fieldset>
         )}
 
-        {form.questions.map((q) => (
+        {form.questions.map((q) => q.type === "section" ? (
+          <div key={q.id} className="rounded-2xl border-l-4 border-primary bg-card p-5 shadow-sm">
+            <h2 className="text-lg font-black text-ink">{q.label}</h2>
+            {q.help && <p className="mt-1 whitespace-pre-wrap text-sm text-ink/70">{q.help}</p>}
+          </div>
+        ) : (
           <fieldset key={q.id} className="rounded-2xl bg-card p-5 shadow-sm">
             <legend className="px-0 text-sm font-bold text-ink">{q.label}{q.required && <span className="text-primary"> *</span>}</legend>
             {q.help && <p className="mt-1 whitespace-pre-wrap text-xs text-muted">{q.help}</p>}
             <div className="mt-3">
-              {q.type === "short" && <input required={q.required} value={answers[q.id] || ""} onChange={(e) => setAnswer(q.id, e.target.value)} className={FIELD} />}
+              {q.type === "short" && (
+                <>
+                  <input
+                    type={INPUT_TYPE[q.validation] || "text"}
+                    inputMode={q.validation === "number" ? "decimal" : undefined}
+                    required={q.required}
+                    value={answers[q.id] || ""}
+                    onChange={(e) => setAnswer(q.id, e.target.value)}
+                    className={FIELD}
+                  />
+                  {validateShortAnswer(q.validation, answers[q.id]) && (
+                    <p className="mt-1 text-xs font-semibold text-primary">{validateShortAnswer(q.validation, answers[q.id])}</p>
+                  )}
+                </>
+              )}
               {q.type === "paragraph" && <textarea required={q.required} rows={4} value={answers[q.id] || ""} onChange={(e) => setAnswer(q.id, e.target.value)} className={FIELD} />}
               {q.type === "dropdown" && (
                 <select required={q.required} value={answers[q.id] || ""} onChange={(e) => setAnswer(q.id, e.target.value)} className={FIELD}>
                   <option value="">Choose</option>
-                  {q.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                  {optionsOf(q).map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               )}
               {q.type === "choice" && (
                 <div className="space-y-2">
-                  {q.options.map((o) => (
+                  {optionsOf(q).map((o) => (
                     <label key={o} className="flex items-center gap-2 text-sm text-ink">
                       <input type="radio" name={q.id} required={q.required} checked={answers[q.id] === o} onChange={() => setAnswer(q.id, o)} className="h-4 w-4" /> {o}
                     </label>
@@ -141,7 +201,7 @@ export default function FormFillPage({ formId }) {
               )}
               {q.type === "checkbox" && (
                 <div className="space-y-2">
-                  {q.options.map((o) => (
+                  {optionsOf(q).map((o) => (
                     <label key={o} className="flex items-center gap-2 text-sm text-ink">
                       <input type="checkbox" checked={(answers[q.id] || []).includes(o)} onChange={() => toggleCheckbox(q.id, o)} className="h-4 w-4 rounded" /> {o}
                     </label>
@@ -173,6 +233,57 @@ export default function FormFillPage({ formId }) {
                     </label>
                   ))}
                   {q.scale?.highLabel && <span className="text-xs text-muted">{q.scale.highLabel}</span>}
+                </div>
+              )}
+              {q.type === "rating" && (
+                <div className="flex flex-wrap gap-1" role="radiogroup" aria-label={q.label}>
+                  {Array.from({ length: q.scale?.max || 5 }, (_, i) => i + 1).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      role="radio"
+                      aria-checked={answers[q.id] === n}
+                      aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                      onClick={() => setAnswer(q.id, answers[q.id] === n && !q.required ? undefined : n)}
+                      className="rounded-lg p-1 transition hover:scale-110"
+                    >
+                      <Star className={`h-7 w-7 ${(answers[q.id] || 0) >= n ? "fill-warning text-warning" : "text-subtle"}`} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              {GRID_TYPES.includes(q.type) && (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[360px] text-center text-xs">
+                    <thead>
+                      <tr>
+                        <th className="p-2" />
+                        {q.columns.map((column) => <th key={column} className="p-2 font-semibold text-muted">{column}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {q.rows.map((row, rowIndex) => {
+                        const value = (answers[q.id] || {})[String(rowIndex)];
+                        return (
+                          <tr key={row} className="border-t border-border-subtle">
+                            <th scope="row" className="p-2 text-left font-semibold text-ink">{row}</th>
+                            {q.columns.map((column) => (
+                              <td key={column} className="p-2">
+                                <input
+                                  type={q.type === "grid" ? "radio" : "checkbox"}
+                                  name={`${q.id}_${rowIndex}`}
+                                  aria-label={`${row}: ${column}`}
+                                  checked={q.type === "grid" ? value === column : (value || []).includes(column)}
+                                  onChange={() => setGridCell(q, rowIndex, column)}
+                                  className="h-4 w-4"
+                                />
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
               {q.type === "date" && <input type="date" required={q.required} value={answers[q.id] || ""} onChange={(e) => setAnswer(q.id, e.target.value)} className={`${FIELD} sm:w-auto`} />}

@@ -12,6 +12,10 @@ import {
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { SkeletonGrid } from "../ui/Skeleton";
+import { LayoutToggle, StaffAssignments } from "./AssignmentsPanel";
+import { useSessionTab } from "../../lib/page-refresh";
+
+const MODEL_TEST_TABS = ["Model Test", "Assignment"];
 
 const LABEL = "grid gap-1 text-xs font-bold text-muted";
 const FIELD = "rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
@@ -104,9 +108,11 @@ function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
   const [form, setForm] = useState(initial);
   const [modules, setModules] = useState([]);
   useEffect(() => {
-    if (!form.courseId) { setModules([]); return; }
+    if (!form.courseId) return undefined;
     return subscribeModules(form.courseId, setModules, () => setModules([]));
   }, [form.courseId]);
+  // Derived instead of reset-in-effect: no course picked → no modules.
+  const courseModules = form.courseId ? modules : [];
   function set(field) {
     return (e) => setForm((c) => ({ ...c, [field]: e.target.value }));
   }
@@ -141,7 +147,7 @@ function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
           Module <span className="font-normal text-subtle">(optional — whole course if blank)</span>
           <select value={form.moduleId} onChange={set("moduleId")} disabled={!form.courseId} className={FIELD}>
             <option value="">Whole course</option>
-            {modules.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+            {courseModules.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
           </select>
         </label>
       </div>
@@ -227,6 +233,11 @@ export default function TeacherExams({ teacherId, isManager = false }) {
   const [error, setError] = useState("");
   const toast = useToast();
   const confirm = useConfirm();
+  // Model Test | Assignment, each in Grid or List layout — both remembered
+  // across a page Refresh.
+  const [tab, setTab] = useSessionTab("model-test", "Model Test", MODEL_TEST_TABS);
+  const [layout, setLayout] = useSessionTab("model-test-layout", "grid", ["grid", "list"]);
+  const [createAssignmentSignal, setCreateAssignmentSignal] = useState(0);
 
   useEffect(() => {
     if (isManager) return subscribeCourses(setCourses, () => {});
@@ -315,29 +326,83 @@ export default function TeacherExams({ teacherId, isManager = false }) {
         <div className="flex items-center gap-3">
           <div className="rounded-2xl bg-active p-2"><ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" /></div>
           <div>
-            <h2 className="text-lg font-black sm:text-xl">Exams &amp; Quizzes</h2>
+            <h2 className="text-lg font-black sm:text-xl">Model Test</h2>
             <p className="mt-1 text-xs text-muted">
-              {isManager
-                ? "Oversee every exam across the academy — students take them online, graded automatically."
-                : "Create exams for your courses — students take them online, graded automatically."}
+              {tab === "Assignment"
+                ? "Set assignments for a class — students submit online, you grade and give feedback."
+                : isManager
+                  ? "Oversee every exam across the academy — students take them online, graded automatically."
+                  : "Create exams for your courses — students take them online, graded automatically."}
             </p>
           </div>
         </div>
-        <button type="button" onClick={openCreate} disabled={!courses.length} className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white disabled:opacity-50">
-          <Plus className="h-4 w-4" /> Create Exam
+        <button
+          type="button"
+          onClick={tab === "Assignment" ? () => setCreateAssignmentSignal((n) => n + 1) : openCreate}
+          disabled={!courses.length}
+          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white disabled:opacity-50"
+        >
+          <Plus className="h-4 w-4" /> {tab === "Assignment" ? "Create Assignment" : "Create Exam"}
         </button>
       </section>
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav className="flex gap-1 rounded-2xl border border-border-subtle bg-card p-1 shadow-sm">
+          {MODEL_TEST_TABS.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setTab(item)}
+              className={`rounded-xl px-4 py-2 text-xs font-bold ${tab === item ? "bg-primary text-white" : "text-muted hover:bg-active"}`}
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+        <LayoutToggle value={layout} onChange={setLayout} />
+      </div>
+
       {!isManager && !courses.length && (
-        <p className="rounded-xl bg-warning-soft px-4 py-3 text-sm font-semibold text-warning">You have no assigned courses yet — an exam must belong to one of your courses.</p>
+        <p className="rounded-xl bg-warning-soft px-4 py-3 text-sm font-semibold text-warning">You have no assigned courses yet — exams and assignments must belong to one of your courses.</p>
       )}
 
-      {loading ? (
+      {tab === "Assignment" ? (
+        <StaffAssignments teacherId={teacherId} isManager={isManager} courses={courses} layout={layout} createSignal={createAssignmentSignal} />
+      ) : loading ? (
         <SkeletonGrid count={6} mediaHeight="h-0" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" />
       ) : !quizzes.length ? (
         <div className="rounded-3xl border border-dashed border-border-subtle bg-card py-16 text-center">
           <p className="font-bold text-ink">No exams yet.</p>
           <p className="mt-1 text-sm text-muted">Create your first exam to start testing students on a course.</p>
+        </div>
+      ) : layout === "list" ? (
+        <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-card shadow-sm">
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead className="bg-page text-[10px] font-black uppercase tracking-wider text-muted">
+              <tr>{["Exam", "Training", "Questions", "Points", "Attempts", "Time", "Status", "Actions"].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {quizzes.map((quiz) => (
+                <tr key={quiz.id} className="border-t border-border-subtle">
+                  <td className="px-4 py-3 font-bold text-ink">{quiz.title}</td>
+                  <td className="px-4 py-3 text-xs text-muted">{courseMap.get(quiz.courseId) || "Unknown course"}</td>
+                  <td className="px-4 py-3 text-xs text-muted">{quiz.questions?.length || 0}</td>
+                  <td className="px-4 py-3 text-xs text-muted">{quiz.totalPoints || 0}</td>
+                  <td className="px-4 py-3 text-xs text-muted">{quiz.maxAttempts || 1}</td>
+                  <td className="px-4 py-3 text-xs text-muted">{quiz.timeLimitMinutes ? `${quiz.timeLimitMinutes} min` : "—"}</td>
+                  <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${quiz.status === "published" ? "bg-success-soft text-success" : "bg-page text-muted"}`}>{quiz.status}</span></td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1 text-xs font-bold">
+                      <button type="button" onClick={() => openEdit(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><Pencil className="h-3.5 w-3.5" /> Edit</button>
+                      <button type="button" onClick={() => togglePublish(quiz)} className="rounded-lg px-2 py-1.5 text-info hover:bg-page">{quiz.status === "published" ? "Unpublish" : "Publish"}</button>
+                      <button type="button" onClick={() => setViewingResults(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><Users className="h-3.5 w-3.5" /> Results</button>
+                      <button type="button" onClick={() => remove(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-primary hover:bg-active"><Trash2 className="h-3.5 w-3.5" /> Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

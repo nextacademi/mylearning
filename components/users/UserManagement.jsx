@@ -6,6 +6,7 @@ import { changeUserRole, deleteUserAccount, loadUsersCached, updateUserDetails }
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
+import { useSessionTab } from "../../lib/page-refresh";
 import { SkeletonBar, SkeletonList } from "../ui/Skeleton";
 import StudentManagement from "../StudentManagement";
 import TeacherAssignment from "../teacher-assignment/TeacherAssignment";
@@ -92,7 +93,7 @@ function UserDetails({ user }) {
 }
 
 export default function UserManagement({ role, currentUserId, onNavigate }) {
-  const [tab, setTab] = useState("All Users");
+  const [tab, setTab] = useSessionTab("users", "All Users", USER_TABS);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
