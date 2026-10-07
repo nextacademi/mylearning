@@ -5,6 +5,7 @@ import { CircleDollarSign, Clock, Hash, Wallet } from "lucide-react";
 import { stopEnterSubmit } from "../../lib/ui/keyboard";
 import { createIncome, deleteIncome as deleteIncomeRequest, updateIncome } from "../../lib/services/finance-service";
 import { loadStudentDirectory } from "../../lib/services/student-service";
+import StudentPicker from "./StudentPicker";
 import { formatDate, formatMoney } from "../training/PaymentHistoryTable";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
@@ -75,8 +76,7 @@ function IncomeForm({ initial, saving, onCancel, onSubmit, students, courses }) 
   // name (so the table/receipt still read fine even if that student or
   // training is later renamed or removed) — the same id+name pairing
   // lib/server/finance-core.js already stores for personId/courseId.
-  function selectStudent(event) {
-    const id = event.target.value;
+  function selectStudent(id) {
     const student = students.find((item) => item.id === id);
     setForm((current) => ({ ...current, personId: id, personName: student ? student.displayName || student.email || "" : current.personName }));
   }
@@ -144,13 +144,10 @@ function IncomeForm({ initial, saving, onCancel, onSubmit, students, courses }) 
             {STATUSES.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </label>
-        <label className={LABEL}>
+        <div className={LABEL}>
           Student <span className="font-normal text-subtle">(optional — for tracking which student this came from)</span>
-          <select value={form.personId} onChange={selectStudent} className={FIELD}>
-            <option value="">Not a specific student</option>
-            {students.map((item) => <option key={item.id} value={item.id}>{item.displayName || item.email}</option>)}
-          </select>
-        </label>
+          <StudentPicker students={students} value={form.personId} onChange={selectStudent} className={FIELD} />
+        </div>
         <label className={LABEL}>
           Person <span className="font-normal text-subtle">(optional — donor/sponsor name, or overrides the student above)</span>
           <input value={form.personName} onChange={set("personName")} onKeyDown={stopEnterSubmit} placeholder="e.g. donor / sponsor name" className={FIELD} />
