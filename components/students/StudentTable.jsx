@@ -29,9 +29,18 @@ function initialsOf(name, email) {
 function IdentityCell({ item }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-active text-xs font-bold text-primary">
-        {initialsOf(item.displayName, item.email)}
-      </span>
+      {item.photoURL ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.photoURL}
+          alt={item.displayName || "Student"}
+          className="h-9 w-9 shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-active text-xs font-bold text-primary">
+          {initialsOf(item.displayName, item.email)}
+        </span>
+      )}
       <div className="min-w-0">
         <b className="block truncate text-ink">{item.displayName || "Unnamed student"}</b>
         <span className="block font-mono text-[11px] text-subtle">{item.userId || "—"}</span>
