@@ -4,6 +4,7 @@ import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { signQrToken } from "../../../../lib/qr-token";
 import { ensureUserId } from "../../../../lib/server/user-id";
+import { isLearnerRole } from "../../../../lib/learner-roles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,7 +74,8 @@ export async function POST(request) {
     // attendance-scan contract (which only recognizes kind === "student").
     // Every other self-issuing role gets the generic "teacher" bucket —
     // nothing else in the app branches on kind besides attendance-scan.
-    const kind = mode === "student" ? "student" : targetData.role === "Student" ? "student" : "teacher";
+    // Volunteers learn like Students, so their card is a student card too.
+    const kind = mode === "student" ? "student" : isLearnerRole(targetData.role) ? "student" : "teacher";
     const qrToken = signQrToken({ sub: targetId, kind, v: qrVersion });
 
     // The card must show the human-readable unified User ID, never the raw

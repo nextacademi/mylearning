@@ -60,6 +60,7 @@ import {
   updateModule,
 } from "../../lib/course-modules-data";
 import { uploadLessonContent } from "../../lib/services/lesson-content-service";
+import { isLearnerRole } from "../../lib/learner-roles";
 
 // Same Admin/Director module list used by app/dashboard/[role]/page.jsx's
 // roleConfig.Director/Admin — duplicated here (a static, rarely-changing
@@ -197,7 +198,7 @@ export default function TrainingDetailsPage() {
     // Non-Students never read studentEnrolled (every use below is guarded
     // by profile?.role === "Student" first), so there is nothing to do or
     // set for them here — no need for a synchronous setState in that case.
-    if (profile?.role !== "Student" || !courseId || !user?.uid) return undefined;
+    if (!isLearnerRole(profile?.role) || !courseId || !user?.uid) return undefined;
     let cancelled = false;
     getDoc(doc(db, "enrollments", `${courseId}_${user.uid}`))
       .then((snapshot) => {
@@ -343,9 +344,9 @@ export default function TrainingDetailsPage() {
         <div className="mt-6">
           <Empty>Training not found</Empty>
         </div>
-      ) : !allowed && profile?.role === "Student" && studentEnrolled === null ? (
+      ) : !allowed && isLearnerRole(profile?.role) && studentEnrolled === null ? (
         <TrainingDetailsSkeleton />
-      ) : !allowed && profile?.role === "Student" && studentEnrolled ? (
+      ) : !allowed && isLearnerRole(profile?.role) && studentEnrolled ? (
         <div className="mt-6">
           <header className="rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-4 text-ink shadow-sm md:p-5">
             <p className="font-mono text-[10px] uppercase tracking-widest text-primary">

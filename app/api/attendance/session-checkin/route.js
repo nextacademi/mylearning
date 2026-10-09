@@ -3,6 +3,7 @@ import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { verifyQrToken, QrTokenError } from "../../../../lib/qr-token";
 import { recordAttendanceScan } from "../../../../lib/server/attendance-core";
+import { isLearnerRole } from "../../../../lib/learner-roles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ async function access(request) {
   if (!profile.exists || data.active === false) {
     return { denied: NextResponse.json({ code: "unauthorized", message: "Sign in to continue." }, { status: 403 }) };
   }
-  if (data.role !== "Student") {
+  if (!isLearnerRole(data.role)) {
     return { denied: NextResponse.json({ code: "unauthorized", message: "Only students can check in with this scanner." }, { status: 403 }) };
   }
   return { db, uid: decoded.uid, student: data };

@@ -31,6 +31,7 @@ import ChatHub from "../../../components/chat/ChatHub";
 import SettingsPage from "../../../components/settings/SettingsPage";
 import { useNewInquiryCount } from "../../../lib/contact-inquiries-data";
 import { useUnreadNotificationsByType } from "../../../lib/notification-data";
+import { isLearnerRole } from "../../../lib/learner-roles";
 import IdCardPrint from "../../../components/teacher/IdCardPrint";
 import Shop from "../../../components/shop/Shop";
 import PromoCodeView from "../../../components/promo/PromoCodeView";
@@ -78,23 +79,26 @@ export const roleConfig = {
       "Settings",
     ],
   },
+  // Same learner access as a Student (My Training, Attendance, Model Test,
+  // Documents, …) — see lib/learner-roles.js — with their own Volunteer
+  // Home Panel as the Dashboard.
   Volunteer: {
     greeting: "Make an impact in your community.",
     modules: [
       "Dashboard",
+      "My Training",
+      "Appointments",
       "Events",
-      "Activities",
-      "Training",
+      "Attendance",
+      "Documents",
       "Achievements",
+      "Model Test",
+      "My Shop",
+      "ID Card",
       "Chat",
       "Settings",
     ],
-    stats: [
-      ["Students supported", "24", "this month", "â™™"],
-      ["Hours logged", "18", "this week", "â—·"],
-      ["Events joined", "06", "upcoming", "â—‰"],
-      ["Impact score", "94%", "positive", "âœ¦"],
-    ],
+    stats: [],
   },
   Facilitator: {
     greeting: "Your sessions are ready to lead.",
@@ -375,14 +379,14 @@ function DashboardContent({ role, profile, user }) {
   // completely different component/endpoint — this fetch would be wasted)
   // and Teacher (redirected away above, to their own workspace).
   useEffect(() => {
-    if (role && role !== "Teacher" && role !== "Student") prefetchTraining();
+    if (role && role !== "Teacher" && !isLearnerRole(role)) prefetchTraining();
   }, [role]);
   // Student's own equivalent of the prefetch above — see
   // lib/student-data.js's prefetchMyTraining for why this needs a
   // separate (listener-based) mechanism instead of reusing
   // prefetchTraining's plain promise cache.
   useEffect(() => {
-    if (role === "Student" && user?.uid) prefetchMyTraining(user.uid);
+    if (isLearnerRole(role) && user?.uid) prefetchMyTraining(user.uid);
   }, [role, user?.uid]);
   // Perceived-speed only, for the remaining Admin/Director-only sidebar
   // modules (Students, Teacher, Room Booking, User, Achievement, Model
@@ -402,7 +406,7 @@ function DashboardContent({ role, profile, user }) {
       prefetchFinanceOverview();
       prefetchInvoices();
     }
-    if (role === "Student" || role === "Facilitator" || role === "Admin") {
+    if (isLearnerRole(role) || role === "Facilitator" || role === "Admin") {
       prefetchDocuments();
     }
   }, [role]);
@@ -460,7 +464,7 @@ function DashboardContent({ role, profile, user }) {
               <UserManagement role="Admin" currentUserId={user.uid} onNavigate={setActive} />
             ) : role === "Admin" && active === "Finance" ? (
               <FinanceManagement />
-            ) : role === "Student" && (active === "Training" || active === "My Training") ? (
+            ) : isLearnerRole(role) && (active === "Training" || active === "My Training") ? (
               <MyPaymentSummary />
             ) : (active === "Training" || active === "My Training") ? (
               <TrainingManagement role={role} />
@@ -494,7 +498,7 @@ function DashboardContent({ role, profile, user }) {
               <StudentAchievements uid={user.uid} />
             ) : active === "Model Test" ? (
               <StudentExams uid={user.uid} />
-            ) : role === "Student" && active === "Attendance" ? (
+            ) : isLearnerRole(role) && active === "Attendance" ? (
               <StudentAttendance />
             ) : role === "Student" && active === "Dashboard" ? (
               <StudentDashboardHome

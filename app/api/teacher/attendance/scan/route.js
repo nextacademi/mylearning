@@ -4,6 +4,7 @@ import { getCachedUserSnapshot } from "../../../../../lib/server/cached-profile"
 import { verifyQrToken, QrTokenError } from "../../../../../lib/qr-token";
 import { recordAttendanceScan } from "../../../../../lib/server/attendance-core";
 import { recordTeacherScan } from "../../../../../lib/server/teacher-attendance-core";
+import { isLearnerRole } from "../../../../../lib/learner-roles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,12 +70,16 @@ export async function POST(request) {
   }
 
   const classSnapshot = await db.collection("classes").doc(classId).get();
+  // Volunteers learn like Students; a card printed before that change says
+  // kind "teacher", so look at the person's actual role, not just the card.
+  const scannedSnapshot = await db.collection("users").doc(payload.sub).get();
+  const scannedIsLearner = scannedSnapshot.exists && isLearnerRole(scannedSnapshot.data().role);
 
   // A teacher's own ID card (kind "teacher") scanned by Admin/Director
   // records TEACHER attendance for this class's training — see
   // lib/server/teacher-attendance-core.js. Only managers may do this; a
   // Teacher scanning another teacher's card is still rejected below.
-  if (payload.kind === "teacher" && isManager) {
+  if (payload.kind === "teacher" && isManager && !scannedIsLearner) {
     if (!classSnapshot.exists) return fail("not_found", "Class not found.", 404);
     const teacherId = payload.sub;
     if (!(classSnapshot.data().teacherIds || []).includes(teacherId)) {
@@ -100,7 +105,7 @@ export async function POST(request) {
     });
   }
 
-  if (payload.kind !== "student") {
+  if (payload.kind !== "student" && !scannedIsLearner) {
     return fail("invalid", "This QR code does not belong to a student.", 400);
   }
 
@@ -116,7 +121,7 @@ export async function POST(request) {
 
   const studentId = payload.sub;
   const studentSnapshot = await db.collection("users").doc(studentId).get();
-  if (!studentSnapshot.exists || studentSnapshot.data().role !== "Student") {
+  if (!studentSnapshot.exists || !isLearnerRole(studentSnapshot.data().role)) {
     return fail("not_found", "Student not found.", 404);
   }
   const student = studentSnapshot.data();
