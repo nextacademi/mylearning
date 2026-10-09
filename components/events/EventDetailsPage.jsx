@@ -379,6 +379,171 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
   );
 }
 
+const VOLUNTEER_SCANNER_ID = "event-volunteer-scanner";
+
+// Volunteers tab — who WORKED this event (vs. Participants, who attended).
+// Scanning an ID card here checks the person in as a Volunteer and credits
+// the event's hours to their volunteer total; "+ Add volunteer" does the
+// same by hand. Same participant records + hours logic as the other tabs
+// (lib/server/event-hours.js), just filtered to eventRole = Volunteer.
+function VolunteersTab({ eventId, canManage, staff, onNotice }) {
+  const [participants, setParticipants] = useState([]);
+  const [defaultHours, setDefaultHours] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const [manualToken, setManualToken] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  const [hoursDraft, setHoursDraft] = useState({});
+  const scannerRef = useRef(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await loadEventParticipants(eventId);
+      setParticipants(data.participants || []);
+      setDefaultHours(data.defaultHours || 0);
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
+  useEffect(() => () => { scannerRef.current?.stop().catch(() => {}); }, []);
+
+  const volunteers = participants.filter((p) => p.eventRole === "Volunteer");
+  const checkedIn = volunteers.filter((p) => p.attendanceStatus === "present");
+  const totalHours = checkedIn.reduce((sum, p) => sum + p.hoursCredited, 0);
+
+  async function handleToken(tokenValue) {
+    if (!tokenValue || busy) return;
+    setBusy(true);
+    setResult(null);
+    try {
+      const response = await scanEventAttendance(eventId, tokenValue, "Volunteer");
+      setResult({ ok: true, ...response });
+      setManualToken("");
+      await load();
+    } catch (scanError) {
+      setResult({ ok: false, message: scanError.message });
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function startScanning() {
+    setCameraError("");
+    setResult(null);
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode(VOLUNTEER_SCANNER_ID);
+      scannerRef.current = scanner;
+      await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 220 }, async (decodedText) => {
+        await scanner.stop().catch(() => {});
+        setScanning(false);
+        handleToken(decodedText);
+      }, () => {});
+      setScanning(true);
+    } catch {
+      setCameraError("Unable to access the camera. Use manual entry below instead.");
+    }
+  }
+  async function update(userId, patch, message) {
+    try {
+      await updateEventParticipant(eventId, userId, patch);
+      if (message) onNotice(message);
+      await load();
+    } catch (updateError) {
+      onNotice(updateError.message || "Unable to update this volunteer.", true);
+    }
+  }
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
+      <Panel
+        title={`Volunteers (${checkedIn.length} checked in · ${totalHours}h)`}
+        action={canManage && <button type="button" onClick={() => setAdding(true)} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">+ Add volunteer</button>}
+      >
+        <p className="mb-3 text-xs text-muted">Everyone who worked this event. Each check-in credits {defaultHours}h (the event&apos;s length) to their volunteer hours — edit a person&apos;s hours if they worked a different amount.</p>
+        {loading ? <SkeletonList count={4} /> : volunteers.length ? (
+          <div className="space-y-2">
+            {volunteers.map((p) => {
+              const present = p.attendanceStatus === "present";
+              const draft = hoursDraft[p.userId];
+              return (
+                <div key={p.userId} className="flex flex-col gap-2 rounded-xl bg-page p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                  <span className="min-w-0">
+                    <b className="block text-ink">{p.displayName || p.email}</b>
+                    <span className="block truncate text-[11px] text-muted">{[p.email, p.phone].filter(Boolean).join(" · ")}{p.totals ? ` · ${p.totals.volunteerHours} vol h total` : ""}</span>
+                  </span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    {present ? (
+                      <>
+                        <span className="rounded-full bg-success-soft px-2 py-1 text-[10px] font-bold text-success">Checked in</span>
+                        <input
+                          type="number" min="0" max="24" step="0.25"
+                          value={draft ?? p.hoursCredited}
+                          disabled={!canManage}
+                          onChange={(e) => setHoursDraft({ ...hoursDraft, [p.userId]: e.target.value })}
+                          onBlur={() => {
+                            if (draft === undefined || Number(draft) === p.hoursCredited) return;
+                            setHoursDraft((d) => { const next = { ...d }; delete next[p.userId]; return next; });
+                            update(p.userId, { hours: draft }, "Hours updated.");
+                          }}
+                          className="w-16 rounded-lg border border-border-subtle bg-card px-2 py-1"
+                          aria-label={`Hours for ${p.displayName}`}
+                        />
+                        <span className="text-muted">h</span>
+                      </>
+                    ) : (
+                      <button type="button" onClick={() => update(p.userId, { attendanceStatus: "present" }, "Checked in.")} className="rounded-lg bg-success px-3 py-1.5 font-bold text-white">Check in</button>
+                    )}
+                    {canManage && (
+                      <button type="button" onClick={() => update(p.userId, { eventRole: "Participant" }, "Moved to participants.")} className="rounded-lg border border-border-subtle px-2.5 py-1.5 font-bold text-muted hover:bg-card" title="Count this person as a participant instead">
+                        Not a volunteer
+                      </button>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : <Empty>No volunteers yet — scan a volunteer&apos;s ID card or use “+ Add volunteer”.</Empty>}
+      </Panel>
+
+      <Panel title="Check in a volunteer">
+        <div id={VOLUNTEER_SCANNER_ID} className="mx-auto max-w-sm overflow-hidden rounded-2xl bg-slate-900" />
+        {!scanning && <button type="button" onClick={startScanning} className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white">Start camera scan</button>}
+        {cameraError && <p className="mt-3 text-xs text-primary">{cameraError}</p>}
+        <div className="mt-5 border-t border-border-subtle pt-4">
+          <p className="mb-2 text-xs font-semibold text-muted">Camera denied? Paste the QR token manually:</p>
+          <div className="flex gap-2">
+            <input value={manualToken} onChange={(e) => setManualToken(e.target.value)} placeholder="Scanned token" className="flex-1 rounded-xl border border-border-subtle px-3 py-2 text-xs" />
+            <button type="button" onClick={() => handleToken(manualToken)} disabled={busy || !manualToken} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-40">Submit</button>
+          </div>
+        </div>
+        {result && (
+          <div className={`mt-4 rounded-2xl p-4 text-sm ${result.ok ? (result.code === "already_marked" ? "bg-warning-soft text-warning" : "bg-success-soft text-success") : "bg-active text-primary"}`}>
+            <b className="block">{result.message}</b>
+            {result.participant && <p className="mt-1 text-xs">{result.participant.displayName || result.participant.email}</p>}
+          </div>
+        )}
+      </Panel>
+
+      {adding && (
+        <WalkInDialog
+          eventId={eventId}
+          staff={staff}
+          participants={participants.filter((p) => p.eventRole === "Volunteer")}
+          defaultHours={defaultHours}
+          onClose={() => setAdding(false)}
+          onAdded={async () => { setAdding(false); onNotice("Volunteer added and checked in."); await load(); }}
+        />
+      )}
+    </div>
+  );
+}
+
 const SCANNER_ELEMENT_ID = "event-attendance-scanner";
 
 function AttendanceTab({ eventId, onNotice }) {
@@ -575,7 +740,7 @@ export default function EventDetailsPage() {
     }
   }
 
-  const tabs = ["Overview", ...(canManage || isOrganizerTeacher ? ["Participants", "Attendance"] : [])];
+  const tabs = ["Overview", ...(canManage || isOrganizerTeacher ? ["Participants", "Volunteers", "Attendance"] : [])];
 
   // The dashboard tab lives only in that page's own React state, not the
   // URL — so navigating to the bare dashboard URL always lands back on its
@@ -667,6 +832,7 @@ export default function EventDetailsPage() {
                   </Panel>
                 )}
                 {tab === "Participants" && <ParticipantsTab eventId={event.id} canManage={canManage} staff={staff} onNotice={flash} />}
+                {tab === "Volunteers" && canManageAttendance && <VolunteersTab eventId={event.id} canManage={canManage} staff={staff} onNotice={flash} />}
                 {tab === "Attendance" && canManageAttendance && <AttendanceTab eventId={event.id} onNotice={flash} />}
               </motion.div>
             </AnimatePresence>

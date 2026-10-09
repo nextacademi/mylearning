@@ -1,0 +1,270 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
+import {
+  addTrainingVolunteer, loadTrainingVolunteers, removeTrainingVolunteer, updateTrainingVolunteerHours,
+} from "../../lib/services/training-volunteer-service";
+import { loadUsersCached } from "../../lib/services/user-service";
+import { useConfirm } from "../ui/ConfirmDialog";
+import { useToast } from "../ui/Toast";
+import { SkeletonList } from "../ui/Skeleton";
+
+// Training → Volunteers: who helped run this training on a given day and
+// for how long (lib/server/training-volunteers.js). Scan a volunteer's ID
+// card, or "+ Add volunteer" (member or guest) — they appear in the day's
+// list with their hours, which also count toward their volunteer total.
+
+const SCANNER_ID = "training-volunteer-scanner";
+function todayLocal() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function AddVolunteerDialog({ courseId, date, defaultHours, members, onClose, onAdded }) {
+  const [mode, setMode] = useState(members.length ? "member" : "guest");
+  const [search, setSearch] = useState("");
+  const [userId, setUserId] = useState("");
+  const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
+  const [hours, setHours] = useState(String(defaultHours || ""));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const q = search.trim().toLowerCase();
+  const matches = members
+    .filter((m) => !q || [m.displayName, m.email, m.phone].some((v) => String(v || "").toLowerCase().includes(q)))
+    .slice(0, 50);
+
+  async function save(event) {
+    event.preventDefault();
+    if (mode === "member" && !userId) return setError("Choose a member.");
+    if (mode === "guest" && !guest.name.trim()) return setError("Enter the volunteer's name.");
+    setSaving(true);
+    setError("");
+    try {
+      const result = await addTrainingVolunteer({ courseId, date, hours, ...(mode === "member" ? { userId } : guest) });
+      onAdded(result.message);
+    } catch (err) {
+      setError(err.message || "Unable to add this volunteer.");
+      setSaving(false);
+    }
+  }
+
+  const input = "w-full rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm";
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
+      <form onSubmit={save} className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-ink">Add volunteer · {date}</h3>
+          <button type="button" onClick={onClose} className="text-xl text-muted" aria-label="Close">×</button>
+        </div>
+        {members.length > 0 && (
+          <div className="flex gap-1 rounded-xl border border-border-subtle p-1 text-xs font-bold">
+            {[["member", "Existing member"], ["guest", "Guest (no account)"]].map(([key, label]) => (
+              <button key={key} type="button" onClick={() => setMode(key)} className={`flex-1 rounded-lg px-3 py-2 ${mode === key ? "bg-primary text-white" : "text-muted hover:bg-page"}`}>{label}</button>
+            ))}
+          </div>
+        )}
+        {mode === "member" ? (
+          <div className="space-y-2">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, or phone…" className={input} />
+            <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-border-subtle p-1">
+              {matches.length ? matches.map((m) => (
+                <label key={m.uid} className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${userId === m.uid ? "bg-active" : "hover:bg-page"}`}>
+                  <input type="radio" name="training-volunteer" checked={userId === m.uid} onChange={() => setUserId(m.uid)} />
+                  <span className="min-w-0 truncate text-ink">{m.displayName || m.email}</span>
+                  <span className="ml-auto shrink-0 text-[11px] text-muted">{m.role}</span>
+                </label>
+              )) : <p className="p-3 text-xs text-muted">No matching members.</p>}
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input required value={guest.name} onChange={(e) => setGuest({ ...guest, name: e.target.value })} placeholder="Full name" className={`${input} sm:col-span-2`} />
+            <input type="email" value={guest.email} onChange={(e) => setGuest({ ...guest, email: e.target.value })} placeholder="Email (optional)" className={input} />
+            <input type="tel" value={guest.phone} onChange={(e) => setGuest({ ...guest, phone: e.target.value })} placeholder="Phone (optional)" className={input} />
+          </div>
+        )}
+        <label className="grid gap-1 text-xs font-bold text-muted">
+          Hours helped
+          <input type="number" min="0" max="24" step="0.25" value={hours} onChange={(e) => setHours(e.target.value)} className={input} />
+        </label>
+        {error && <p className="rounded-xl bg-active px-3 py-2 text-xs text-primary">{error}</p>}
+        <div className="flex justify-end gap-3">
+          <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-bold text-muted">Cancel</button>
+          <button disabled={saving} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Adding…" : "Add & check in"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+export default function TrainingVolunteersTab({ courseId }) {
+  const toast = useToast();
+  const confirm = useConfirm();
+  const [date, setDate] = useState(todayLocal);
+  const [showAll, setShowAll] = useState(false);
+  const [rows, setRows] = useState([]);
+  const [defaultHours, setDefaultHours] = useState(0);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const [manualToken, setManualToken] = useState("");
+  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [hoursDraft, setHoursDraft] = useState({});
+  const [loadError, setLoadError] = useState("");
+  const scannerRef = useRef(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await loadTrainingVolunteers(courseId, showAll ? "" : date);
+      setRows(data.volunteers || []);
+      setDefaultHours(data.defaultHours || 0);
+      setLoadError("");
+    } catch (err) {
+      setLoadError(err.message || "Unable to load volunteers.");
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId, date, showAll]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
+  // Member picker — Admin/Director only (a Teacher can still add guests or scan).
+  useEffect(() => {
+    loadUsersCached().then((data) => setMembers((data.users || []).filter((u) => !u.missingProfile))).catch(() => setMembers([]));
+  }, []);
+  useEffect(() => () => { scannerRef.current?.stop().catch(() => {}); }, []);
+
+  async function handleToken(token) {
+    if (!token || busy) return;
+    setBusy(true);
+    setResult(null);
+    try {
+      const response = await addTrainingVolunteer({ courseId, date, token });
+      setResult({ ok: true, message: response.message });
+      setManualToken("");
+      await load();
+    } catch (err) {
+      setResult({ ok: false, message: err.message });
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function startScanning() {
+    setCameraError("");
+    setResult(null);
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode(SCANNER_ID);
+      scannerRef.current = scanner;
+      await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 220 }, async (decodedText) => {
+        await scanner.stop().catch(() => {});
+        setScanning(false);
+        handleToken(decodedText);
+      }, () => {});
+      setScanning(true);
+    } catch {
+      setCameraError("Unable to access the camera. Use manual entry below instead.");
+    }
+  }
+  async function saveHours(row) {
+    const draft = hoursDraft[row.id];
+    if (draft === undefined || Number(draft) === row.hours) return;
+    setHoursDraft((d) => { const next = { ...d }; delete next[row.id]; return next; });
+    try {
+      await updateTrainingVolunteerHours(courseId, row.id, draft);
+      toast.success("Hours updated.");
+      await load();
+    } catch (err) {
+      toast.error(err.message || "Unable to update hours.");
+    }
+  }
+  function remove(row) {
+    return confirm({
+      title: "Remove volunteer",
+      message: `Remove ${row.displayName} from ${row.date}? Their ${row.hours}h is taken off their volunteer total.`,
+      tone: "danger",
+      confirmLabel: "Remove",
+      onConfirm: async () => { await removeTrainingVolunteer(courseId, row.id); toast.success("Volunteer removed."); await load(); },
+    });
+  }
+
+  const totalHours = rows.reduce((sum, r) => sum + (Number(r.hours) || 0), 0);
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
+      <section className="rounded-3xl border border-border-subtle bg-card p-6 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-bold text-ink">Volunteers ({rows.length} · {Math.round(totalHours * 100) / 100}h)</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <input type="date" value={date} onChange={(e) => { setDate(e.target.value); setShowAll(false); }} className="rounded-xl border border-border-subtle bg-page px-3 py-2 text-xs" />
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+              <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> All days
+            </label>
+            <button type="button" onClick={() => setAdding(true)} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">+ Add volunteer</button>
+          </div>
+        </div>
+        <p className="mb-3 text-xs text-muted">Who helped run this training {showAll ? "on every day" : `on ${date}`}. Each check-in credits {defaultHours}h (the class length) to their volunteer hours — edit it if they helped longer or shorter.</p>
+        {loadError && <p className="mb-3 rounded-xl bg-active p-3 text-xs text-primary">{loadError}</p>}
+        {loading ? <SkeletonList count={4} /> : rows.length ? (
+          <div className="space-y-2">
+            {rows.map((row) => (
+              <div key={row.id} className="flex flex-col gap-2 rounded-xl bg-page p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                <span className="min-w-0">
+                  <b className="block text-ink">{row.displayName}{!row.userId && <span className="ml-1.5 text-[10px] font-bold uppercase text-warning">Guest</span>}</b>
+                  <span className="block truncate text-[11px] text-muted">{[row.email, row.phone].filter(Boolean).join(" · ")}{showAll ? ` · ${row.date}` : ""} · {row.source === "scan" ? "QR scan" : "added by hand"}</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <input
+                    type="number" min="0" max="24" step="0.25"
+                    value={hoursDraft[row.id] ?? row.hours}
+                    onChange={(e) => setHoursDraft({ ...hoursDraft, [row.id]: e.target.value })}
+                    onBlur={() => saveHours(row)}
+                    className="w-16 rounded-lg border border-border-subtle bg-card px-2 py-1"
+                    aria-label={`Hours for ${row.displayName}`}
+                  />
+                  <span className="text-muted">h</span>
+                  <button type="button" onClick={() => remove(row)} className="rounded-lg p-1.5 text-primary hover:bg-active" aria-label={`Remove ${row.displayName}`}><Trash2 className="h-4 w-4" /></button>
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border-subtle p-8 text-center text-sm text-muted">No volunteers {showAll ? "yet" : "on this day"} — scan a volunteer&apos;s ID card or use “+ Add volunteer”.</div>
+        )}
+      </section>
+
+      <section className="rounded-3xl border border-border-subtle bg-card p-6 shadow-sm">
+        <h2 className="mb-4 font-bold text-ink">Check in a volunteer · {date}</h2>
+        <div id={SCANNER_ID} className="mx-auto max-w-sm overflow-hidden rounded-2xl bg-slate-900" />
+        {!scanning && <button type="button" onClick={startScanning} className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white">Start camera scan</button>}
+        {cameraError && <p className="mt-3 text-xs text-primary">{cameraError}</p>}
+        <div className="mt-5 border-t border-border-subtle pt-4">
+          <p className="mb-2 text-xs font-semibold text-muted">Camera denied? Paste the QR token manually:</p>
+          <div className="flex gap-2">
+            <input value={manualToken} onChange={(e) => setManualToken(e.target.value)} placeholder="Scanned token" className="flex-1 rounded-xl border border-border-subtle px-3 py-2 text-xs" />
+            <button type="button" onClick={() => handleToken(manualToken)} disabled={busy || !manualToken} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-40">Submit</button>
+          </div>
+        </div>
+        {result && (
+          <div className={`mt-4 rounded-2xl p-4 text-sm ${result.ok ? "bg-success-soft text-success" : "bg-active text-primary"}`}>
+            <b className="block">{result.message}</b>
+          </div>
+        )}
+      </section>
+
+      {adding && (
+        <AddVolunteerDialog
+          courseId={courseId}
+          date={date}
+          defaultHours={defaultHours}
+          members={members}
+          onClose={() => setAdding(false)}
+          onAdded={async (message) => { setAdding(false); toast.success(message || "Volunteer added."); await load(); }}
+        />
+      )}
+    </div>
+  );
+}

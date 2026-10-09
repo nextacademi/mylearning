@@ -11,6 +11,7 @@ import { useAuth } from "../../lib/auth-context";
 import AttendanceStatusPicker from "./AttendanceStatusPicker";
 import { TeacherAttendancePanel } from "../attendance/TeacherAttendance";
 import ClassSessionsPanel from "./ClassSessionsPanel";
+import TrainingVolunteersTab from "./TrainingVolunteersTab";
 import { subscribeCourseClassSessions } from "../../lib/class-sessions-data";
 import {
   listClassEnrollments,
@@ -87,6 +88,7 @@ const managerTabs = [
   "Classes",
   "Students",
   "Attendance",
+  "Volunteers",
   "Modules",
   "Materials",
   "Assign",
@@ -96,6 +98,7 @@ const teacherTabs = [
   "Students",
   "Classes",
   "Attendance",
+  "Volunteers",
   "Modules",
   "Assessment",
   "Materials",
@@ -571,6 +574,7 @@ export default function TrainingDetailsPage() {
               canMark={isAssignedTeacher || canManage}
             />
           )}
+          {tab === "Volunteers" && <TrainingVolunteersTab courseId={course.id} />}
           {tab === "Assessment" && (
             <AssessmentTab
               courseId={course.id}

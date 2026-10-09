@@ -44,6 +44,9 @@ export async function POST(request, { params }) {
   const body = await request.json().catch(() => ({}));
   const rawToken = typeof body.token === "string" ? body.token : "";
   if (!rawToken) return fail("invalid_request", "No QR code data received.", 400);
+  // The event page's Volunteers tab scans with eventRole "Volunteer" so the
+  // person is checked in (and their hours credited) as a volunteer.
+  const asRole = body.eventRole === "Volunteer" || body.eventRole === "Participant" ? body.eventRole : undefined;
 
   let payload;
   try {
@@ -81,7 +84,7 @@ export async function POST(request, { params }) {
       attendanceStatus: null,
       attendanceAt: null,
       source: "walk-in",
-      eventRole: user.role === "Volunteer" ? "Volunteer" : "Participant",
+      eventRole: asRole || (user.role === "Volunteer" ? "Volunteer" : "Participant"),
       hoursCredited: 0,
       addedBy: a.staffId,
     });
@@ -89,6 +92,17 @@ export async function POST(request, { params }) {
     await batch.commit();
   } else if (participantSnapshot.data().attendanceStatus === "present") {
     const p = participantSnapshot.data();
+    if (asRole && p.eventRole !== asRole) {
+      // Already in as the other role: switch it (hours move with them).
+      const switched = await setEventAttendance(a.db, a.eventRef, a.event, userId, { eventRole: asRole, markedBy: a.staffId });
+      return NextResponse.json({
+        code: "success",
+        message: `Already checked in — now counted as ${switched.eventRole} (${switched.hoursCredited}h).`,
+        participant: { ...summary, displayName: p.displayName || summary.displayName },
+        hoursCredited: switched.hoursCredited,
+        eventRole: switched.eventRole,
+      });
+    }
     return NextResponse.json({
       code: "already_marked",
       message: `Already checked in — ${Number(p.hoursCredited) || 0}h credited.`,
@@ -97,7 +111,7 @@ export async function POST(request, { params }) {
   }
 
   // Marks present AND credits the event's hours to their totals.
-  const result = await setEventAttendance(a.db, a.eventRef, a.event, userId, { status: "present", markedBy: a.staffId });
+  const result = await setEventAttendance(a.db, a.eventRef, a.event, userId, { status: "present", eventRole: asRole, markedBy: a.staffId });
   return NextResponse.json({
     code: "success",
     message: `${walkIn ? "Added as walk-in and checked in" : "Checked in"} — ${result.hoursCredited}h credited as ${result.eventRole}.`,
