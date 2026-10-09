@@ -80,8 +80,8 @@ export const roleConfig = {
     ],
   },
   // Same learner access as a Student (My Training, Attendance, Model Test,
-  // Documents, …) — see lib/learner-roles.js — with their own Volunteer
-  // Home Panel as the Dashboard.
+  // Documents, …) — see lib/learner-roles.js — plus "Volunteer": their own
+  // Volunteer Home Panel (impact, hours, My Contribution).
   Volunteer: {
     greeting: "Make an impact in your community.",
     modules: [
@@ -89,6 +89,7 @@ export const roleConfig = {
       "My Training",
       "Appointments",
       "Events",
+      "Volunteer",
       "Attendance",
       "Documents",
       "Achievements",
@@ -472,7 +473,7 @@ function DashboardContent({ role, profile, user }) {
               <EventManagement />
             ) : role === "Admin" && active === "Volunteer" ? (
               <VolunteerModule name={name} onNavigate={setActive} />
-            ) : role === "Volunteer" && active === "Dashboard" ? (
+            ) : role === "Volunteer" && active === "Volunteer" ? (
               <VolunteerHomePanel />
             ) : role === "Admin" && active === "Room Booking" ? (
               <RoomBooking role="Admin" />
@@ -500,7 +501,7 @@ function DashboardContent({ role, profile, user }) {
               <StudentExams uid={user.uid} />
             ) : isLearnerRole(role) && active === "Attendance" ? (
               <StudentAttendance />
-            ) : role === "Student" && active === "Dashboard" ? (
+            ) : isLearnerRole(role) && active === "Dashboard" ? (
               <StudentDashboardHome
                 uid={user.uid}
                 name={name}
