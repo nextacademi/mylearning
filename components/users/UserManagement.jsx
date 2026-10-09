@@ -128,7 +128,23 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
 
   const columns = useMemo(() => [
     { key: "userId", header: "User ID", sortable: true, accessor: (u) => u.userId || "", render: (u) => <span className="font-mono text-xs text-muted">{u.userId || dash}</span> },
-    { key: "displayName", header: "Name", sortable: true, accessor: (u) => u.displayName || "", render: (u) => <b className="text-ink">{u.displayName || dash}</b> },
+    {
+      key: "displayName", header: "Name", sortable: true, accessor: (u) => u.displayName || "",
+      // Same avatar as the Students / Teachers tabs: photo, else initials.
+      render: (u) => (
+        <span className="flex items-center gap-2.5">
+          {u.photoURL ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={u.photoURL} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+          ) : (
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-active text-xs font-bold text-primary">
+              {(u.displayName || u.email || "?").trim().slice(0, 2).toUpperCase()}
+            </span>
+          )}
+          <b className="text-ink">{u.displayName || dash}</b>
+        </span>
+      ),
+    },
     { key: "email", header: "Email", sortable: true, accessor: (u) => u.email || "" },
     { key: "phone", header: "Phone", accessor: (u) => u.phone || "" },
     // A sign-in account with no users/{uid} profile — "Change role" creates it.

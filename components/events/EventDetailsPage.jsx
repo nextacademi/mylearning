@@ -10,8 +10,8 @@ import { TeacherShell } from "../TeacherWorkspacePage";
 import DirectorShell from "../dashboard/DirectorShell";
 import AdminShell from "../dashboard/AdminShell";
 import {
-  addEventParticipant, cancelEventRegistration, loadEventParticipants, loadEvents,
-  markEventAttendance, registerForEvent, removeEventParticipant, scanEventAttendance,
+  addEventParticipant, addEventWalkIn, cancelEventRegistration, loadEventParticipants, loadEvents,
+  markEventAttendance, registerForEvent, removeEventParticipant, scanEventAttendance, updateEventParticipant,
 } from "../../lib/services/event-service";
 import { loadMyParticipation } from "../../lib/events-client";
 import { loadUsers } from "../../lib/services/user-service";
@@ -95,18 +95,126 @@ function downloadCsv(filename, rows, headers) {
   URL.revokeObjectURL(url);
 }
 
+// Walk-in = someone who turned up / helped without registering. Pick an
+// existing account (their hours add to their profile totals) or type a
+// guest's details; either way they're marked present with hours credited.
+function WalkInDialog({ eventId, staff, participants, defaultHours, onClose, onAdded }) {
+  const [mode, setMode] = useState("existing");
+  const [search, setSearch] = useState("");
+  const [userId, setUserId] = useState("");
+  const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
+  const [eventRole, setEventRole] = useState("Volunteer");
+  const [hours, setHours] = useState(String(defaultHours || ""));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const present = new Set(participants.filter((p) => p.attendanceStatus === "present").map((p) => p.userId));
+  const q = search.trim().toLowerCase();
+  const matches = staff
+    .filter((item) => !present.has(item.uid))
+    .filter((item) => !q || [item.displayName, item.email, item.phone].some((v) => String(v || "").toLowerCase().includes(q)))
+    .slice(0, 50);
+
+  async function save(event) {
+    event.preventDefault();
+    if (mode === "existing" && !userId) return setError("Choose a person.");
+    if (mode === "guest" && !guest.name.trim()) return setError("Enter the walk-in's name.");
+    setSaving(true);
+    setError("");
+    try {
+      await addEventWalkIn(eventId, { ...(mode === "existing" ? { userId } : guest), eventRole, hours });
+      onAdded();
+    } catch (saveError) {
+      setError(saveError.message || "Unable to add this walk-in.");
+      setSaving(false);
+    }
+  }
+
+  const input = "w-full rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm";
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
+      <form onSubmit={save} className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-ink">Add walk-in</h3>
+          <button type="button" onClick={onClose} className="text-xl text-muted" aria-label="Close">×</button>
+        </div>
+        <div className="flex gap-1 rounded-xl border border-border-subtle p-1 text-xs font-bold">
+          {[["existing", "Existing member"], ["guest", "Guest (no account)"]].map(([key, label]) => (
+            <button key={key} type="button" onClick={() => setMode(key)} className={`flex-1 rounded-lg px-3 py-2 ${mode === key ? "bg-primary text-white" : "text-muted hover:bg-page"}`}>{label}</button>
+          ))}
+        </div>
+        {mode === "existing" ? (
+          <div className="space-y-2">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, or phone…" className={input} />
+            <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-border-subtle p-1">
+              {matches.length ? matches.map((item) => (
+                <label key={item.uid} className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${userId === item.uid ? "bg-active" : "hover:bg-page"}`}>
+                  <input type="radio" name="walkin-user" checked={userId === item.uid} onChange={() => setUserId(item.uid)} />
+                  <span className="min-w-0 truncate text-ink">{item.displayName || item.email}</span>
+                  <span className="ml-auto shrink-0 text-[11px] text-muted">{item.role}</span>
+                </label>
+              )) : <p className="p-3 text-xs text-muted">No matching members.</p>}
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input required value={guest.name} onChange={(e) => setGuest({ ...guest, name: e.target.value })} placeholder="Full name" className={`${input} sm:col-span-2`} />
+            <input type="email" value={guest.email} onChange={(e) => setGuest({ ...guest, email: e.target.value })} placeholder="Email (optional)" className={input} />
+            <input type="tel" value={guest.phone} onChange={(e) => setGuest({ ...guest, phone: e.target.value })} placeholder="Phone (optional)" className={input} />
+            <p className="text-[11px] text-subtle sm:col-span-2">A guest&apos;s hours are recorded on this event only — there&apos;s no profile to add them to.</p>
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            Role at this event
+            <select value={eventRole} onChange={(e) => setEventRole(e.target.value)} className={input}>
+              <option value="Volunteer">Volunteer</option>
+              <option value="Participant">Participant</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-xs font-bold text-muted">
+            Hours to credit
+            <input type="number" min="0" max="24" step="0.25" value={hours} onChange={(e) => setHours(e.target.value)} className={input} />
+          </label>
+        </div>
+        {error && <p className="rounded-xl bg-active px-3 py-2 text-xs text-primary">{error}</p>}
+        <div className="flex justify-end gap-3">
+          <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-bold text-muted">Cancel</button>
+          <button disabled={saving} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Adding…" : "Add & check in"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ActivityPills({ totals }) {
+  if (!totals) return <span className="text-[11px] text-subtle">Guest</span>;
+  const pill = "rounded-full border border-red-line px-2 py-0.5 text-[10px] font-bold text-muted";
+  return (
+    <div className="flex flex-wrap gap-1">
+      <span className={pill}>{totals.volunteerHours} VOL H</span>
+      <span className={pill}>{totals.eventHours} EVENT H</span>
+      <span className={pill}>{totals.eventsAttended} EVENTS</span>
+    </div>
+  );
+}
+
 function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
   const confirm = useConfirm();
   const [participants, setParticipants] = useState([]);
+  const [defaultHours, setDefaultHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [addingId, setAddingId] = useState("");
+  const [walkIn, setWalkIn] = useState(false);
+  const [search, setSearch] = useState("");
+  const [hoursDraft, setHoursDraft] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const result = await loadEventParticipants(eventId);
       setParticipants(result.participants || []);
+      setDefaultHours(result.defaultHours || 0);
       setError("");
     } catch (loadError) {
       setError(loadError.message || "Unable to load participants.");
@@ -127,8 +235,17 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
       setError(addError.message || "Unable to add this participant.");
     }
   }
+  async function update(userId, patch, message) {
+    try {
+      await updateEventParticipant(eventId, userId, patch);
+      if (message) onNotice(message);
+      await load();
+    } catch (updateError) {
+      setError(updateError.message || "Unable to update this participant.");
+    }
+  }
   async function remove(userId) {
-    if (!(await confirm({ title: "Remove participant", message: "Remove this participant's registration?", tone: "danger", confirmLabel: "Remove" }))) return;
+    if (!(await confirm({ title: "Remove participant", message: "Remove this participant? Any hours credited for this event are taken off their totals.", tone: "danger", confirmLabel: "Remove" }))) return;
     try {
       await removeEventParticipant(eventId, userId);
       onNotice("Participant removed.");
@@ -140,50 +257,123 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
   function exportCsv() {
     downloadCsv(
       `event-${eventId}-participants.csv`,
-      participants.map((p) => ({ Name: p.displayName, Email: p.email, Phone: p.phone, Role: p.role, "Registered At": p.registeredAt || "", Attendance: p.attendanceStatus || "Not marked" })),
-      ["Name", "Email", "Phone", "Role", "Registered At", "Attendance"],
+      participants.map((p) => ({ Name: p.displayName, Email: p.email, Phone: p.phone, "Event Role": p.eventRole, Source: p.source, "Registered At": p.registeredAt || "", Attendance: p.attendanceStatus || "Not marked", "Hours Credited": p.hoursCredited })),
+      ["Name", "Email", "Phone", "Event Role", "Source", "Registered At", "Attendance", "Hours Credited"],
     );
   }
 
   const available = staff.filter((item) => !participants.some((p) => p.userId === item.uid));
+  const q = search.trim().toLowerCase();
+  const shown = participants.filter((p) => !q || [p.displayName, p.email, p.phone].some((v) => String(v || "").toLowerCase().includes(q)));
+  const presentCount = participants.filter((p) => p.attendanceStatus === "present").length;
+  const totalHours = participants.reduce((sum, p) => sum + (p.attendanceStatus === "present" ? p.hoursCredited : 0), 0);
 
   return (
     <Panel
       title={`Participants (${participants.length})`}
-      action={<button type="button" onClick={exportCsv} disabled={!participants.length} className="rounded-xl border border-border-subtle px-3 py-2 text-xs font-bold text-ink hover:bg-active disabled:opacity-40">Export CSV</button>}
+      action={
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={exportCsv} disabled={!participants.length} className="rounded-xl border border-border-subtle px-3 py-2 text-xs font-bold text-ink hover:bg-active disabled:opacity-40">Export CSV</button>
+          {canManage && <button type="button" onClick={() => setWalkIn(true)} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">+ Add walk-in</button>}
+        </div>
+      }
     >
+      <p className="mb-3 text-xs text-muted">
+        {presentCount} attended · {totalHours}h credited in total · default {defaultHours}h per person (the event&apos;s length). Scanning someone&apos;s ID QR in the Attendance tab checks them in and credits their hours — even if they didn&apos;t register.
+      </p>
       {canManage && (
-        <div className="mb-5 flex flex-wrap gap-2 rounded-2xl bg-page p-3">
+        <div className="mb-4 flex flex-wrap gap-2 rounded-2xl bg-page p-3">
           <select value={addingId} onChange={(e) => setAddingId(e.target.value)} className="flex-1 rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs">
-            <option value="">Manually add a participant...</option>
+            <option value="">Register someone (not checked in yet)...</option>
             {available.map((item) => <option key={item.uid} value={item.uid}>{item.displayName || item.email} ({item.role})</option>)}
           </select>
-          <button type="button" onClick={addParticipant} disabled={!addingId} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-40">Add</button>
+          <button type="button" onClick={addParticipant} disabled={!addingId} className="rounded-xl border border-border-subtle bg-card px-4 py-2 text-xs font-bold text-ink disabled:opacity-40">Register</button>
         </div>
       )}
+      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, or phone…" className="mb-3 w-full rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm" />
       {error && <p className="mb-3 rounded-xl bg-active px-3 py-2 text-xs text-primary">{error}</p>}
       {loading ? (
         <SkeletonList count={5} />
       ) : participants.length ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b text-[10px] uppercase tracking-wider text-subtle"><tr>{["Name", "Role", "Contact", "Registered", "Attendance", canManage ? "Actions" : ""].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
+          <table className="w-full min-w-[980px] text-left text-sm">
+            <thead className="border-b text-[10px] uppercase tracking-wider text-subtle"><tr>{["Member", "Contact", "Role", "Attendance", "Hours", "Previous activity", canManage ? "Actions" : ""].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
             <tbody>
-              {participants.map((p) => (
-                <tr key={p.userId} className="border-b border-border-subtle text-xs">
-                  <td className="p-3 font-semibold text-ink">{p.displayName || "—"}</td>
-                  <td className="p-3 text-muted">{p.role || "—"}</td>
-                  <td className="p-3 text-muted">{p.email}{p.phone ? ` · ${p.phone}` : ""}</td>
-                  <td className="p-3 text-muted">{p.registeredAt ? new Date(p.registeredAt).toLocaleDateString() : "—"}</td>
-                  <td className="p-3"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${p.attendanceStatus === "present" ? "bg-success-soft text-success" : p.attendanceStatus === "absent" ? "bg-active text-primary" : "bg-page text-muted"}`}>{p.attendanceStatus === "present" ? "Present" : p.attendanceStatus === "absent" ? "Absent" : "Not marked"}</span></td>
-                  {canManage && <td className="p-3"><button type="button" onClick={() => remove(p.userId)} className="text-primary hover:underline">Remove</button></td>}
-                </tr>
-              ))}
+              {shown.map((p) => {
+                const present = p.attendanceStatus === "present";
+                const draft = hoursDraft[p.userId];
+                return (
+                  <tr key={p.userId} className="border-b border-border-subtle text-xs">
+                    <td className="p-3">
+                      <b className="block text-ink">{p.displayName || "—"}</b>
+                      {p.source === "walk-in" && <span className="text-[10px] font-bold uppercase text-warning">Walk-in</span>}
+                    </td>
+                    <td className="p-3 text-muted">{p.email}{p.phone ? <span className="block">{p.phone}</span> : null}</td>
+                    <td className="p-3">
+                      {canManage ? (
+                        <button
+                          type="button"
+                          onClick={() => update(p.userId, { eventRole: p.eventRole === "Volunteer" ? "Participant" : "Volunteer" })}
+                          title="Click to switch Participant / Volunteer"
+                          className={`rounded-xl px-3 py-1.5 font-bold ${p.eventRole === "Volunteer" ? "bg-primary text-white" : "border border-border-subtle text-ink hover:bg-page"}`}
+                        >
+                          {p.eventRole}
+                        </button>
+                      ) : p.eventRole}
+                    </td>
+                    <td className="p-3">
+                      <select
+                        value={p.attendanceStatus || ""}
+                        onChange={(e) => update(p.userId, { attendanceStatus: e.target.value || null }, "Attendance updated.")}
+                        className={`rounded-lg border border-border-subtle px-2 py-1.5 text-xs font-bold ${present ? "text-success" : p.attendanceStatus === "absent" ? "text-primary" : "text-muted"}`}
+                      >
+                        <option value="">Not marked</option>
+                        <option value="present">Attended</option>
+                        <option value="absent">Absent</option>
+                      </select>
+                    </td>
+                    <td className="p-3">
+                      {present ? (
+                        <span className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="24"
+                            step="0.25"
+                            value={draft ?? p.hoursCredited}
+                            onChange={(e) => setHoursDraft({ ...hoursDraft, [p.userId]: e.target.value })}
+                            onBlur={() => {
+                              if (draft === undefined || Number(draft) === p.hoursCredited) return;
+                              setHoursDraft((d) => { const next = { ...d }; delete next[p.userId]; return next; });
+                              update(p.userId, { hours: draft }, "Hours updated.");
+                            }}
+                            className="w-16 rounded-lg border border-border-subtle px-2 py-1 text-xs"
+                            aria-label={`Hours credited to ${p.displayName}`}
+                          />
+                          <span className="text-muted">h</span>
+                        </span>
+                      ) : <span className="text-subtle">—</span>}
+                    </td>
+                    <td className="p-3"><ActivityPills totals={p.totals} /></td>
+                    {canManage && <td className="p-3"><button type="button" onClick={() => remove(p.userId)} className="text-primary hover:underline">Remove</button></td>}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       ) : (
-        <Empty>No participants registered yet.</Empty>
+        <Empty>No participants yet — scan ID cards in the Attendance tab, or use “Add walk-in”.</Empty>
+      )}
+      {walkIn && (
+        <WalkInDialog
+          eventId={eventId}
+          staff={staff}
+          participants={participants}
+          defaultHours={defaultHours}
+          onClose={() => setWalkIn(false)}
+          onAdded={async () => { setWalkIn(false); onNotice("Walk-in added and checked in."); await load(); }}
+        />
       )}
     </Panel>
   );
@@ -264,7 +454,10 @@ function AttendanceTab({ eventId, onNotice }) {
           <div className="space-y-2">
             {participants.map((p) => (
               <div key={p.userId} className="flex items-center justify-between rounded-xl bg-page p-3 text-xs">
-                <b>{p.displayName || p.email}</b>
+                <span>
+                  <b className="block">{p.displayName || p.email}</b>
+                  <span className="text-[11px] text-muted">{p.eventRole}{p.attendanceStatus === "present" ? ` · ${p.hoursCredited}h credited` : ""}</span>
+                </span>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => mark(p.userId, "present")} className={`rounded-lg px-3 py-1.5 font-bold ${p.attendanceStatus === "present" ? "bg-success text-white" : "border border-border-subtle text-muted hover:bg-active"}`}>Present</button>
                   <button type="button" onClick={() => mark(p.userId, "absent")} className={`rounded-lg px-3 py-1.5 font-bold ${p.attendanceStatus === "absent" ? "bg-primary text-white" : "border border-border-subtle text-muted hover:bg-active"}`}>Absent</button>

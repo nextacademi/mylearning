@@ -5,9 +5,10 @@ import { CalendarClock, ExternalLink, FileText, LayoutGrid, List, Pencil, Plus, 
 import {
   createAssignment, deleteAssignment, gradeSubmission, loadAssignableClasses, setAssignmentStatus,
   subscribeAllAssignments, subscribeAssignmentSubmissions, subscribeClassAssignments, subscribeMySubmissions,
-  subscribeTeacherAssignmentList, submitAssignment, updateAssignment,
+  subscribeTeacherAssignmentList, submitAssignment, submitBlockedReason, attemptsUsed, updateAssignment,
 } from "../../lib/assignment-data";
 import { loadUsersByIds } from "../../lib/training-detail";
+import { listClassEnrollments } from "../../lib/teacher-data";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
 
@@ -64,6 +65,21 @@ const isOverdue = (dueDate) => {
   return dueDate < today;
 };
 
+// "Pass" / "Fail" against the assignment's passing score (none set → "").
+function passFail(assignment, score) {
+  if (score == null || assignment.passingScore == null || assignment.passingScore === "") return "";
+  return Number(score) >= Number(assignment.passingScore) ? "Pass" : "Fail";
+}
+// One line of the rules: pass mark, tries, expiry, who it's for.
+function rulesLine(a) {
+  return [
+    a.passingScore != null && a.passingScore !== "" ? `Pass ${a.passingScore}/${a.maxScore}` : "",
+    `${a.maxAttempts || 1} ${(a.maxAttempts || 1) === 1 ? "try" : "tries"}`,
+    a.expiresAt ? `Expires ${a.expiresAt}` : "",
+    a.studentIds?.length ? `${a.studentIds.length} selected student${a.studentIds.length === 1 ? "" : "s"}` : "Whole class",
+  ].filter(Boolean).join(" · ");
+}
+
 function StatusPill({ status }) {
   return (
     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${status === "published" ? "bg-success-soft text-success" : "bg-page text-muted"}`}>
@@ -95,12 +111,46 @@ function AssignmentForm({ initial, courses, teacherId, isManager, saving, error,
 
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
 
+  // Students enrolled in the chosen class, for "Assign to → Selected students".
+  const [classStudents, setClassStudents] = useState([]);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [assignTo, setAssignTo] = useState(initial.studentIds?.length ? "some" : "all");
+  const [pickError, setPickError] = useState("");
+  useEffect(() => {
+    if (!form.classId) return undefined;
+    let cancelled = false;
+    listClassEnrollments(form.classId)
+      .then((rows) => loadUsersByIds([...new Set(rows.filter((r) => r.status !== "withdrawn").map((r) => r.studentId).filter(Boolean))]))
+      .then((users) => { if (!cancelled) setClassStudents(users.sort((a, b) => (a.displayName || a.email || "").localeCompare(b.displayName || b.email || ""))); })
+      .catch(() => { if (!cancelled) setClassStudents([]); });
+    return () => { cancelled = true; };
+  }, [form.classId]);
+  const shownStudents = form.classId ? classStudents : [];
+  const visibleStudents = shownStudents.filter((s) => {
+    const q = studentSearch.trim().toLowerCase();
+    return !q || [s.displayName, s.email, s.phone].some((v) => String(v || "").toLowerCase().includes(q));
+  });
+  const picked = new Set(form.studentIds || []);
+  function toggleStudent(id) {
+    setForm((current) => {
+      const next = new Set(current.studentIds || []);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return { ...current, studentIds: [...next] };
+    });
+  }
+
   function submit(event) {
     event.preventDefault();
     const course = courses.find((c) => c.id === form.courseId);
     const classItem = classes.find((c) => c.id === form.classId);
+    if (assignTo === "some" && !(form.studentIds || []).length) {
+      setPickError("Pick at least one student, or assign it to the whole class.");
+      return;
+    }
+    setPickError("");
     onSubmit({
       ...form,
+      studentIds: assignTo === "some" ? form.studentIds : [],
       teacherId: isEdit
         ? form.teacherId
         : isManager
@@ -144,7 +194,49 @@ function AssignmentForm({ initial, courses, teacherId, isManager, saving, error,
           Max score
           <input type="number" min="1" value={form.maxScore} onChange={set("maxScore")} required className={FIELD} />
         </label>
+        <label className={LABEL}>
+          Passing score <span className="font-normal text-subtle">(optional — shows Pass / Fail)</span>
+          <input type="number" min="0" max={form.maxScore || undefined} value={form.passingScore} onChange={set("passingScore")} placeholder="e.g. 60" className={FIELD} />
+        </label>
+        <label className={LABEL}>
+          Max tries
+          <input type="number" min="1" max="20" value={form.maxAttempts} onChange={set("maxAttempts")} required className={FIELD} />
+        </label>
+        <label className={`${LABEL} sm:col-span-2`}>
+          Expires on <span className="font-normal text-subtle">(optional — no submissions accepted after this date; after the due date but before this, a submission is marked late)</span>
+          <input type="date" value={form.expiresAt} min={form.dueDate || undefined} onChange={set("expiresAt")} className={`${FIELD} sm:w-1/2`} />
+        </label>
       </div>
+
+      <fieldset className="space-y-2 rounded-2xl border border-border-subtle p-4">
+        <legend className="px-1 text-xs font-bold text-muted">Assign to</legend>
+        <div className="flex flex-wrap gap-4 text-sm text-ink">
+          <label className="flex items-center gap-2"><input type="radio" name="assign-to" checked={assignTo === "all"} onChange={() => setAssignTo("all")} /> Whole class</label>
+          <label className="flex items-center gap-2"><input type="radio" name="assign-to" checked={assignTo === "some"} onChange={() => setAssignTo("some")} /> Selected students</label>
+        </div>
+        {assignTo === "some" && (
+          !form.classId ? (
+            <p className="text-xs text-muted">Choose a training and class first.</p>
+          ) : !shownStudents.length ? (
+            <p className="text-xs text-muted">No students are enrolled in this class yet.</p>
+          ) : (
+            <>
+              <input value={studentSearch} onChange={(e) => setStudentSearch(e.target.value)} placeholder="Search by name, email or phone…" className={`${FIELD} py-2`} />
+              <p className="text-[11px] text-muted">{picked.size} of {shownStudents.length} selected</p>
+              <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-border-subtle p-2">
+                {visibleStudents.map((s) => (
+                  <label key={s.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink hover:bg-page">
+                    <input type="checkbox" checked={picked.has(s.id)} onChange={() => toggleStudent(s.id)} className="h-4 w-4" />
+                    <span className="min-w-0 truncate">{s.displayName || s.email}</span>
+                    <span className="ml-auto truncate text-[11px] text-muted">{s.email}</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          )
+        )}
+        {pickError && <p className="text-xs font-semibold text-primary">{pickError}</p>}
+      </fieldset>
       <label className={LABEL}>
         Resource link <span className="font-normal text-subtle">(optional — worksheet, Google Doc, video…)</span>
         <input type="url" value={form.resourceUrl} onChange={set("resourceUrl")} placeholder="https://…" className={FIELD} />
@@ -211,11 +303,17 @@ function SubmissionsDialog({ assignment, teacherId, isManager, onClose }) {
                     <b className="block text-sm text-ink">{student?.displayName || student?.email || submission.studentId}</b>
                     <span className="block text-[11px] text-muted">{[student?.email, student?.phone].filter(Boolean).join(" · ")}</span>
                   </div>
-                  {submission.score != null ? (
-                    <span className="rounded-full bg-success-soft px-2.5 py-1 text-[11px] font-bold text-success">{submission.score}/{assignment.maxScore}</span>
-                  ) : (
-                    <span className="rounded-full bg-warning-soft px-2.5 py-1 text-[11px] font-bold text-warning">Not graded</span>
-                  )}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-full bg-page px-2.5 py-1 text-[11px] font-bold text-muted">Try {attemptsUsed(submission)}/{assignment.maxAttempts || 1}</span>
+                    {submission.late && <span className="rounded-full bg-warning-soft px-2.5 py-1 text-[11px] font-bold text-warning">Late</span>}
+                    {submission.score != null ? (
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${passFail(assignment, submission.score) === "Fail" ? "bg-active text-primary" : "bg-success-soft text-success"}`}>
+                        {submission.score}/{assignment.maxScore}{passFail(assignment, submission.score) ? ` · ${passFail(assignment, submission.score)}` : ""}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-warning-soft px-2.5 py-1 text-[11px] font-bold text-warning">Not graded</span>
+                    )}
+                  </div>
                 </div>
                 {submission.answer && <p className="whitespace-pre-wrap rounded-xl bg-page p-3 text-xs text-ink">{submission.answer}</p>}
                 {submission.link && (
@@ -262,7 +360,10 @@ function SubmissionsDialog({ assignment, teacherId, isManager, onClose }) {
   );
 }
 
-const blankAssignment = () => ({ courseId: "", classId: "", title: "", instructions: "", dueDate: "", maxScore: "100", resourceUrl: "" });
+const blankAssignment = () => ({
+  courseId: "", classId: "", title: "", instructions: "", dueDate: "", maxScore: "100", resourceUrl: "",
+  passingScore: "", maxAttempts: "1", expiresAt: "", studentIds: [],
+});
 
 export function StaffAssignments({ teacherId, isManager, courses, layout, createSignal }) {
   const [assignments, setAssignments] = useState([]);
@@ -331,7 +432,7 @@ export function StaffAssignments({ teacherId, isManager, courses, layout, create
 
   const actions = (assignment) => (
     <>
-      <button type="button" onClick={() => { setError(""); setEditing({ ...blankAssignment(), ...assignment, maxScore: String(assignment.maxScore || 100) }); }} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><Pencil className="h-3.5 w-3.5" /> Edit</button>
+      <button type="button" onClick={() => { setError(""); setEditing({ ...blankAssignment(), ...assignment, maxScore: String(assignment.maxScore || 100), passingScore: assignment.passingScore ?? "", maxAttempts: String(assignment.maxAttempts || 1), studentIds: assignment.studentIds || [] }); }} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><Pencil className="h-3.5 w-3.5" /> Edit</button>
       <button type="button" onClick={() => togglePublish(assignment)} className="rounded-lg px-2 py-1.5 text-info hover:bg-page">{assignment.status === "published" ? "Unpublish" : "Publish"}</button>
       <button type="button" onClick={() => setViewing(assignment)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><Users className="h-3.5 w-3.5" /> Submissions</button>
       <button type="button" onClick={() => remove(assignment)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-primary hover:bg-active"><Trash2 className="h-3.5 w-3.5" /> Delete</button>
@@ -351,7 +452,7 @@ export function StaffAssignments({ teacherId, isManager, courses, layout, create
         <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-card shadow-sm">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-page text-[10px] font-black uppercase tracking-wider text-muted">
-              <tr>{["Assignment", "Training", "Due", "Max score", "Status", "Actions"].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr>
+              <tr>{["Assignment", "Training", "Due", "Rules", "Status", "Actions"].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr>
             </thead>
             <tbody>
               {assignments.map((a) => (
@@ -359,7 +460,7 @@ export function StaffAssignments({ teacherId, isManager, courses, layout, create
                   <td className="px-4 py-3 font-bold text-ink">{a.title}</td>
                   <td className="px-4 py-3 text-xs text-muted">{courseTitle.get(a.courseId) || "—"}</td>
                   <td className={`px-4 py-3 text-xs ${isOverdue(a.dueDate) ? "font-bold text-primary" : "text-muted"}`}>{a.dueDate || "—"}</td>
-                  <td className="px-4 py-3 text-xs text-muted">{a.maxScore}</td>
+                  <td className="px-4 py-3 text-xs text-muted">{a.maxScore} pts · {rulesLine(a)}</td>
                   <td className="px-4 py-3"><StatusPill status={a.status} /></td>
                   <td className="px-4 py-3"><div className="flex flex-wrap gap-1 text-xs font-bold">{actions(a)}</div></td>
                 </tr>
@@ -382,6 +483,7 @@ export function StaffAssignments({ teacherId, isManager, courses, layout, create
               <div className="flex flex-wrap gap-3 text-[11px] font-semibold text-subtle">
                 <span className={`flex items-center gap-1 ${isOverdue(a.dueDate) ? "text-primary" : ""}`}><CalendarClock className="h-3.5 w-3.5" /> {dueLabel(a.dueDate)}</span>
                 <span>{a.maxScore} points</span>
+                <span className="basis-full">{rulesLine(a)}</span>
               </div>
               <div className="mt-auto flex flex-wrap gap-2 border-t border-border-subtle pt-3 text-xs font-bold">{actions(a)}</div>
             </article>
@@ -467,21 +569,28 @@ export function StudentAssignments({ uid, enrollments, layout }) {
   const classKey = [...new Set(enrollments.map((e) => e.classId).filter(Boolean))].sort().join(",");
   const courseTitle = useMemo(() => new Map(enrollments.map((e) => [e.courseId, e.courseTitle])), [enrollments]);
 
-  useEffect(() => subscribeClassAssignments(classKey ? classKey.split(",") : [], setAssignments, () => {}), [classKey]);
+  useEffect(() => subscribeClassAssignments(classKey ? classKey.split(",") : [], uid, setAssignments, () => {}), [classKey, uid]);
   useEffect(() => subscribeMySubmissions(uid, setSubmissions, () => {}), [uid]);
   const mine = useMemo(() => new Map(submissions.map((s) => [s.assignmentId, s])), [submissions]);
 
   const statusOf = (a) => {
     const s = mine.get(a.id);
-    if (s?.score != null) return { label: `Graded ${s.score}/${a.maxScore}`, cls: "bg-success-soft text-success" };
-    if (s) return { label: "Submitted", cls: "bg-info-soft text-info" };
+    if (s?.score != null) {
+      const result = passFail(a, s.score);
+      return { label: `${s.score}/${a.maxScore}${result ? ` · ${result}` : ""}`, cls: result === "Fail" ? "bg-active text-primary" : "bg-success-soft text-success" };
+    }
+    if (s) return { label: s.late ? "Submitted late" : "Submitted", cls: "bg-info-soft text-info" };
+    if (a.expiresAt && submitBlockedReason(a, s)) return { label: "Expired", cls: "bg-page text-muted" };
     if (isOverdue(a.dueDate)) return { label: "Overdue", cls: "bg-active text-primary" };
     return { label: "To do", cls: "bg-warning-soft text-warning" };
   };
   const action = (a) => {
     const s = mine.get(a.id);
+    const blocked = submitBlockedReason(a, s);
     if (s?.score != null) return <button type="button" onClick={() => setOpen(a)} className="rounded-lg border border-border-subtle px-3 py-1.5 text-xs font-bold text-ink hover:bg-page">View</button>;
-    return <button type="button" onClick={() => setOpen(a)} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white">{s ? "Edit submission" : "Submit"}</button>;
+    if (blocked) return <span className="text-xs font-bold text-subtle">{blocked}</span>;
+    const left = (a.maxAttempts || 1) - attemptsUsed(s);
+    return <button type="button" onClick={() => setOpen(a)} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white">{s ? "Resubmit" : "Submit"}{(a.maxAttempts || 1) > 1 ? ` (${left} ${left === 1 ? "try" : "tries"} left)` : ""}</button>;
   };
 
   if (!assignments.length) {
@@ -533,6 +642,7 @@ export function StudentAssignments({ uid, enrollments, layout }) {
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${status.cls}`}>{status.label}</span>
                 </div>
                 <p className="flex items-center gap-1 text-[11px] font-semibold text-subtle"><CalendarClock className="h-3.5 w-3.5" /> {dueLabel(a.dueDate)} · {a.maxScore} points</p>
+                <p className="text-[11px] text-subtle">{rulesLine(a)}</p>
                 {s?.feedback && <p className="rounded-xl bg-page p-2 text-xs text-ink"><b>Feedback:</b> {s.feedback}</p>}
                 <div className="mt-auto border-t border-border-subtle pt-3">{action(a)}</div>
               </article>
