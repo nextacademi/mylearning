@@ -16,15 +16,6 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function StatCard({ value, label, note, Icon }) {
-  return (
-    <div className="rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(160deg,#fff7f7_0%,#ffffff_70%)] p-4 text-center shadow-sm">
-      <p className="text-3xl font-black text-primary">{value}</p>
-      <p className="mt-1 flex items-center justify-center gap-1 text-[11px] font-bold text-ink"><Icon className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> {label}</p>
-      <p className="mt-0.5 text-[10px] text-muted">{note}</p>
-    </div>
-  );
-}
 
 function ActivityChart({ months }) {
   const max = Math.max(1, ...months.map((m) => m.events + m.trainings));
@@ -44,6 +35,102 @@ function ActivityChart({ months }) {
         );
       })}
     </div>
+  );
+}
+
+const ROLE_TONE = {
+  Volunteer: "bg-active text-primary",
+  Teacher: "bg-purple-soft text-purple",
+  Learner: "bg-teal-soft text-teal",
+  Participant: "bg-info-soft text-info",
+};
+const STATUS_TONE = { Completed: "text-success", Upcoming: "text-info", Absent: "text-primary", Excused: "text-muted" };
+const r1 = (n) => Math.round(n * 10) / 10;
+
+// "My Contribution" — every event and training this person took part in
+// (name, date, location, role, hours), with a compact summary on top that is
+// worked out from the very same rows, so the two can never disagree.
+function MyContribution({ rows, certificates }) {
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState("All");
+  const done = rows.filter((r) => r.status === "Completed");
+  const hoursAs = (name) => r1(done.filter((r) => r.role === name).reduce((s, r) => s + r.hours, 0));
+  const totalHours = r1(done.reduce((s, r) => s + r.hours, 0));
+  const programmes = new Set(done.map((r) => `${r.type}:${r.name}`)).size;
+  const summary = [
+    [totalHours, "Total hours", Clock],
+    [hoursAs("Volunteer"), "Volunteer hours", HeartHandshake],
+    [hoursAs("Teacher"), "Teaching hours", Sparkles],
+    [hoursAs("Learner"), "Learning hours", CalendarCheck],
+    [r1(hoursAs("Participant")), "Event hours", CalendarCheck],
+    [done.filter((r) => r.type !== "Training").length, "Events completed", Trophy],
+    [programmes, "Programmes", Trophy],
+    [certificates, "Certificates", Award],
+  ];
+  const roles = ["All", ...new Set(rows.map((r) => r.role))];
+  const q = search.trim().toLowerCase();
+  const shown = rows.filter((r) => (role === "All" || r.role === role) && (!q || [r.name, r.location, r.type].some((v) => String(v || "").toLowerCase().includes(q))));
+
+  return (
+    <section className="rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(160deg,#fff7f7_0%,#ffffff_60%)] p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="font-black text-ink">My Contribution</h3>
+          <p className="text-xs text-muted">Every event and training you&apos;ve taken part in — your role and the hours you contributed.</p>
+        </div>
+        <span className="rounded-full bg-active px-3 py-1 text-sm font-black text-primary">{totalHours} hrs</span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+        {summary.map(([value, label, Icon]) => (
+          <div key={label} className="rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-center">
+            <p className="text-xl font-black text-primary">{value}</p>
+            <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] font-bold text-muted"><Icon className="h-3 w-3" aria-hidden="true" /> {label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search programme or location…" className="min-w-[200px] flex-1 rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm" />
+        <select value={role} onChange={(e) => setRole(e.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs font-semibold">
+          {roles.map((item) => <option key={item} value={item}>{item === "All" ? "All roles" : item}</option>)}
+        </select>
+      </div>
+
+      <div className="mt-3 overflow-x-auto rounded-xl border border-border-subtle bg-card">
+        <table className="w-full min-w-[720px] text-left text-xs">
+          <thead className="bg-page text-[10px] font-black uppercase tracking-wider text-muted">
+            <tr>{["Programme", "Date", "Location", "Role", "Hours", "Status"].map((h) => <th key={h} className={`px-4 py-3 ${h === "Hours" ? "text-right" : ""}`}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {shown.length ? shown.map((r) => (
+              <tr key={r.id} className="border-t border-border-subtle">
+                <td className="px-4 py-3">
+                  <b className="block text-ink">{r.name}</b>
+                  <span className="text-[10px] uppercase tracking-wide text-subtle">{r.type}</span>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-muted">{formatDate(r.date)}</td>
+                <td className="px-4 py-3 text-muted">{r.location || "—"}</td>
+                <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${ROLE_TONE[r.role] || "bg-page text-muted"}`}>{r.role}</span></td>
+                <td className="px-4 py-3 text-right font-bold text-ink">{r.status === "Completed" ? `${r.hours}h` : "—"}</td>
+                <td className={`px-4 py-3 font-semibold ${STATUS_TONE[r.status] || "text-muted"}`}>{r.status}</td>
+              </tr>
+            )) : (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-muted">{rows.length ? "Nothing matches your search." : "No contributions yet — they appear here as you're checked in to events and trainings."}</td></tr>
+            )}
+          </tbody>
+          {shown.length > 0 && (
+            <tfoot>
+              <tr className="border-t border-border-subtle bg-page font-bold">
+                <td className="px-4 py-3 text-ink" colSpan={4}>{shown.length} record{shown.length === 1 ? "" : "s"}</td>
+                <td className="px-4 py-3 text-right text-primary">{r1(shown.filter((r) => r.status === "Completed").reduce((s, r) => s + r.hours, 0))}h</td>
+                <td />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -87,12 +174,7 @@ export default function VolunteerHomePanel() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard value={data.totalHours} label="Total Hours" note={`${data.volunteerHours} volunteer · ${data.eventHours} event · ${data.trainingHours} training`} Icon={Clock} />
-        <StatCard value={data.eventsAttended} label="Events Attended" note={`${data.upcomingEvents} upcoming`} Icon={CalendarCheck} />
-        <StatCard value={data.certificates} label="Certificates" note={`${data.certificates} earned`} Icon={Award} />
-        <StatCard value={data.volunteerHours} label="Volunteer Hours" note="Hours given back to the community" Icon={HeartHandshake} />
-      </section>
+      <MyContribution rows={data.contributions || []} certificates={data.certificates} />
 
       <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <div className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">

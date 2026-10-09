@@ -95,93 +95,116 @@ function downloadCsv(filename, rows, headers) {
   URL.revokeObjectURL(url);
 }
 
-// Walk-in = someone who turned up / helped without registering. Pick an
-// existing account (their hours add to their profile totals) or type a
-// guest's details; either way they're marked present with hours credited.
-function WalkInDialog({ eventId, staff, participants, defaultHours, onClose, onAdded }) {
-  const [mode, setMode] = useState("existing");
+// "Add walk-in attendance" — an inline box (opened by "+ Add walk-in", closed
+// by "Close walk-in") for people who came without registering. Pick Half or
+// Full credit, search a member, click them: they're added immediately, so
+// several can be added in a row. Status "Registered" only signs them up (no
+// hours yet). No match? Add the typed name as a guest. `fixedRole` pins the
+// role (the Volunteers tab always adds volunteers).
+function WalkInPanel({ eventId, staff, participants, defaultHours, fixedRole, onAdded }) {
+  const [credit, setCredit] = useState("full");
+  const [status, setStatus] = useState("attended");
+  const [eventRole, setEventRole] = useState(fixedRole || "Participant");
   const [search, setSearch] = useState("");
-  const [userId, setUserId] = useState("");
-  const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
-  const [eventRole, setEventRole] = useState("Volunteer");
-  const [hours, setHours] = useState(String(defaultHours || ""));
-  const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
-  const present = new Set(participants.filter((p) => p.attendanceStatus === "present").map((p) => p.userId));
+  const full = Number(defaultHours) || 0;
+  const half = Math.round((full / 2) * 100) / 100;
+  const hours = credit === "half" ? half : full;
+  const taken = new Set(participants.filter((p) => (status === "attended" ? p.attendanceStatus === "present" && p.eventRole === (fixedRole || eventRole) : true)).map((p) => p.userId));
   const q = search.trim().toLowerCase();
-  const matches = staff
-    .filter((item) => !present.has(item.uid))
-    .filter((item) => !q || [item.displayName, item.email, item.phone].some((v) => String(v || "").toLowerCase().includes(q)))
-    .slice(0, 50);
+  const matches = q
+    ? staff
+      .filter((item) => !taken.has(item.uid))
+      .filter((item) => [item.displayName, item.email, item.phone].some((v) => String(v || "").toLowerCase().includes(q)))
+      .slice(0, 8)
+    : [];
 
-  async function save(event) {
-    event.preventDefault();
-    if (mode === "existing" && !userId) return setError("Choose a person.");
-    if (mode === "guest" && !guest.name.trim()) return setError("Enter the walk-in's name.");
-    setSaving(true);
+  async function add(person, label) {
+    setBusyId(person.userId || "guest");
     setError("");
     try {
-      await addEventWalkIn(eventId, { ...(mode === "existing" ? { userId } : guest), eventRole, hours });
-      onAdded();
-    } catch (saveError) {
-      setError(saveError.message || "Unable to add this walk-in.");
-      setSaving(false);
+      if (status === "attended") {
+        await addEventWalkIn(eventId, { ...person, eventRole: fixedRole || eventRole, hours });
+        onAdded(`${label} checked in — ${hours}h as ${fixedRole || eventRole}.`);
+      } else {
+        if (!person.userId) throw new Error("Guests can only be added as Attended.");
+        await addEventParticipant(eventId, person.userId);
+        onAdded(`${label} registered.`);
+      }
+      setSearch("");
+    } catch (addError) {
+      setError(addError.message || "Unable to add this person.");
+    } finally {
+      setBusyId("");
     }
   }
 
-  const input = "w-full rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm";
+  const radio = (key, text) => (
+    <label className={`flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${credit === key ? "border-primary bg-active text-ink" : "border-transparent bg-card text-muted"}`}>
+      <input type="radio" name={`walkin-credit-${fixedRole || "all"}`} checked={credit === key} onChange={() => setCredit(key)} className="accent-[var(--color-primary)]" />
+      {text}
+    </label>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <form onSubmit={save} className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-ink">Add walk-in</h3>
-          <button type="button" onClick={onClose} className="text-xl text-muted" aria-label="Close">×</button>
-        </div>
-        <div className="flex gap-1 rounded-xl border border-border-subtle p-1 text-xs font-bold">
-          {[["existing", "Existing member"], ["guest", "Guest (no account)"]].map(([key, label]) => (
-            <button key={key} type="button" onClick={() => setMode(key)} className={`flex-1 rounded-lg px-3 py-2 ${mode === key ? "bg-primary text-white" : "text-muted hover:bg-page"}`}>{label}</button>
-          ))}
-        </div>
-        {mode === "existing" ? (
-          <div className="space-y-2">
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, or phone…" className={input} />
-            <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-border-subtle p-1">
-              {matches.length ? matches.map((item) => (
-                <label key={item.uid} className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${userId === item.uid ? "bg-active" : "hover:bg-page"}`}>
-                  <input type="radio" name="walkin-user" checked={userId === item.uid} onChange={() => setUserId(item.uid)} />
-                  <span className="min-w-0 truncate text-ink">{item.displayName || item.email}</span>
-                  <span className="ml-auto shrink-0 text-[11px] text-muted">{item.role}</span>
-                </label>
-              )) : <p className="p-3 text-xs text-muted">No matching members.</p>}
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2">
-            <input required value={guest.name} onChange={(e) => setGuest({ ...guest, name: e.target.value })} placeholder="Full name" className={`${input} sm:col-span-2`} />
-            <input type="email" value={guest.email} onChange={(e) => setGuest({ ...guest, email: e.target.value })} placeholder="Email (optional)" className={input} />
-            <input type="tel" value={guest.phone} onChange={(e) => setGuest({ ...guest, phone: e.target.value })} placeholder="Phone (optional)" className={input} />
-            <p className="text-[11px] text-subtle sm:col-span-2">A guest&apos;s hours are recorded on this event only — there&apos;s no profile to add them to.</p>
+    <div className="mb-4 rounded-2xl border border-[#f3aaaa] bg-[#fdeaea] p-5">
+      <h3 className="font-bold text-ink">Add walk-in {fixedRole === "Volunteer" ? "volunteers" : "attendance"}</h3>
+      <p className="mt-1 max-w-2xl text-xs text-muted">
+        Add one or more {fixedRole === "Volunteer" ? "volunteers who helped" : "members who attended"} without registering. Hours are based on this programme&apos;s full duration ({full}h) — choose half or full.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-[11px] font-bold uppercase tracking-wider text-muted">Credit hours</span>
+        {radio("half", `Half (${half}h)`)}
+        {radio("full", `Full (${full}h)`)}
+        {!fixedRole && (
+          <select value={eventRole} onChange={(e) => setEventRole(e.target.value)} className="ml-auto rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs font-semibold" aria-label="Role">
+            <option value="Participant">as Participant</option>
+            <option value="Volunteer">as Volunteer</option>
+          </select>
+        )}
+      </div>
+      <div className="relative mt-3 flex flex-wrap gap-2">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search member by name, email, or phone..."
+          className="min-w-[220px] flex-1 rounded-xl border border-border-subtle bg-card px-4 py-3 text-sm"
+          aria-label="Search member"
+        />
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-3 text-sm" aria-label="Status">
+          <option value="attended">Attended</option>
+          <option value="registered">Registered</option>
+        </select>
+        {q && (
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border-subtle bg-card p-1 shadow-xl sm:right-40">
+            {matches.map((item) => (
+              <button
+                key={item.uid}
+                type="button"
+                disabled={Boolean(busyId)}
+                onClick={() => add({ userId: item.uid }, item.displayName || item.email)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-page disabled:opacity-50"
+              >
+                <span className="min-w-0 flex-1 truncate"><b className="text-ink">{item.displayName || item.email}</b> <span className="text-xs text-muted">{item.email}{item.phone ? ` · ${item.phone}` : ""}</span></span>
+                <span className="shrink-0 text-[11px] text-muted">{busyId === item.uid ? "Adding…" : item.role}</span>
+              </button>
+            ))}
+            {status === "attended" && (
+              <button
+                type="button"
+                disabled={Boolean(busyId)}
+                onClick={() => add({ name: search.trim() }, search.trim())}
+                className="flex w-full items-center gap-2 rounded-lg border-t border-border-subtle px-3 py-2 text-left text-sm text-primary hover:bg-page disabled:opacity-50"
+              >
+                + Add “{search.trim()}” as a guest (no account)
+              </button>
+            )}
+            {!matches.length && status !== "attended" && <p className="px-3 py-2 text-xs text-muted">No matching members.</p>}
           </div>
         )}
-        <div className="grid grid-cols-2 gap-3">
-          <label className="grid gap-1 text-xs font-bold text-muted">
-            Role at this event
-            <select value={eventRole} onChange={(e) => setEventRole(e.target.value)} className={input}>
-              <option value="Volunteer">Volunteer</option>
-              <option value="Participant">Participant</option>
-            </select>
-          </label>
-          <label className="grid gap-1 text-xs font-bold text-muted">
-            Hours to credit
-            <input type="number" min="0" max="24" step="0.25" value={hours} onChange={(e) => setHours(e.target.value)} className={input} />
-          </label>
-        </div>
-        {error && <p className="rounded-xl bg-active px-3 py-2 text-xs text-primary">{error}</p>}
-        <div className="flex justify-end gap-3">
-          <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-bold text-muted">Cancel</button>
-          <button disabled={saving} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Adding…" : "Add & check in"}</button>
-        </div>
-      </form>
+      </div>
+      {error && <p className="mt-2 rounded-xl bg-card px-3 py-2 text-xs text-primary">{error}</p>}
     </div>
   );
 }
@@ -204,7 +227,6 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
   const [defaultHours, setDefaultHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [addingId, setAddingId] = useState("");
   const [walkIn, setWalkIn] = useState(false);
   const [search, setSearch] = useState("");
   const [hoursDraft, setHoursDraft] = useState({});
@@ -224,17 +246,6 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
   }, [eventId]);
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
 
-  async function addParticipant() {
-    if (!addingId) return;
-    try {
-      await addEventParticipant(eventId, addingId);
-      setAddingId("");
-      onNotice("Participant added.");
-      await load();
-    } catch (addError) {
-      setError(addError.message || "Unable to add this participant.");
-    }
-  }
   async function update(userId, patch, message) {
     try {
       await updateEventParticipant(eventId, userId, patch);
@@ -262,7 +273,6 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
     );
   }
 
-  const available = staff.filter((item) => !participants.some((p) => p.userId === item.uid));
   const q = search.trim().toLowerCase();
   const shown = participants.filter((p) => !q || [p.displayName, p.email, p.phone].some((v) => String(v || "").toLowerCase().includes(q)));
   const presentCount = participants.filter((p) => p.attendanceStatus === "present").length;
@@ -274,21 +284,25 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
       action={
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={exportCsv} disabled={!participants.length} className="rounded-xl border border-border-subtle px-3 py-2 text-xs font-bold text-ink hover:bg-active disabled:opacity-40">Export CSV</button>
-          {canManage && <button type="button" onClick={() => setWalkIn(true)} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">+ Add walk-in</button>}
+          {canManage && (
+            <button type="button" onClick={() => setWalkIn((open) => !open)} className={walkIn ? "rounded-xl border border-border-subtle bg-card px-4 py-2 text-xs font-bold text-ink hover:bg-page" : "rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white"}>
+              {walkIn ? "Close walk-in" : "+ Add walk-in"}
+            </button>
+          )}
         </div>
       }
     >
       <p className="mb-3 text-xs text-muted">
         {presentCount} attended · {totalHours}h credited in total · default {defaultHours}h per person (the event&apos;s length). Scanning someone&apos;s ID QR in the Attendance tab checks them in and credits their hours — even if they didn&apos;t register.
       </p>
-      {canManage && (
-        <div className="mb-4 flex flex-wrap gap-2 rounded-2xl bg-page p-3">
-          <select value={addingId} onChange={(e) => setAddingId(e.target.value)} className="flex-1 rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs">
-            <option value="">Register someone (not checked in yet)...</option>
-            {available.map((item) => <option key={item.uid} value={item.uid}>{item.displayName || item.email} ({item.role})</option>)}
-          </select>
-          <button type="button" onClick={addParticipant} disabled={!addingId} className="rounded-xl border border-border-subtle bg-card px-4 py-2 text-xs font-bold text-ink disabled:opacity-40">Register</button>
-        </div>
+      {canManage && walkIn && (
+        <WalkInPanel
+          eventId={eventId}
+          staff={staff}
+          participants={participants}
+          defaultHours={defaultHours}
+          onAdded={async (message) => { onNotice(message); await load(); }}
+        />
       )}
       <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, or phone…" className="mb-3 w-full rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm" />
       {error && <p className="mb-3 rounded-xl bg-active px-3 py-2 text-xs text-primary">{error}</p>}
@@ -364,16 +378,6 @@ function ParticipantsTab({ eventId, canManage, staff, onNotice }) {
         </div>
       ) : (
         <Empty>No participants yet — scan ID cards in the Attendance tab, or use “Add walk-in”.</Empty>
-      )}
-      {walkIn && (
-        <WalkInDialog
-          eventId={eventId}
-          staff={staff}
-          participants={participants}
-          defaultHours={defaultHours}
-          onClose={() => setWalkIn(false)}
-          onAdded={async () => { setWalkIn(false); onNotice("Walk-in added and checked in."); await load(); }}
-        />
       )}
     </Panel>
   );
@@ -462,8 +466,22 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
     <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
       <Panel
         title={`Volunteers (${checkedIn.length} checked in · ${totalHours}h)`}
-        action={canManage && <button type="button" onClick={() => setAdding(true)} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">+ Add volunteer</button>}
+        action={canManage && (
+          <button type="button" onClick={() => setAdding((open) => !open)} className={adding ? "rounded-xl border border-border-subtle bg-card px-4 py-2 text-xs font-bold text-ink hover:bg-page" : "rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white"}>
+            {adding ? "Close walk-in" : "+ Add walk-in"}
+          </button>
+        )}
       >
+        {canManage && adding && (
+          <WalkInPanel
+            eventId={eventId}
+            staff={staff}
+            participants={participants}
+            defaultHours={defaultHours}
+            fixedRole="Volunteer"
+            onAdded={async (message) => { onNotice(message); await load(); }}
+          />
+        )}
         <p className="mb-3 text-xs text-muted">Everyone who worked this event. Each check-in credits {defaultHours}h (the event&apos;s length) to their volunteer hours — edit a person&apos;s hours if they worked a different amount.</p>
         {loading ? <SkeletonList count={4} /> : volunteers.length ? (
           <div className="space-y-2">
@@ -508,7 +526,7 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
               );
             })}
           </div>
-        ) : <Empty>No volunteers yet — scan a volunteer&apos;s ID card or use “+ Add volunteer”.</Empty>}
+        ) : <Empty>No volunteers yet — scan a volunteer&apos;s ID card or use “+ Add walk-in”.</Empty>}
       </Panel>
 
       <Panel title="Check in a volunteer">
@@ -530,16 +548,6 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
         )}
       </Panel>
 
-      {adding && (
-        <WalkInDialog
-          eventId={eventId}
-          staff={staff}
-          participants={participants.filter((p) => p.eventRole === "Volunteer")}
-          defaultHours={defaultHours}
-          onClose={() => setAdding(false)}
-          onAdded={async () => { setAdding(false); onNotice("Volunteer added and checked in."); await load(); }}
-        />
-      )}
     </div>
   );
 }

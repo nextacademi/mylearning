@@ -12,7 +12,7 @@ import { SkeletonList } from "../ui/Skeleton";
 
 // Training → Volunteers: who helped run this training on a given day and
 // for how long (lib/server/training-volunteers.js). Scan a volunteer's ID
-// card, or "+ Add volunteer" (member or guest) — they appear in the day's
+// card, or "+ Add walk-in" (member or guest) — they appear in the day's
 // list with their hours, which also count toward their volunteer total.
 
 const SCANNER_ID = "training-volunteer-scanner";
@@ -21,79 +21,86 @@ function todayLocal() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-function AddVolunteerDialog({ courseId, date, defaultHours, members, onClose, onAdded }) {
-  const [mode, setMode] = useState(members.length ? "member" : "guest");
+// Inline "Add walk-in volunteers" box (opened by "+ Add walk-in"): pick Half
+// or Full credit, search a member, click to add — repeat for several. No
+// match (or a Teacher, who can't list members)? Add the typed name as a guest.
+function WalkInVolunteerPanel({ courseId, date, defaultHours, members, onAdded }) {
+  const [credit, setCredit] = useState("full");
   const [search, setSearch] = useState("");
-  const [userId, setUserId] = useState("");
-  const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
-  const [hours, setHours] = useState(String(defaultHours || ""));
-  const [saving, setSaving] = useState(false);
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const full = Number(defaultHours) || 0;
+  const half = Math.round((full / 2) * 100) / 100;
+  const hours = credit === "half" ? half : full;
   const q = search.trim().toLowerCase();
-  const matches = members
-    .filter((m) => !q || [m.displayName, m.email, m.phone].some((v) => String(v || "").toLowerCase().includes(q)))
-    .slice(0, 50);
+  const matches = q
+    ? members.filter((m) => [m.displayName, m.email, m.phone].some((v) => String(v || "").toLowerCase().includes(q))).slice(0, 8)
+    : [];
 
-  async function save(event) {
-    event.preventDefault();
-    if (mode === "member" && !userId) return setError("Choose a member.");
-    if (mode === "guest" && !guest.name.trim()) return setError("Enter the volunteer's name.");
-    setSaving(true);
+  async function add(person, key) {
+    setBusy(key);
     setError("");
     try {
-      const result = await addTrainingVolunteer({ courseId, date, hours, ...(mode === "member" ? { userId } : guest) });
+      const result = await addTrainingVolunteer({ courseId, date, hours, ...person });
       onAdded(result.message);
+      setSearch("");
     } catch (err) {
       setError(err.message || "Unable to add this volunteer.");
-      setSaving(false);
+    } finally {
+      setBusy("");
     }
   }
 
-  const input = "w-full rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm";
+  const radio = (key, text) => (
+    <label className={`flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${credit === key ? "border-primary bg-active text-ink" : "border-transparent bg-card text-muted"}`}>
+      <input type="radio" name="training-walkin-credit" checked={credit === key} onChange={() => setCredit(key)} />
+      {text}
+    </label>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
-      <form onSubmit={save} className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-ink">Add volunteer · {date}</h3>
-          <button type="button" onClick={onClose} className="text-xl text-muted" aria-label="Close">×</button>
-        </div>
-        {members.length > 0 && (
-          <div className="flex gap-1 rounded-xl border border-border-subtle p-1 text-xs font-bold">
-            {[["member", "Existing member"], ["guest", "Guest (no account)"]].map(([key, label]) => (
-              <button key={key} type="button" onClick={() => setMode(key)} className={`flex-1 rounded-lg px-3 py-2 ${mode === key ? "bg-primary text-white" : "text-muted hover:bg-page"}`}>{label}</button>
+    <div className="mb-4 rounded-2xl border border-[#f3aaaa] bg-[#fdeaea] p-5">
+      <h3 className="font-bold text-ink">Add walk-in volunteers · {date}</h3>
+      <p className="mt-1 max-w-2xl text-xs text-muted">Add one or more people who helped run this class. Hours are based on the class length ({full}h) — choose half or full.</p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-[11px] font-bold uppercase tracking-wider text-muted">Credit hours</span>
+        {radio("half", `Half (${half}h)`)}
+        {radio("full", `Full (${full}h)`)}
+      </div>
+      <div className="relative mt-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={members.length ? "Search member by name, email, or phone..." : "Type the volunteer's name..."}
+          className="w-full rounded-xl border border-border-subtle bg-card px-4 py-3 text-sm"
+          aria-label="Search member"
+        />
+        {q && (
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border-subtle bg-card p-1 shadow-xl">
+            {matches.map((m) => (
+              <button
+                key={m.uid}
+                type="button"
+                disabled={Boolean(busy)}
+                onClick={() => add({ userId: m.uid }, m.uid)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-page disabled:opacity-50"
+              >
+                <span className="min-w-0 flex-1 truncate"><b className="text-ink">{m.displayName || m.email}</b> <span className="text-xs text-muted">{m.email}{m.phone ? ` · ${m.phone}` : ""}</span></span>
+                <span className="shrink-0 text-[11px] text-muted">{busy === m.uid ? "Adding…" : m.role}</span>
+              </button>
             ))}
+            <button
+              type="button"
+              disabled={Boolean(busy)}
+              onClick={() => add({ name: search.trim() }, "guest")}
+              className="flex w-full items-center gap-2 rounded-lg border-t border-border-subtle px-3 py-2 text-left text-sm text-primary hover:bg-page disabled:opacity-50"
+            >
+              + Add “{search.trim()}” as a guest (no account)
+            </button>
           </div>
         )}
-        {mode === "member" ? (
-          <div className="space-y-2">
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, or phone…" className={input} />
-            <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-border-subtle p-1">
-              {matches.length ? matches.map((m) => (
-                <label key={m.uid} className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${userId === m.uid ? "bg-active" : "hover:bg-page"}`}>
-                  <input type="radio" name="training-volunteer" checked={userId === m.uid} onChange={() => setUserId(m.uid)} />
-                  <span className="min-w-0 truncate text-ink">{m.displayName || m.email}</span>
-                  <span className="ml-auto shrink-0 text-[11px] text-muted">{m.role}</span>
-                </label>
-              )) : <p className="p-3 text-xs text-muted">No matching members.</p>}
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2">
-            <input required value={guest.name} onChange={(e) => setGuest({ ...guest, name: e.target.value })} placeholder="Full name" className={`${input} sm:col-span-2`} />
-            <input type="email" value={guest.email} onChange={(e) => setGuest({ ...guest, email: e.target.value })} placeholder="Email (optional)" className={input} />
-            <input type="tel" value={guest.phone} onChange={(e) => setGuest({ ...guest, phone: e.target.value })} placeholder="Phone (optional)" className={input} />
-          </div>
-        )}
-        <label className="grid gap-1 text-xs font-bold text-muted">
-          Hours helped
-          <input type="number" min="0" max="24" step="0.25" value={hours} onChange={(e) => setHours(e.target.value)} className={input} />
-        </label>
-        {error && <p className="rounded-xl bg-active px-3 py-2 text-xs text-primary">{error}</p>}
-        <div className="flex justify-end gap-3">
-          <button type="button" onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-bold text-muted">Cancel</button>
-          <button disabled={saving} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Adding…" : "Add & check in"}</button>
-        </div>
-      </form>
+      </div>
+      {error && <p className="mt-2 rounded-xl bg-card px-3 py-2 text-xs text-primary">{error}</p>}
     </div>
   );
 }
@@ -203,9 +210,20 @@ export default function TrainingVolunteersTab({ courseId }) {
             <label className="flex items-center gap-1.5 text-xs font-semibold text-muted">
               <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> All days
             </label>
-            <button type="button" onClick={() => setAdding(true)} className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">+ Add volunteer</button>
+            <button type="button" onClick={() => setAdding((open) => !open)} className={adding ? "rounded-xl border border-border-subtle bg-card px-4 py-2 text-xs font-bold text-ink hover:bg-page" : "rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white"}>
+              {adding ? "Close walk-in" : "+ Add walk-in"}
+            </button>
           </div>
         </div>
+        {adding && (
+          <WalkInVolunteerPanel
+            courseId={courseId}
+            date={date}
+            defaultHours={defaultHours}
+            members={members}
+            onAdded={async (message) => { toast.success(message || "Volunteer added."); await load(); }}
+          />
+        )}
         <p className="mb-3 text-xs text-muted">Who helped run this training {showAll ? "on every day" : `on ${date}`}. Each check-in credits {defaultHours}h (the class length) to their volunteer hours — edit it if they helped longer or shorter.</p>
         {loadError && <p className="mb-3 rounded-xl bg-active p-3 text-xs text-primary">{loadError}</p>}
         {loading ? <SkeletonList count={4} /> : rows.length ? (
@@ -232,7 +250,7 @@ export default function TrainingVolunteersTab({ courseId }) {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-border-subtle p-8 text-center text-sm text-muted">No volunteers {showAll ? "yet" : "on this day"} — scan a volunteer&apos;s ID card or use “+ Add volunteer”.</div>
+          <div className="rounded-2xl border border-dashed border-border-subtle p-8 text-center text-sm text-muted">No volunteers {showAll ? "yet" : "on this day"} — scan a volunteer&apos;s ID card or use “+ Add walk-in”.</div>
         )}
       </section>
 
@@ -255,16 +273,6 @@ export default function TrainingVolunteersTab({ courseId }) {
         )}
       </section>
 
-      {adding && (
-        <AddVolunteerDialog
-          courseId={courseId}
-          date={date}
-          defaultHours={defaultHours}
-          members={members}
-          onClose={() => setAdding(false)}
-          onAdded={async (message) => { setAdding(false); toast.success(message || "Volunteer added."); await load(); }}
-        />
-      )}
     </div>
   );
 }
