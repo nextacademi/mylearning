@@ -122,6 +122,7 @@ export default function TrainingVolunteersTab({ courseId }) {
   const [busy, setBusy] = useState(false);
   const [hoursDraft, setHoursDraft] = useState({});
   const [loadError, setLoadError] = useState("");
+  const [volunteerSearch, setVolunteerSearch] = useState("");
   const scannerRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -199,6 +200,8 @@ export default function TrainingVolunteersTab({ courseId }) {
   }
 
   const totalHours = rows.reduce((sum, r) => sum + (Number(r.hours) || 0), 0);
+  const vq = volunteerSearch.trim().toLowerCase();
+  const shownRows = vq ? rows.filter((r) => [r.displayName, r.email, r.phone].some((v) => String(v || "").toLowerCase().includes(vq))) : rows;
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
@@ -226,9 +229,10 @@ export default function TrainingVolunteersTab({ courseId }) {
         )}
         <p className="mb-3 text-xs text-muted">Who helped run this training {showAll ? "on every day" : `on ${date}`}. Each check-in credits {defaultHours}h (the class length) to their volunteer hours — edit it if they helped longer or shorter.</p>
         {loadError && <p className="mb-3 rounded-xl bg-active p-3 text-xs text-primary">{loadError}</p>}
-        {loading ? <SkeletonList count={4} /> : rows.length ? (
+        <input value={volunteerSearch} onChange={(e) => setVolunteerSearch(e.target.value)} placeholder="Search volunteers by name, email, or phone…" className="mb-3 w-full rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm" aria-label="Search volunteers" />
+        {loading ? <SkeletonList count={4} /> : shownRows.length ? (
           <div className="space-y-2">
-            {rows.map((row) => (
+            {shownRows.map((row) => (
               <div key={row.id} className="flex flex-col gap-2 rounded-xl bg-page p-3 text-xs sm:flex-row sm:items-center sm:justify-between">
                 <span className="min-w-0">
                   <b className="block text-ink">{row.displayName}{!row.userId && <span className="ml-1.5 text-[10px] font-bold uppercase text-warning">Guest</span>}</b>
@@ -249,6 +253,8 @@ export default function TrainingVolunteersTab({ courseId }) {
               </div>
             ))}
           </div>
+        ) : rows.length ? (
+          <div className="rounded-2xl border border-dashed border-border-subtle p-8 text-center text-sm text-muted">No volunteers match “{volunteerSearch}”.</div>
         ) : (
           <div className="rounded-2xl border border-dashed border-border-subtle p-8 text-center text-sm text-muted">No volunteers {showAll ? "yet" : "on this day"} — scan a volunteer&apos;s ID card or use “+ Add walk-in”.</div>
         )}

@@ -401,6 +401,7 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const [hoursDraft, setHoursDraft] = useState({});
+  const [volunteerSearch, setVolunteerSearch] = useState("");
   const scannerRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -417,6 +418,8 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
   useEffect(() => () => { scannerRef.current?.stop().catch(() => {}); }, []);
 
   const volunteers = participants.filter((p) => p.eventRole === "Volunteer");
+  const vq = volunteerSearch.trim().toLowerCase();
+  const shownVolunteers = vq ? volunteers.filter((p) => [p.displayName, p.email, p.phone].some((v) => String(v || "").toLowerCase().includes(vq))) : volunteers;
   const checkedIn = volunteers.filter((p) => p.attendanceStatus === "present");
   const totalHours = checkedIn.reduce((sum, p) => sum + p.hoursCredited, 0);
 
@@ -483,9 +486,10 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
           />
         )}
         <p className="mb-3 text-xs text-muted">Everyone who worked this event. Each check-in credits {defaultHours}h (the event&apos;s length) to their volunteer hours — edit a person&apos;s hours if they worked a different amount.</p>
-        {loading ? <SkeletonList count={4} /> : volunteers.length ? (
+        <input value={volunteerSearch} onChange={(e) => setVolunteerSearch(e.target.value)} placeholder="Search volunteers by name, email, or phone…" className="mb-3 w-full rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm" aria-label="Search volunteers" />
+        {loading ? <SkeletonList count={4} /> : shownVolunteers.length ? (
           <div className="space-y-2">
-            {volunteers.map((p) => {
+            {shownVolunteers.map((p) => {
               const present = p.attendanceStatus === "present";
               const draft = hoursDraft[p.userId];
               return (
@@ -526,7 +530,7 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
               );
             })}
           </div>
-        ) : <Empty>No volunteers yet — scan a volunteer&apos;s ID card or use “+ Add walk-in”.</Empty>}
+        ) : volunteers.length ? <Empty>No volunteers match “{volunteerSearch}”.</Empty> : <Empty>No volunteers yet — scan a volunteer&apos;s ID card or use “+ Add walk-in”.</Empty>}
       </Panel>
 
       <Panel title="Check in a volunteer">

@@ -174,7 +174,6 @@ export default function VolunteerHomePanel() {
         </div>
       </section>
 
-      <MyContribution rows={data.contributions || []} certificates={data.certificates} />
 
       <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <div className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
@@ -238,6 +237,9 @@ export default function VolunteerHomePanel() {
           ))}
         </div>
       </section>
+
+      {/* Detailed list last: summary + every programme, at the bottom of the panel. */}
+      <MyContribution rows={data.contributions || []} certificates={data.certificates} />
     </div>
   );
 }
