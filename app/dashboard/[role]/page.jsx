@@ -46,6 +46,8 @@ import StudentDashboardHome from "../../../components/students/StudentDashboardH
 import AdminQrScanner from "../../../components/attendance/AdminQrScanner";
 import RoomBooking from "../../../components/room-booking/RoomBooking";
 import DocumentsModule from "../../../components/documents/DocumentsModule";
+import VolunteerModule from "../../../components/volunteer/VolunteerModule";
+import VolunteerHomePanel from "../../../components/volunteer/VolunteerHomePanel";
 
 export const roleConfig = {
   // Every self-registered account lands here first (see createProfile in
@@ -137,6 +139,7 @@ export const roleConfig = {
       "Dashboard",
       "Training",
       "Event",
+      "Volunteer",
       "Room Booking",
       "Finance",
       "Documents",
@@ -160,6 +163,7 @@ export const roleConfig = {
       "Dashboard",
       "Training",
       "Event",
+      "Volunteer",
       "Room Booking",
       "Finance",
       "Documents",
@@ -273,6 +277,8 @@ function DirectorDashboard({ profile, user }) {
               <TrainingManagement role="Director" />
             ) : active === "Event" ? (
               <EventManagement />
+            ) : active === "Volunteer" ? (
+              <VolunteerModule name={name} onNavigate={setActive} />
             ) : active === "Room Booking" ? (
               <RoomBooking role="Director" />
             ) : active === "Documents" ? (
@@ -460,6 +466,10 @@ function DashboardContent({ role, profile, user }) {
               <TrainingManagement role={role} />
             ) : role === "Admin" && active === "Event" ? (
               <EventManagement />
+            ) : role === "Admin" && active === "Volunteer" ? (
+              <VolunteerModule name={name} onNavigate={setActive} />
+            ) : role === "Volunteer" && active === "Dashboard" ? (
+              <VolunteerHomePanel />
             ) : role === "Admin" && active === "Room Booking" ? (
               <RoomBooking role="Admin" />
             ) : active === "Appointments" ? (
