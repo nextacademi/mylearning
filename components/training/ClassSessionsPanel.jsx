@@ -56,6 +56,25 @@ function addOneHour(hhmm) {
 
 const blank = { title: "", date: "", startTime: "", endTime: "", location: "", notes: "", teacherId: "" };
 
+// "AutoCAD Class 01" → "AutoCAD Class 02" (keeps the zero-padding); a title
+// with no trailing number gets " (copy)". `step` = how many numbers on.
+function nextTitle(title, step = 1) {
+  const match = /^(.*?)(\d+)(\D*)$/.exec(title || "");
+  if (!match) return `${title || "Class"} (copy)`;
+  const [, prefix, digits, suffix] = match;
+  return `${prefix}${String(Number(digits) + step).padStart(digits.length, "0")}${suffix}`;
+}
+
+// "YYYY-MM-DD" + n days, built from local Y/M/D (no UTC date shift).
+function addDays(value, days) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return value || "";
+  const [y, m, d] = value.split("-").map(Number);
+  const date = new Date(y, m - 1, d + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+const MAX_COPIES = 20;
+
 export default function ClassSessionsPanel({ course, classes, canManage, isAssignedTeacher, currentUid }) {
   const [sessions, setSessions] = useState([]);
   const [teacherNames, setTeacherNames] = useState(new Map());
@@ -64,6 +83,8 @@ export default function ClassSessionsPanel({ course, classes, canManage, isAssig
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [qrSession, setQrSession] = useState(null);
+  const [copies, setCopies] = useState("1");
+  const [everyDays, setEveryDays] = useState("7");
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -95,10 +116,35 @@ export default function ClassSessionsPanel({ course, classes, canManage, isAssig
     setForm({ title: session.title, date: session.date, startTime: session.startTime, endTime: session.endTime, location: session.location, notes: session.notes || "", teacherId: session.teacherId || "" });
     setError("");
   }
+  // Duplicate = the Create form pre-filled from this session, with the class
+  // number and date moved on one week. "Copies" + "every N days" lets one
+  // session become the whole course's run (e.g. 11 more weekly classes) in
+  // one go; each copy can still be edited afterwards.
+  function openDuplicate(session) {
+    setEditing({ classId: session.classId, isNew: true, isDuplicate: true, sourceTitle: session.title });
+    setForm({
+      title: nextTitle(session.title, 1),
+      date: addDays(session.date, 7),
+      startTime: session.startTime || "",
+      endTime: session.endTime || "",
+      location: session.location || "",
+      notes: session.notes || "",
+      teacherId: session.teacherId || "",
+    });
+    setCopies("1");
+    setEveryDays("7");
+    setError("");
+  }
   function close() {
     setEditing(null);
     setError("");
   }
+
+  const copyCount = Math.min(MAX_COPIES, Math.max(1, Math.round(Number(copies) || 1)));
+  const gapDays = Math.max(1, Math.round(Number(everyDays) || 7));
+  const plannedCopies = editing?.isDuplicate
+    ? Array.from({ length: copyCount }, (_, i) => ({ title: nextTitle(form.title, i), date: addDays(form.date, i * gapDays) }))
+    : [];
 
   async function save() {
     if (!form.title.trim() || !form.date) {
@@ -108,7 +154,19 @@ export default function ClassSessionsPanel({ course, classes, canManage, isAssig
     setSaving(true);
     setError("");
     try {
-      if (editing.isNew) {
+      if (editing.isDuplicate) {
+        // One at a time so a failure part-way reports how many were made.
+        let made = 0;
+        try {
+          for (const copy of plannedCopies) {
+            await createClassSession({ courseId: course.id, classId: editing.classId, ...form, ...copy });
+            made += 1;
+          }
+        } catch (err) {
+          throw new Error(`${made} of ${plannedCopies.length} created — ${err.message || "the rest failed"}.`);
+        }
+        toast.success(made === 1 ? `"${plannedCopies[0].title}" created.` : `${made} class sessions created.`);
+      } else if (editing.isNew) {
         await createClassSession({ courseId: course.id, classId: editing.classId, ...form });
       } else {
         await updateClassSession({ id: editing.id, ...form });
@@ -215,6 +273,7 @@ export default function ClassSessionsPanel({ course, classes, canManage, isAssig
                                   <button onClick={() => setQrSession(session)} className="rounded-lg bg-primary px-2.5 py-1 text-white hover:bg-primary-hover">Show QR</button>
                                 )}
                                 <button onClick={() => openEdit(session)} className="rounded-lg border border-border-subtle px-2.5 py-1 text-ink hover:bg-active">Edit</button>
+                                <button onClick={() => openDuplicate(session)} className="rounded-lg border border-border-subtle px-2.5 py-1 text-info hover:bg-active" title="Copy this session to a new date">Duplicate</button>
                                 {session.status !== "cancelled" && (
                                   <button onClick={() => cancelSession(session)} className="rounded-lg border border-border-subtle px-2.5 py-1 text-primary hover:bg-active">Cancel</button>
                                 )}
@@ -237,8 +296,11 @@ export default function ClassSessionsPanel({ course, classes, canManage, isAssig
 
       {editing && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-          <div className="w-full max-w-md space-y-3 rounded-2xl bg-card p-6 shadow-xl">
-            <h4 className="text-sm font-bold text-ink">{editing.isNew ? "Create Class Session" : "Edit Class Session"}</h4>
+          <div className="max-h-[92vh] w-full max-w-md space-y-3 overflow-y-auto rounded-2xl bg-card p-6 shadow-xl">
+            <h4 className="text-sm font-bold text-ink">{editing.isDuplicate ? "Duplicate Class Session" : editing.isNew ? "Create Class Session" : "Edit Class Session"}</h4>
+            {editing.isDuplicate && (
+              <p className="text-[11px] text-muted">Copied from “{editing.sourceTitle}”. The class number and date are moved on — change anything before saving.</p>
+            )}
             <label className="grid gap-1 text-xs font-bold text-muted">
               Class Name / Number
               <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Class 1" className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal" />
@@ -306,11 +368,32 @@ export default function ClassSessionsPanel({ course, classes, canManage, isAssig
               Notes (optional)
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="rounded-xl border border-border-subtle px-3 py-2 text-sm font-normal" />
             </label>
+            {editing.isDuplicate && (
+              <div className="space-y-2 rounded-xl border border-border-subtle bg-page p-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="grid gap-1 text-xs font-bold text-muted">
+                    How many copies
+                    <input type="number" min="1" max={MAX_COPIES} value={copies} onChange={(e) => setCopies(e.target.value)} className="rounded-xl border border-border-subtle bg-card px-2 py-2 text-sm font-normal" />
+                  </label>
+                  <label className="grid gap-1 text-xs font-bold text-muted">
+                    Repeat every (days)
+                    <input type="number" min="1" value={everyDays} onChange={(e) => setEveryDays(e.target.value)} disabled={copyCount === 1} className="rounded-xl border border-border-subtle bg-card px-2 py-2 text-sm font-normal disabled:opacity-50" />
+                  </label>
+                </div>
+                {copyCount > 1 && (
+                  <ul className="max-h-36 space-y-0.5 overflow-y-auto text-[11px] text-muted">
+                    {plannedCopies.map((copy) => (
+                      <li key={copy.title + "_" + copy.date} className="flex justify-between gap-2"><span className="truncate">{copy.title}</span><span className="shrink-0">{formatDate(copy.date)}</span></li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
             {error && <p className="text-xs text-primary">{error}</p>}
             <div className="flex justify-end gap-3 pt-1">
               <button onClick={close} disabled={saving} className="px-4 py-2 text-sm font-bold text-muted">Cancel</button>
               <button onClick={save} disabled={saving} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-60">
-                {saving ? "Saving..." : editing.isNew ? "Create Class" : "Save changes"}
+                {saving ? "Saving..." : editing.isDuplicate ? (copyCount > 1 ? `Create ${copyCount} Classes` : "Create Copy") : editing.isNew ? "Create Class" : "Save changes"}
               </button>
             </div>
           </div>
