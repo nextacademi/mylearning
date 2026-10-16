@@ -6,6 +6,7 @@ import { ToastProvider } from "../components/ui/Toast";
 import { ConfirmProvider } from "../components/ui/ConfirmDialog";
 import PwaRegister from "../components/PwaRegister";
 import AiAssistantWidget from "../components/ai-assistant/AiAssistantWidget";
+import ImpersonationBanner from "../components/auth/ImpersonationBanner";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "../lib/seo";
 
 const geistSans = Geist({
@@ -61,6 +62,7 @@ export default function RootLayout({ children }) {
               <ConfirmProvider>
                 {children}
                 <AiAssistantWidget />
+                <ImpersonationBanner />
               </ConfirmProvider>
             </ToastProvider>
           </AuthProvider>

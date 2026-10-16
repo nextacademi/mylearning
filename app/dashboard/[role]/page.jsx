@@ -49,6 +49,8 @@ import RoomBooking from "../../../components/room-booking/RoomBooking";
 import DocumentsModule from "../../../components/documents/DocumentsModule";
 import VolunteerModule from "../../../components/volunteer/VolunteerModule";
 import VolunteerHomePanel from "../../../components/volunteer/VolunteerHomePanel";
+import SocialMediaPerformance from "../../../components/social-media/SocialMediaPerformance";
+import PrizeDraw from "../../../components/prize-draw/PrizeDraw";
 
 export const roleConfig = {
   // Every self-registered account lands here first (see createProfile in
@@ -145,6 +147,7 @@ export const roleConfig = {
       "Training",
       "Event",
       "Volunteer",
+      "Prize Draw",
       "Room Booking",
       "Finance",
       "Documents",
@@ -152,6 +155,7 @@ export const roleConfig = {
       "Promo Codes",
       "Forms",
       "Website",
+      "Social Media",
       "User",
       "Chat",
       "Achievement",
@@ -169,12 +173,14 @@ export const roleConfig = {
       "Training",
       "Event",
       "Volunteer",
+      "Prize Draw",
       "Room Booking",
       "Finance",
       "Documents",
       "My Shop",
       "Forms",
       "Website",
+      "Social Media",
       "User",
       "Chat",
       "Achievement",
@@ -284,6 +290,10 @@ function DirectorDashboard({ profile, user }) {
               <EventManagement />
             ) : active === "Volunteer" ? (
               <VolunteerModule name={name} onNavigate={setActive} />
+            ) : active === "Prize Draw" ? (
+              <PrizeDraw />
+            ) : active === "Social Media" ? (
+              <SocialMediaPerformance />
             ) : active === "Room Booking" ? (
               <RoomBooking role="Director" />
             ) : active === "Documents" ? (
@@ -475,6 +485,10 @@ function DashboardContent({ role, profile, user }) {
               <VolunteerModule name={name} onNavigate={setActive} />
             ) : role === "Volunteer" && active === "Volunteer" ? (
               <VolunteerHomePanel />
+            ) : role === "Admin" && active === "Prize Draw" ? (
+              <PrizeDraw />
+            ) : role === "Admin" && active === "Social Media" ? (
+              <SocialMediaPerformance />
             ) : role === "Admin" && active === "Room Booking" ? (
               <RoomBooking role="Admin" />
             ) : active === "Appointments" ? (

@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { ShoppingBag, ShoppingCart, Pencil, Trash2, Plus, Minus, Search, Tag, Eye, EyeOff, ArrowUpDown } from "lucide-react";
 import {
   subscribeProducts, subscribeMyOrders, subscribeAllOrders, subscribeCategories,
-  createProduct, updateProduct, deleteProduct, uploadProductImage, updateOrderStatus, updateOrderCollection,
+  createProduct, updateProduct, deleteProduct, uploadProductImage,
   createCategory, updateCategory, deleteCategory, uploadCategoryImage,
 } from "../../lib/shop-data";
 import { SkeletonGrid, SkeletonList } from "../ui/Skeleton";
 import ProductOrderModal from "./ProductOrderModal";
 import CartCheckoutModal from "./CartCheckoutModal";
+import ShopOrdersBoard, { ORDER_STATUS, OrderStatusPill } from "./ShopOrdersBoard";
 import DataTable from "../data-table/DataTable";
 import { useAuth } from "../../lib/auth-context";
 
@@ -43,14 +44,6 @@ function Dialog({ title, children, onClose }) {
   );
 }
 
-function StatusBadge({ status }) {
-  const tones = {
-    pending: "bg-warning-soft text-warning",
-    fulfilled: "bg-success-soft text-success",
-    cancelled: "bg-active text-primary",
-  };
-  return <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold capitalize ${tones[status] || "bg-page text-muted"}`}>{status || "pending"}</span>;
-}
 
 const blankProduct = { name: "", description: "", price: "", stock: "", categoryId: "", variants: [] };
 const blankCategory = { name: "", description: "" };
@@ -205,23 +198,6 @@ function CategoryForm({ form, setForm, saving, error, onCancel, onSubmit, imageP
   );
 }
 
-function PickupEditor({ order, saving, onSave, onCancel }) {
-  const [date, setDate] = useState(order.collectionDate || "");
-  return (
-    <div>
-      <p className="mb-3 text-sm text-muted">Order <b className="font-mono">#{order.orderNumber || order.id}</b></p>
-      <label className="grid gap-1 text-xs font-bold text-muted">
-        Collection Date
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} disabled={saving} className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm font-normal" />
-      </label>
-      <div className="mt-5 flex justify-end gap-3">
-        <button type="button" onClick={onCancel} disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-bold text-muted">Cancel</button>
-        <button type="button" onClick={() => onSave(date)} disabled={saving} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">{saving ? "Saving..." : "Save"}</button>
-      </div>
-    </div>
-  );
-}
-
 export default function Shop({ role, uid }) {
   const { profile } = useAuth();
   const canManage = managers.has(role);
@@ -266,10 +242,6 @@ export default function Shop({ role, uid }) {
   // one should return straight back to that product form with the new
   // category already selected — not just close everything.
   const [returnToProductForm, setReturnToProductForm] = useState(false);
-
-  // Admin/Director "Change Pickup" — reassign an order's collection date.
-  const [editingPickupOrder, setEditingPickupOrder] = useState(null);
-  const [pickupSaving, setPickupSaving] = useState(false);
 
   useEffect(() => subscribeProducts((rows) => { setProducts(rows); setProductsLoaded(true); }, () => setProductsLoaded(true)), []);
   useEffect(() => subscribeCategories((rows) => { setCategories(rows); setCategoriesLoaded(true); }, () => setCategoriesLoaded(true)), []);
@@ -501,31 +473,7 @@ export default function Shop({ role, uid }) {
       setError(e.message || "Unable to delete this product.");
     }
   }
-  async function markOrder(order, status) {
-    try {
-      await updateOrderStatus(order.id, status);
-      setNotice(`Order marked ${status}.`);
-    } catch (e) {
-      setError(e.message || "Unable to update this order.");
-    }
-  }
-
-  async function savePickup(dateValue) {
-    if (!editingPickupOrder || pickupSaving) return;
-    setPickupSaving(true);
-    try {
-      await updateOrderCollection(editingPickupOrder.id, dateValue);
-      setNotice("Pickup date updated.");
-      setEditingPickupOrder(null);
-    } catch (e) {
-      setError(e.message || "Unable to update the pickup date.");
-    } finally {
-      setPickupSaving(false);
-    }
-  }
-
   const tabs = ["Shop", "Orders", ...(canManage ? ["Manage Products", "Categories"] : [])];
-  const ordersToShow = canManage ? allOrders : myOrders;
   const pendingOrderCount = (canManage ? allOrders : myOrders).filter((order) => (order.status || "pending") === "pending").length;
 
   return (
@@ -740,33 +688,27 @@ export default function Shop({ role, uid }) {
         </>
       )}
 
-      {tab === "Orders" && (
-        <section className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
-          <h3 className="mb-1 font-bold text-ink">{canManage ? "All orders" : "My orders"}</h3>
-          <p className="mb-4 text-xs text-muted">{canManage ? "Every order placed across the shop." : "Your own order history."}</p>
+      {tab === "Orders" && canManage && <ShopOrdersBoard orders={allOrders} products={products} role={role} />}
+
+      {tab === "Orders" && !canManage && (
+        <section className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm md:p-6">
+          <h3 className="mb-1 font-bold text-ink">My orders</h3>
+          <p className="mb-4 text-xs text-muted">Your own order history and pickup status.</p>
           <DataTable
             title="orders"
-            name="shop-orders"
-            enableExport={canManage}
+            name="my-shop-orders"
+            enableExport={false}
             columns={[
-              { key: "orderNumber", header: "Order #", sortable: true, accessor: (o) => o.orderNumber || o.id, render: (o) => <span className="font-mono text-xs text-muted">{o.orderNumber || dash}</span> },
-              ...(canManage ? [{ key: "customerName", header: "Buyer", sortable: true, accessor: (o) => `${o.customerName || o.buyerName || ""} ${o.customerEmail || o.buyerEmail || ""}`, render: (o) => <span><b className="block text-ink">{o.customerName || o.buyerName || dash}</b><span className="block text-[11px] text-muted">{o.customerPhone || ""}</span><span className="text-[11px] text-muted">{o.customerEmail || o.buyerEmail}</span></span>, exportValue: (o) => o.customerName || o.buyerName || "" }] : []),
-              { key: "items", header: "Items", accessor: (o) => (o.items || []).map((i) => `${i.name}${i.variantLabel ? ` (${i.variantLabel})` : ""} × ${i.quantity}`).join("; "), render: (o) => <span className="text-xs text-muted">{(o.items || []).map((i) => <span key={i.productId} className="block">{i.name}{i.variantLabel ? ` (${i.variantLabel})` : ""} × {i.quantity}</span>)}</span> },
+              { key: "orderNumber", header: "Order ID", sortable: true, accessor: (o) => o.orderNumber || o.id, render: (o) => <span className="font-mono text-xs font-semibold text-primary">{o.orderNumber || dash}</span> },
+              { key: "items", header: "Items", accessor: (o) => (o.items || []).map((i) => `${i.name}${i.variantLabel ? ` (${i.variantLabel})` : ""} × ${i.quantity}`).join("; "), render: (o) => <span className="text-xs text-muted">{(o.items || []).map((i) => <span key={`${i.productId}-${i.variantId || ""}`} className="block">{i.name}{i.variantLabel ? ` (${i.variantLabel})` : ""} × {i.quantity}</span>)}</span> },
               { key: "collectionDate", header: "Collection", sortable: true, accessor: (o) => o.collectionDate || "", render: (o) => <span className="text-xs text-muted">{o.collectionDate ? formatDate(o.collectionDate) : dash}</span> },
-              { key: "totalAmount", header: "Total", align: "right", sortable: true, accessor: (o) => Number(o.totalAmount || 0), render: (o) => <b className="text-ink">{money(o.totalAmount)}</b>, exportValue: (o) => Number(o.totalAmount || 0) },
-              { key: "status", header: "Status", sortable: true, filter: {}, accessor: (o) => o.status || "pending", render: (o) => <StatusBadge status={o.status} /> },
+              { key: "totalAmount", header: "Total", align: "right", sortable: true, accessor: (o) => Number(o.totalAmount || 0), render: (o) => <b className="text-success">{money(o.totalAmount)}</b> },
+              { key: "status", header: "Status", sortable: true, filter: { options: Object.entries(ORDER_STATUS).map(([value, meta]) => ({ value, label: meta.label })) }, accessor: (o) => o.status || "pending", render: (o) => <OrderStatusPill status={o.status} /> },
             ]}
-            rows={[...ordersToShow].sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))}
+            rows={[...myOrders].sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))}
             initialSort={null}
             pageSize={10}
             emptyLabel="No orders yet."
-            rowActions={canManage ? (order) => (
-              <>
-                {order.status !== "fulfilled" && <button type="button" onClick={() => markOrder(order, "fulfilled")} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-success hover:bg-page">Fulfil</button>}
-                {order.status !== "cancelled" && <button type="button" onClick={() => markOrder(order, "cancelled")} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page">Cancel</button>}
-                <button type="button" onClick={() => setEditingPickupOrder(order)} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-info hover:bg-page">Pickup</button>
-              </>
-            ) : undefined}
           />
         </section>
       )}
@@ -873,11 +815,6 @@ export default function Shop({ role, uid }) {
         </Dialog>
       )}
 
-      {editingPickupOrder && (
-        <Dialog title="Change Pickup Date" onClose={() => setEditingPickupOrder(null)}>
-          <PickupEditor order={editingPickupOrder} saving={pickupSaving} onSave={savePickup} onCancel={() => setEditingPickupOrder(null)} />
-        </Dialog>
-      )}
 
       {confirmDelete && (
         <Dialog title="Delete product" onClose={() => setConfirmDelete(null)}>

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Eye, LogIn, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { changeUserRole, deleteUserAccount, loadUsersCached, updateUserDetails } from "../../lib/services/user-service";
+import { loginAsUser } from "../../lib/services/impersonation-service";
+import { canImpersonate } from "../../lib/impersonation-shared";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
@@ -45,7 +47,7 @@ function displayDate(value) {
 // The three-dot secondary-actions menu — Edit details and Delete, kept
 // behind a menu (rather than more always-visible buttons) since they're
 // rarely-used actions on this row.
-function RowMenu({ onEdit, onDelete }) {
+function RowMenu({ onEdit, onDelete, onLoginAs }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -65,6 +67,15 @@ function RowMenu({ onEdit, onDelete }) {
       </button>
       {open && (
         <div className="absolute right-0 top-8 z-20 w-44 rounded-xl border border-border-subtle bg-card p-1 shadow-2xl">
+          {onLoginAs && (
+            <button
+              type="button"
+              onClick={() => { setOpen(false); onLoginAs(); }}
+              className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-semibold text-ink hover:bg-active"
+            >
+              <LogIn className="h-3.5 w-3.5" aria-hidden="true" /> Log in as user
+            </button>
+          )}
           {onEdit && (
             <button
               type="button"
@@ -152,6 +163,17 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
     { key: "status", header: "Status", sortable: true, filter: {}, accessor: (u) => (u.active === null ? "Unknown" : u.active ? "Active" : "Inactive"), render: (u) => <StatusBadge tone={u.active === false ? "gray" : "green"}>{u.active === null ? dash : u.active ? "Active" : "Inactive"}</StatusBadge> },
     { key: "createdAt", header: "Joined", sortable: true, sortValue: (u) => u.createdAt || "", exportValue: (u) => displayDate(u.createdAt), render: (u) => <span className="text-xs text-muted">{displayDate(u.createdAt)}</span> },
   ], []);
+
+  function loginAs(user) {
+    const name = user.displayName || user.email || "this user";
+    return confirm({
+      title: `Log in as ${name}?`,
+      message: `This signs you in to ${name}'s account (${user.role}) — exactly as if they had logged in themselves, so anything you do (orders, registrations, messages) is done as them. Use the small ↩ button in the bottom-left corner to return to your own account. This is recorded in the access log.`,
+      tone: "neutral",
+      confirmLabel: "Log in as user",
+      onConfirm: () => loginAsUser(user.uid),
+    });
+  }
 
   function deleteUser(user) {
     const label = user.email || user.displayName || user.uid;
@@ -247,7 +269,13 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
                 <>
                   <button type="button" onClick={() => setViewing(user)} className="inline-flex items-center gap-1 rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90"><Eye className="h-3.5 w-3.5" /> View</button>
                   {canChange(user) && <button type="button" onClick={() => { setChanging(user); setNextRole(user.role || "Student"); setError(""); }} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-primary hover:bg-page">Change role</button>}
-                  {canChange(user) && <RowMenu onEdit={user.missingProfile ? null : () => startEdit(user)} onDelete={() => deleteUser(user)} />}
+                  {canChange(user) && (
+                    <RowMenu
+                      onEdit={user.missingProfile ? null : () => startEdit(user)}
+                      onDelete={() => deleteUser(user)}
+                      onLoginAs={!user.missingProfile && canImpersonate(role, user.role) ? () => loginAs(user) : null}
+                    />
+                  )}
                 </>
               )}
             />
