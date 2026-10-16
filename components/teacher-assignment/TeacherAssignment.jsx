@@ -9,6 +9,7 @@ import { useSessionTab } from "../../lib/page-refresh";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
 import DataTable from "../data-table/DataTable";
+import LoginAsButton from "../auth/LoginAsButton";
 import { SkeletonList } from "../ui/Skeleton";
 import {
   assignTeacher, loadTeacherAssignmentDataCached, removeTeacher, saveTeacherAssignment,
@@ -285,7 +286,10 @@ function DirectoryTab({ data, loading, onView, onNavigate }) {
       pageSize={10}
       emptyLabel="No active teacher accounts exist yet."
       rowActions={(teacher) => (
-        <button type="button" onClick={() => onView(teacher)} className="rounded-lg bg-info px-3 py-1.5 text-[11px] font-bold text-white hover:opacity-90">View</button>
+        <>
+          <button type="button" onClick={() => onView(teacher)} className="rounded-lg bg-info px-3 py-1.5 text-[11px] font-bold text-white hover:opacity-90">View</button>
+          <LoginAsButton uid={teacher.id} role={teacher.role || "Teacher"} name={teacher.displayName || teacher.email} />
+        </>
       )}
     />
   );

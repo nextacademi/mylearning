@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MoreVertical, UserRound } from "lucide-react";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
+import LoginAsButton from "../auth/LoginAsButton";
 
 function formatDate(value) {
   if (!value) return "";
@@ -191,6 +192,7 @@ export default function StudentTable({ students, tab, onView, onEdit, onDeactiva
       rowActions={(item) => (
         <>
           <button type="button" onClick={() => onView(item)} className="rounded-lg bg-info px-2.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90">View</button>
+          <LoginAsButton uid={item.id} role={item.role || "Student"} name={item.displayName || item.email} />
           <button type="button" onClick={() => onEdit(item)} className="rounded-lg border border-border-subtle px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-page">Edit</button>
           <RowMenu item={item} onDeactivate={onDeactivate} onReactivate={onReactivate} />
         </>
