@@ -20,7 +20,7 @@ export default function LoginAsButton({ uid, role, name }) {
       type="button"
       onClick={() => confirm({
         title: `Log in as ${label}?`,
-        message: `This signs you in to ${label}'s account (${role}) — exactly as if they had logged in themselves, so anything you do (orders, registrations, messages) is done as them. Use the small ↩ button in the bottom-left corner to return to your own account. This is recorded in the access log.`,
+        message: `This signs you in to ${label}'s account (${role}) — exactly as if they had logged in themselves, so anything you do (orders, registrations, messages) is done as them. To come back to your own account, use "Return to my account" in the bottom-left corner, or Sign out. This is recorded in the access log.`,
         tone: "neutral",
         confirmLabel: "Log in as user",
         onConfirm: () => loginAsUser(uid),

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { loadTraining } from "../../lib/services/training-service";
 import { subscribeCourseClasses } from "../../lib/training-detail";
 import { subscribeCourseClassSessions } from "../../lib/class-sessions-data";
 import { scanAttendanceQr } from "../../lib/services/qr-service";
+import { useQrScanner } from "../../lib/useQrScanner";
 
 const SCANNER_ELEMENT_ID = "admin-qr-scanner";
 
@@ -23,12 +24,10 @@ export default function AdminQrScanner() {
   const [classId, setClassId] = useState("");
   const [sessions, setSessions] = useState([]);
   const [sessionId, setSessionId] = useState("");
-  const [scanning, setScanning] = useState(false);
   const [manualToken, setManualToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
-  const [cameraError, setCameraError] = useState("");
-  const scannerRef = useRef(null);
+  const scanner = useQrScanner(SCANNER_ELEMENT_ID, handleToken);
 
   useEffect(() => {
     loadTraining().then((data) => setCourses(data.courses || [])).catch(() => setCourses([]));
@@ -59,38 +58,10 @@ export default function AdminQrScanner() {
     }
   }
 
-  async function startScanning() {
-    setCameraError("");
+  function startScanning() {
     setResult(null);
-    try {
-      const { Html5Qrcode } = await import("html5-qrcode");
-      const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
-      scannerRef.current = scanner;
-      await scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 220 },
-        async (decodedText) => {
-          await scanner.stop().catch(() => {});
-          setScanning(false);
-          handleToken(decodedText);
-        },
-        () => {},
-      );
-      setScanning(true);
-    } catch (error) {
-      setCameraError(
-        error?.message?.includes("Permission")
-          ? "Camera permission was denied. Use manual entry below instead."
-          : "Unable to access the camera. Use manual entry below instead.",
-      );
-    }
+    scanner.start();
   }
-
-  useEffect(() => {
-    return () => {
-      scannerRef.current?.stop().catch(() => {});
-    };
-  }, []);
 
   return (
     <div className="space-y-4">
@@ -103,12 +74,12 @@ export default function AdminQrScanner() {
       <div className="grid gap-4 lg:grid-cols-[1fr_.8fr]">
         <div className="rounded-3xl border border-border-subtle bg-card p-5 shadow-sm">
           <div className="mb-4 flex flex-wrap gap-2">
-            <select value={courseId} onChange={(e) => { setCourseId(e.target.value); setClassId(""); setSessionId(""); }} className="rounded-xl border border-border-subtle bg-page px-3 py-2 text-xs">
+            <select value={courseId} onChange={(e) => { scanner.stop(); setCourseId(e.target.value); setClassId(""); setSessionId(""); }} className="rounded-xl border border-border-subtle bg-page px-3 py-2 text-xs">
               <option value="">Select training</option>
               {courses.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </select>
             {courseId && (
-              <select value={classId} onChange={(e) => { setClassId(e.target.value); setSessionId(""); }} className="rounded-xl border border-border-subtle bg-page px-3 py-2 text-xs">
+              <select value={classId} onChange={(e) => { if (!e.target.value) scanner.stop(); setClassId(e.target.value); setSessionId(""); }} className="rounded-xl border border-border-subtle bg-page px-3 py-2 text-xs">
                 <option value="">Select class</option>
                 {classes.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
               </select>
@@ -126,12 +97,19 @@ export default function AdminQrScanner() {
           ) : (
             <>
               <div id={SCANNER_ELEMENT_ID} className="mx-auto max-w-sm overflow-hidden rounded-2xl bg-slate-900" />
-              {!scanning && (
+              {scanner.scanning ? (
+                <>
+                  <p className="mt-3 text-center text-xs text-muted">Camera stays on — show the next ID card.</p>
+                  <button type="button" onClick={scanner.stop} className="mt-3 w-full rounded-xl border border-border-subtle py-3 text-xs font-bold text-ink hover:bg-page">
+                    Stop camera
+                  </button>
+                </>
+              ) : (
                 <button onClick={startScanning} className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white">
                   Start camera scan
                 </button>
               )}
-              {cameraError && <p className="mt-3 text-xs text-primary">{cameraError}</p>}
+              {scanner.cameraError && <p className="mt-3 text-xs text-primary">{scanner.cameraError}</p>}
               <div className="mt-5 border-t border-border-subtle pt-4">
                 <p className="mb-2 text-xs font-semibold text-muted">Camera denied? Paste the QR token manually:</p>
                 <div className="flex gap-2">

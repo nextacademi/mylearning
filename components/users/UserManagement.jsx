@@ -128,7 +128,8 @@ export default function UserManagement({ role, currentUserId, onNavigate }) {
   const canChange = (user) => user.uid !== currentUserId && !(role !== "Director" && user.role === "Director");
 
   const columns = useMemo(() => [
-    { key: "userId", header: "User ID", sortable: true, accessor: (u) => u.userId || "", render: (u) => <span className="font-mono text-xs text-muted">{u.userId || dash}</span> },
+    // Not shown as a column, but still searchable and included in exports.
+    { key: "userId", header: "User ID", hidden: true, accessor: (u) => u.userId || "" },
     {
       key: "displayName", header: "Name", sortable: true, accessor: (u) => u.displayName || "",
       // Same avatar as the Students / Teachers tabs: photo, else initials.

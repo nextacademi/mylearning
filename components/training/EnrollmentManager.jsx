@@ -64,6 +64,9 @@ function EnrollStudentModal({ allStudents, capacityFull, onEnroll, close }) {
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
+  // Enrolled while this modal is open — marked at once, before the list reloads,
+  // so the same student can't be enrolled twice.
+  const [enrolledIds, setEnrolledIds] = useState([]);
 
   const filtered = allStudents.filter((student) =>
     `${student.displayName} ${student.email} ${student.userId}`.toLowerCase().includes(search.trim().toLowerCase()),
@@ -74,6 +77,7 @@ function EnrollStudentModal({ allStudents, capacityFull, onEnroll, close }) {
     setError("");
     try {
       await onEnroll(student.id);
+      setEnrolledIds((ids) => [...ids, student.id]);
     } catch (err) {
       setError(err.message || "Unable to enroll this student.");
     } finally {
@@ -100,6 +104,11 @@ function EnrollStudentModal({ allStudents, capacityFull, onEnroll, close }) {
         />
       </label>
       {error && <p className="mb-3 rounded-xl bg-active p-3 text-xs text-primary">{error}</p>}
+      {enrolledIds.length > 0 && (
+        <p className="mb-3 rounded-xl bg-success-soft p-3 text-xs font-semibold text-success">
+          {enrolledIds.length} {enrolledIds.length === 1 ? "student" : "students"} enrolled.
+        </p>
+      )}
       <div className="max-h-80 space-y-2 overflow-y-auto">
         {filtered.length ? (
           filtered.map((student) => (
@@ -113,7 +122,9 @@ function EnrollStudentModal({ allStudents, capacityFull, onEnroll, close }) {
                 </b>
                 <span className="text-muted">{student.userId} · {student.email}</span>
               </div>
-              {student.alreadyEnrolled ? (
+              {enrolledIds.includes(student.id) ? (
+                <span className="shrink-0 rounded-full bg-success-soft px-3 py-1.5 text-[10px] font-bold text-success">Enrolled</span>
+              ) : student.alreadyEnrolled ? (
                 <span className="shrink-0 rounded-full bg-page px-3 py-1.5 text-[10px] font-bold text-muted">Already Enrolled</span>
               ) : (
                 <button
@@ -406,7 +417,7 @@ export default function EnrollmentManager({ mode, courseId, courseTitle, courseC
   async function handleEnroll(studentId) {
     await backend.enroll(courseId, studentId);
     setMessage("Student enrolled.");
-    setModalOpen(false);
+    // The modal stays open so several students can be enrolled in one go.
     load();
   }
   async function handleRemove(row) {

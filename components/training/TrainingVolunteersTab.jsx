@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import {
   addTrainingVolunteer, loadTrainingVolunteers, removeTrainingVolunteer, updateTrainingVolunteerHours,
@@ -9,6 +9,7 @@ import { loadUsersCached } from "../../lib/services/user-service";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { useToast } from "../ui/Toast";
 import { SkeletonList } from "../ui/Skeleton";
+import { useQrScanner } from "../../lib/useQrScanner";
 
 // Training → Volunteers: who helped run this training on a given day and
 // for how long (lib/server/training-volunteers.js). Scan a volunteer's ID
@@ -115,15 +116,13 @@ export default function TrainingVolunteersTab({ courseId }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [cameraError, setCameraError] = useState("");
   const [manualToken, setManualToken] = useState("");
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
   const [hoursDraft, setHoursDraft] = useState({});
   const [loadError, setLoadError] = useState("");
   const [volunteerSearch, setVolunteerSearch] = useState("");
-  const scannerRef = useRef(null);
+  const scanner = useQrScanner(SCANNER_ID, handleToken);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -143,7 +142,6 @@ export default function TrainingVolunteersTab({ courseId }) {
   useEffect(() => {
     loadUsersCached().then((data) => setMembers((data.users || []).filter((u) => !u.missingProfile))).catch(() => setMembers([]));
   }, []);
-  useEffect(() => () => { scannerRef.current?.stop().catch(() => {}); }, []);
 
   async function handleToken(token) {
     if (!token || busy) return;
@@ -160,22 +158,9 @@ export default function TrainingVolunteersTab({ courseId }) {
       setBusy(false);
     }
   }
-  async function startScanning() {
-    setCameraError("");
+  function startScanning() {
     setResult(null);
-    try {
-      const { Html5Qrcode } = await import("html5-qrcode");
-      const scanner = new Html5Qrcode(SCANNER_ID);
-      scannerRef.current = scanner;
-      await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 220 }, async (decodedText) => {
-        await scanner.stop().catch(() => {});
-        setScanning(false);
-        handleToken(decodedText);
-      }, () => {});
-      setScanning(true);
-    } catch {
-      setCameraError("Unable to access the camera. Use manual entry below instead.");
-    }
+    scanner.start();
   }
   async function saveHours(row) {
     const draft = hoursDraft[row.id];
@@ -263,8 +248,15 @@ export default function TrainingVolunteersTab({ courseId }) {
       <section className="rounded-3xl border border-border-subtle bg-card p-6 shadow-sm">
         <h2 className="mb-4 font-bold text-ink">Check in a volunteer · {date}</h2>
         <div id={SCANNER_ID} className="mx-auto max-w-sm overflow-hidden rounded-2xl bg-slate-900" />
-        {!scanning && <button type="button" onClick={startScanning} className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white">Start camera scan</button>}
-        {cameraError && <p className="mt-3 text-xs text-primary">{cameraError}</p>}
+        {scanner.scanning ? (
+          <>
+            <p className="mt-3 text-center text-xs text-muted">Camera stays on — show the next ID card.</p>
+            <button type="button" onClick={scanner.stop} className="mt-3 w-full rounded-xl border border-border-subtle py-3 text-xs font-bold text-ink hover:bg-page">Stop camera</button>
+          </>
+        ) : (
+          <button type="button" onClick={startScanning} className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white">Start camera scan</button>
+        )}
+        {scanner.cameraError && <p className="mt-3 text-xs text-primary">{scanner.cameraError}</p>}
         <div className="mt-5 border-t border-border-subtle pt-4">
           <p className="mb-2 text-xs font-semibold text-muted">Camera denied? Paste the QR token manually:</p>
           <div className="flex gap-2">

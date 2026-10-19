@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,6 +30,7 @@ import SettingsPage from "./settings/SettingsPage";
 import { markNotificationRead } from "../lib/notification-data";
 import { uploadProfilePhoto, validateAvatarFile } from "../lib/profile-data";
 import { scanAttendanceQr } from "../lib/services/qr-service";
+import { useQrScanner } from "../lib/useQrScanner";
 import DocumentsModule from "./documents/DocumentsModule";
 import {
   createPromotionLink,
@@ -979,12 +980,10 @@ function ScanQrView({ data }) {
   // Filtered by the current classId rather than reset in the effect above
   // (no course selected simply means classId won't match anything here).
   const todaySessions = sessions.filter((item) => item.classId === classId && item.date === new Date().toISOString().slice(0, 10) && item.status !== "cancelled");
-  const [scanning, setScanning] = useState(false);
   const [manualToken, setManualToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
-  const [cameraError, setCameraError] = useState("");
-  const scannerRef = useRef(null);
+  const scanner = useQrScanner(SCANNER_ELEMENT_ID, handleToken);
 
   async function handleToken(token) {
     if (!classId || !token || busy) return;
@@ -1000,38 +999,10 @@ function ScanQrView({ data }) {
     }
   }
 
-  async function startScanning() {
-    setCameraError("");
+  function startScanning() {
     setResult(null);
-    try {
-      const { Html5Qrcode } = await import("html5-qrcode");
-      const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
-      scannerRef.current = scanner;
-      await scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 220 },
-        async (decodedText) => {
-          await scanner.stop().catch(() => {});
-          setScanning(false);
-          handleToken(decodedText);
-        },
-        () => {},
-      );
-      setScanning(true);
-    } catch (error) {
-      setCameraError(
-        error?.message?.includes("Permission")
-          ? "Camera permission was denied. Use manual entry below instead."
-          : "Unable to access the camera. Use manual entry below instead.",
-      );
-    }
+    scanner.start();
   }
-
-  useEffect(() => {
-    return () => {
-      scannerRef.current?.stop().catch(() => {});
-    };
-  }, [scannerRef]);
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_.8fr]">
@@ -1042,6 +1013,7 @@ function ScanQrView({ data }) {
             <select
               value={classId}
               onChange={(event) => {
+                if (!event.target.value) scanner.stop();
                 setClassId(event.target.value);
                 setSessionId("");
               }}
@@ -1076,7 +1048,18 @@ function ScanQrView({ data }) {
         ) : (
           <>
             <div id={SCANNER_ELEMENT_ID} className="mx-auto max-w-sm overflow-hidden rounded-2xl bg-slate-900" />
-            {!scanning && (
+            {scanner.scanning ? (
+              <>
+                <p className="mt-3 text-center text-xs text-muted">Camera stays on — show the next ID card.</p>
+                <button
+                  type="button"
+                  onClick={scanner.stop}
+                  className="mt-3 w-full rounded-xl border border-border-subtle py-3 text-xs font-bold text-ink hover:bg-page"
+                >
+                  Stop camera
+                </button>
+              </>
+            ) : (
               <button
                 onClick={startScanning}
                 className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white"
@@ -1084,7 +1067,7 @@ function ScanQrView({ data }) {
                 Start camera scan
               </button>
             )}
-            {cameraError && <p className="mt-3 text-xs text-primary">{cameraError}</p>}
+            {scanner.cameraError && <p className="mt-3 text-xs text-primary">{scanner.cameraError}</p>}
             <div className="mt-5 border-t border-border-subtle pt-4">
               <p className="mb-2 text-xs font-semibold text-muted">
                 Camera denied? Paste the QR token manually:

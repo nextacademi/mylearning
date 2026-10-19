@@ -17,6 +17,7 @@ import ExportMenu from "./ExportMenu";
 //     filter?: { options?, predicate?, placeholder? },
 //     exportValue?: (row) => value,   // default the accessor value
 //     exportHeader?, exportable?: boolean,
+//     hidden?: boolean,               // not shown, still searched/exported
 //     className?: string,
 //   }
 // ---------------------------------------------------------------------------
@@ -42,6 +43,7 @@ export default function DataTable({
   dense = false,
 }) {
   const table = useDataTable({ rows, columns, initialSort, pageSize });
+  const shown = columns.filter((col) => !col.hidden);
   const cellPad = dense ? "px-3 py-2" : "px-4 py-3";
 
   return (
@@ -96,10 +98,10 @@ export default function DataTable({
 
       {/* ---- table ---- */}
       <div className="overflow-x-auto rounded-2xl border border-border-subtle bg-card shadow-sm">
-        <table className="w-full text-left text-sm" style={{ minWidth: `${Math.max(640, columns.length * 130)}px` }}>
+        <table className="w-full text-left text-sm" style={{ minWidth: `${Math.max(640, shown.length * 130)}px` }}>
           <thead className="bg-page text-[10px] font-black uppercase tracking-wider text-muted">
             <tr>
-              {columns.map((col) => {
+              {shown.map((col) => {
                 const active = table.sort?.key === col.key;
                 return (
                   <th
@@ -121,9 +123,9 @@ export default function DataTable({
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={columns.length + (rowActions ? 1 : 0)} className="px-4 py-12 text-center text-sm text-muted">Loading…</td></tr>
+              <tr><td colSpan={shown.length + (rowActions ? 1 : 0)} className="px-4 py-12 text-center text-sm text-muted">Loading…</td></tr>
             ) : !table.pageRows.length ? (
-              <tr><td colSpan={columns.length + (rowActions ? 1 : 0)} className="px-4 py-12 text-center text-sm text-muted">{table.total ? "No records match your search or filters." : emptyLabel}</td></tr>
+              <tr><td colSpan={shown.length + (rowActions ? 1 : 0)} className="px-4 py-12 text-center text-sm text-muted">{table.total ? "No records match your search or filters." : emptyLabel}</td></tr>
             ) : (
               table.pageRows.map((row) => (
                 <tr
@@ -131,7 +133,7 @@ export default function DataTable({
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   className={`border-t border-border-subtle transition-colors hover:bg-page ${onRowClick ? "cursor-pointer" : ""}`}
                 >
-                  {columns.map((col) => (
+                  {shown.map((col) => (
                     <td key={col.key} className={`${cellPad} ${alignClass[col.align] || "text-left"} ${col.className || ""}`}>
                       {col.render ? col.render(row) : String(
                         (col.accessor ? col.accessor(row) : row[col.key]) ?? "—",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { useAuth } from "../../lib/auth-context";
@@ -18,6 +18,7 @@ import { loadUsers } from "../../lib/services/user-service";
 import { computeEventStatus, isRegistrationOpen } from "../../lib/events-shared";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { SkeletonBar, SkeletonList } from "../ui/Skeleton";
+import { useQrScanner } from "../../lib/useQrScanner";
 
 // Perceived-speed only — mirrors the real header + tab nav + Overview
 // panel shape below so there's no layout jump once the real event data
@@ -395,14 +396,12 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
   const [defaultHours, setDefaultHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [cameraError, setCameraError] = useState("");
   const [manualToken, setManualToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const [hoursDraft, setHoursDraft] = useState({});
   const [volunteerSearch, setVolunteerSearch] = useState("");
-  const scannerRef = useRef(null);
+  const scanner = useQrScanner(VOLUNTEER_SCANNER_ID, handleToken);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -415,7 +414,6 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
     }
   }, [eventId]);
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
-  useEffect(() => () => { scannerRef.current?.stop().catch(() => {}); }, []);
 
   const volunteers = participants.filter((p) => p.eventRole === "Volunteer");
   const vq = volunteerSearch.trim().toLowerCase();
@@ -438,22 +436,9 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
       setBusy(false);
     }
   }
-  async function startScanning() {
-    setCameraError("");
+  function startScanning() {
     setResult(null);
-    try {
-      const { Html5Qrcode } = await import("html5-qrcode");
-      const scanner = new Html5Qrcode(VOLUNTEER_SCANNER_ID);
-      scannerRef.current = scanner;
-      await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 220 }, async (decodedText) => {
-        await scanner.stop().catch(() => {});
-        setScanning(false);
-        handleToken(decodedText);
-      }, () => {});
-      setScanning(true);
-    } catch {
-      setCameraError("Unable to access the camera. Use manual entry below instead.");
-    }
+    scanner.start();
   }
   async function update(userId, patch, message) {
     try {
@@ -535,8 +520,15 @@ function VolunteersTab({ eventId, canManage, staff, onNotice }) {
 
       <Panel title="Check in a volunteer">
         <div id={VOLUNTEER_SCANNER_ID} className="mx-auto max-w-sm overflow-hidden rounded-2xl bg-slate-900" />
-        {!scanning && <button type="button" onClick={startScanning} className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white">Start camera scan</button>}
-        {cameraError && <p className="mt-3 text-xs text-primary">{cameraError}</p>}
+        {scanner.scanning ? (
+          <>
+            <p className="mt-3 text-center text-xs text-muted">Camera stays on — show the next ID card.</p>
+            <button type="button" onClick={scanner.stop} className="mt-3 w-full rounded-xl border border-border-subtle py-3 text-xs font-bold text-ink hover:bg-page">Stop camera</button>
+          </>
+        ) : (
+          <button type="button" onClick={startScanning} className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white">Start camera scan</button>
+        )}
+        {scanner.cameraError && <p className="mt-3 text-xs text-primary">{scanner.cameraError}</p>}
         <div className="mt-5 border-t border-border-subtle pt-4">
           <p className="mb-2 text-xs font-semibold text-muted">Camera denied? Paste the QR token manually:</p>
           <div className="flex gap-2">
@@ -561,12 +553,10 @@ const SCANNER_ELEMENT_ID = "event-attendance-scanner";
 function AttendanceTab({ eventId, onNotice }) {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [scanning, setScanning] = useState(false);
-  const [cameraError, setCameraError] = useState("");
   const [manualToken, setManualToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
-  const scannerRef = useRef(null);
+  const scanner = useQrScanner(SCANNER_ELEMENT_ID, handleToken);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -578,7 +568,6 @@ function AttendanceTab({ eventId, onNotice }) {
     }
   }, [eventId]);
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
-  useEffect(() => () => { scannerRef.current?.stop().catch(() => {}); }, []);
 
   async function mark(userId, attendanceStatus) {
     try {
@@ -604,22 +593,9 @@ function AttendanceTab({ eventId, onNotice }) {
       setBusy(false);
     }
   }
-  async function startScanning() {
-    setCameraError("");
+  function startScanning() {
     setResult(null);
-    try {
-      const { Html5Qrcode } = await import("html5-qrcode");
-      const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
-      scannerRef.current = scanner;
-      await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 220 }, async (decodedText) => {
-        await scanner.stop().catch(() => {});
-        setScanning(false);
-        handleToken(decodedText);
-      }, () => {});
-      setScanning(true);
-    } catch {
-      setCameraError("Unable to access the camera. Use manual entry below instead.");
-    }
+    scanner.start();
   }
 
   const present = participants.filter((p) => p.attendanceStatus === "present").length;
@@ -646,8 +622,15 @@ function AttendanceTab({ eventId, onNotice }) {
       </Panel>
       <Panel title="Scan a participant's ID QR code">
         <div id={SCANNER_ELEMENT_ID} className="mx-auto max-w-sm overflow-hidden rounded-2xl bg-slate-900" />
-        {!scanning && <button type="button" onClick={startScanning} className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white">Start camera scan</button>}
-        {cameraError && <p className="mt-3 text-xs text-primary">{cameraError}</p>}
+        {scanner.scanning ? (
+          <>
+            <p className="mt-3 text-center text-xs text-muted">Camera stays on — show the next ID card.</p>
+            <button type="button" onClick={scanner.stop} className="mt-3 w-full rounded-xl border border-border-subtle py-3 text-xs font-bold text-ink hover:bg-page">Stop camera</button>
+          </>
+        ) : (
+          <button type="button" onClick={startScanning} className="mt-4 w-full rounded-xl bg-primary py-3 text-xs font-bold text-white">Start camera scan</button>
+        )}
+        {scanner.cameraError && <p className="mt-3 text-xs text-primary">{scanner.cameraError}</p>}
         <div className="mt-5 border-t border-border-subtle pt-4">
           <p className="mb-2 text-xs font-semibold text-muted">Camera denied? Paste the QR token manually:</p>
           <div className="flex gap-2">
