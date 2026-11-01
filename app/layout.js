@@ -7,7 +7,9 @@ import { ConfirmProvider } from "../components/ui/ConfirmDialog";
 import PwaRegister from "../components/PwaRegister";
 import AiAssistantWidget from "../components/ai-assistant/AiAssistantWidget";
 import ImpersonationBanner from "../components/auth/ImpersonationBanner";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "../lib/seo";
+import Script from "next/script";
+import { SITE_NAME, SITE_URL } from "../lib/seo";
+import { loadSeoSettingsSafe } from "../lib/server/seo-settings";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,30 +27,43 @@ const geistMono = Geist_Mono({
 // canonical URLs silently break in production. `title.template` lets every
 // other page just set `title: "Page Name"` and get "Page Name | Next
 // Academy" for free instead of repeating the suffix everywhere.
-export const metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: { default: `${SITE_NAME} | ${SITE_TAGLINE}`, template: `%s | ${SITE_NAME}` },
-  description: SITE_DESCRIPTION,
-  manifest: "/manifest.json",
-  openGraph: {
-    type: "website",
-    siteName: SITE_NAME,
-    title: `${SITE_NAME} | ${SITE_TAGLINE}`,
-    description: SITE_DESCRIPTION,
-    url: SITE_URL,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${SITE_NAME} | ${SITE_TAGLINE}`,
-    description: SITE_DESCRIPTION,
-  },
-};
+// Title / description / keywords / share image / Google Search Console
+// verification all come from Website → SEO (lib/server/seo-settings.js),
+// falling back to lib/seo.js defaults.
+export async function generateMetadata() {
+  const seo = await loadSeoSettingsSafe();
+  const images = seo.shareImage ? [{ url: seo.shareImage }] : undefined;
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: seo.siteTitle, template: `%s | ${SITE_NAME}` },
+    description: seo.description,
+    keywords: seo.keywords ? seo.keywords.split(",").map((k) => k.trim()).filter(Boolean) : undefined,
+    manifest: "/manifest.json",
+    openGraph: {
+      type: "website",
+      siteName: SITE_NAME,
+      title: seo.siteTitle,
+      description: seo.description,
+      url: SITE_URL,
+      locale: "en_SG",
+      ...(images ? { images } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seo.siteTitle,
+      description: seo.description,
+      ...(images ? { images: images.map((i) => i.url) } : {}),
+    },
+    ...(seo.googleVerification ? { verification: { google: seo.googleVerification } } : {}),
+  };
+}
 
 export const viewport = {
   themeColor: "#ff2d2d",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const { gaMeasurementId } = await loadSeoSettingsSafe();
   return (
     <html
       lang="en"
@@ -68,6 +83,15 @@ export default function RootLayout({ children }) {
           </AuthProvider>
         </ThemeProvider>
         <PwaRegister />
+        {/* Google Analytics 4 — only when an ID is set in Website → SEO. */}
+        {gaMeasurementId && (
+          <>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`} strategy="afterInteractive" />
+            <Script id="ga4" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","${gaMeasurementId}");`}
+            </Script>
+          </>
+        )}
       </body>
     </html>
   );

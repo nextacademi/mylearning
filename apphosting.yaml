@@ -16,7 +16,7 @@
 # -> Authentication -> Settings -> Authorized domains (see README/report).
 env:
   - variable: NEXT_PUBLIC_BASE_URL
-    value: "https://next-academy--mynextlms.asia-southeast1.hosted.app"
+    value: "https://nextacademy.sg"
     availability:
       - BUILD
       - RUNTIME
