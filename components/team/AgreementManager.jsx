@@ -134,6 +134,13 @@ export default function AgreementManager() {
           <Plus className="h-4 w-4" /> Add section
         </button>
 
+        <div className="mt-5 rounded-2xl border border-border-subtle bg-page p-4">
+          <p className="text-xs font-bold text-ink">“Complete your profile” popup</p>
+          <p className="text-[11px] text-muted">Shown after the agreement when a member&apos;s name or phone is missing.</p>
+          <label className="mt-2 block text-xs font-bold text-muted">Heading<input value={form.profileTitle || ""} onChange={set("profileTitle")} placeholder="Complete your profile" className={input} /></label>
+          <label className="mt-2 block text-xs font-bold text-muted">Text under the heading<textarea value={form.profileSubtitle || ""} onChange={set("profileSubtitle")} rows={2} className={input} /></label>
+        </div>
+
         <label className="mt-5 block text-xs font-bold text-muted">Checkbox text (what members agree to)<textarea value={form.checkboxLabel} onChange={set("checkboxLabel")} rows={2} className={input} /></label>
 
         {error && <p className="mt-3 rounded-xl bg-active p-3 text-xs text-primary">{error}</p>}

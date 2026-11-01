@@ -7,7 +7,6 @@ export default function AuthModal({ onClose, required = false }) {
   const { login, register, socialLogin, resetPassword, error, clearError } =
     useAuth();
   const [mode, setMode] = useState("login");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -19,7 +18,7 @@ export default function AuthModal({ onClose, required = false }) {
     setMessage("");
     clearError();
     try {
-      if (mode === "register") await register(email, password, name);
+      if (mode === "register") await register(email, password);
       else if (mode === "reset") {
         await resetPassword(email);
         setMessage("Password reset email sent. Check your inbox.");
@@ -104,15 +103,6 @@ export default function AuthModal({ onClose, required = false }) {
           </div>
         )}
         <form onSubmit={submit} className="grid gap-2 text-left">
-          {mode === "register" && (
-            <input
-              required
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="h-11 rounded-md border border-[#d8e0db] px-3 text-xs"
-              placeholder="Full name"
-            />
-          )}
           <input
             required
             value={email}

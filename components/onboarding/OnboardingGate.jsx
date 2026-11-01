@@ -8,10 +8,10 @@ import { acceptAgreement, loadAgreement } from "../../lib/services/agreement-ser
 
 // First things a member sees after signing in (wraps every /dashboard and
 // /teacher page — see app/dashboard/layout.js):
-//   1. "Complete your profile" — when their name or phone is missing.
-//      Can be skipped for this browser session with ×.
-//   2. The member agreement (Website → Agreement in the admin panel) —
+//   1. The member agreement (Website → Agreement in the admin panel) —
 //      blocks the app until accepted; Sign out is the only other way out.
+//   2. "Complete your profile" — when their name or phone is missing.
+//      Can be skipped for this browser session with ×.
 // The page itself keeps rendering behind the blurred overlay.
 
 const SKIP_KEY = "onboarding:profile-skipped";
@@ -67,7 +67,7 @@ function Brand() {
   );
 }
 
-function ProfileStep({ user, profile, onDone, onSkip }) {
+function ProfileStep({ user, profile, title, subtitle, onDone, onSkip }) {
   const [name, setName] = useState(profile?.displayName || user.displayName || "");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [saving, setSaving] = useState(false);
@@ -97,8 +97,8 @@ function ProfileStep({ user, profile, onDone, onSkip }) {
             <X className="h-4 w-4" />
           </button>
           <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-white shadow-md"><User className="h-6 w-6" aria-hidden="true" /></span>
-          <h2 className="mt-4 text-2xl font-black text-ink">Complete your profile</h2>
-          <p className="mt-1 text-sm text-muted">Please add these details before continuing to use Next Academy.</p>
+          <h2 className="mt-4 text-2xl font-black text-ink">{title || "Complete your profile"}</h2>
+          {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
         </div>
         <div className="space-y-4 px-7 pb-7 pt-2">
           <label className="block text-xs font-bold text-muted">
@@ -190,6 +190,7 @@ function AgreementStep({ agreement, onAccepted, onSignOut }) {
 export default function OnboardingGate({ children }) {
   const { user, profile, logout } = useAuth();
   const [agreementState, setAgreementState] = useState(null); // { agreement, mustAccept }
+  const [agreementChecked, setAgreementChecked] = useState(false);
   const [profileSkipped, setProfileSkipped] = useState(() => {
     try {
       return typeof window !== "undefined" && window.sessionStorage.getItem(SKIP_KEY) === "1";
@@ -204,11 +205,13 @@ export default function OnboardingGate({ children }) {
     let cancelled = false;
     loadAgreement()
       .then((data) => { if (!cancelled) setAgreementState(data); })
-      .catch(() => { if (!cancelled) setAgreementState(null); });
+      .catch(() => { if (!cancelled) setAgreementState(null); })
+      .finally(() => { if (!cancelled) setAgreementChecked(true); });
     return () => { cancelled = true; };
   }, [uid, profile?.role]);
 
-  if (!user || !profile) return children;
+  // Wait for the agreement check so the profile popup never flashes first.
+  if (!user || !profile || !agreementChecked) return children;
 
   const needsProfile = !profileSkipped && (!String(profile.displayName || "").trim() || !String(profile.phone || "").trim());
   const needsAgreement = Boolean(agreementState?.mustAccept);
@@ -216,21 +219,23 @@ export default function OnboardingGate({ children }) {
   return (
     <>
       {children}
-      {needsProfile ? (
+      {needsAgreement ? (
+        <AgreementStep
+          agreement={agreementState.agreement}
+          onAccepted={() => setAgreementState((s) => ({ ...s, mustAccept: false }))}
+          onSignOut={logout}
+        />
+      ) : needsProfile ? (
         <ProfileStep
           user={user}
           profile={profile}
+          title={agreementState?.agreement?.profileTitle}
+          subtitle={agreementState ? agreementState.agreement?.profileSubtitle : "Please add these details before continuing to use Next Academy."}
           onDone={() => setProfileSkipped(true)}
           onSkip={() => {
             try { window.sessionStorage.setItem(SKIP_KEY, "1"); } catch { /* storage unavailable */ }
             setProfileSkipped(true);
           }}
-        />
-      ) : needsAgreement ? (
-        <AgreementStep
-          agreement={agreementState.agreement}
-          onAccepted={() => setAgreementState((s) => ({ ...s, mustAccept: false }))}
-          onSignOut={logout}
         />
       ) : null}
     </>

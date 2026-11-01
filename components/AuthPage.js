@@ -96,7 +96,6 @@ const fieldInput =
 export default function AuthPage({ mode = "login" }) {
   const router = useRouter();
   const auth = useAuth();
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -127,7 +126,9 @@ export default function AuthPage({ mode = "login" }) {
         // the background (best-effort) — see /verify-email, which is still
         // reachable to confirm the link later — but new accounts are no
         // longer blocked from the dashboard while it's unverified.
-        await auth.register(email, password, name);
+        // No name at sign-up — the "Complete your profile" popup asks for it on
+        // first sign-in (components/onboarding/OnboardingGate.jsx).
+        await auth.register(email, password);
       } else {
         await auth.login(email, password);
       }
@@ -268,19 +269,6 @@ export default function AuthPage({ mode = "login" }) {
               onSubmit={submit}
               className={`space-y-4 ${resetMode ? "mt-6" : ""}`}
             >
-              {mode === "register" && !resetMode && (
-                <label className={fieldLabel}>
-                  Full name
-                  <input
-                    required
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    className={fieldInput}
-                    placeholder="Alex Morgan"
-                    autoComplete="name"
-                  />
-                </label>
-              )}
               <label className={fieldLabel}>
                 Email address
                 <input
