@@ -8,6 +8,7 @@ import { toVideoEmbedUrl, youTubeThumbnailUrl } from "../../lib/lesson-embed";
 import { HERO_DEFAULTS, HERO_MAX_STATS, HERO_TEXT_LIMITS } from "../../lib/site-hero";
 import { useToast } from "../ui/Toast";
 import TeamManagement from "./TeamManagement";
+import AgreementManager from "./AgreementManager";
 import PhotoField from "./PhotoField";
 import { useConfirm } from "../ui/ConfirmDialog";
 
@@ -17,6 +18,7 @@ import { useConfirm } from "../ui/ConfirmDialog";
 // slider (formerly its own sidebar item).
 const HEADER_TAB = { label: "Header" };
 const TEAM_TAB = { label: "Team" };
+const AGREEMENT_TAB = { label: "Agreement" };
 const SECTIONS = {
   program: {
     label: "What we do",
@@ -267,7 +269,7 @@ export default function WebsiteContent() {
         <p className="text-xs text-muted">Edit the header, cards and team shown on the public homepage.</p>
       </div>
       <nav className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-2 shadow-sm">
-        {Object.entries({ hero: HEADER_TAB, ...SECTIONS, team: TEAM_TAB }).map(([key, { label }]) => (
+        {Object.entries({ hero: HEADER_TAB, ...SECTIONS, team: TEAM_TAB, agreement: AGREEMENT_TAB }).map(([key, { label }]) => (
           <button
             key={key}
             type="button"
@@ -278,7 +280,7 @@ export default function WebsiteContent() {
           </button>
         ))}
       </nav>
-      {kind === "hero" ? <HeaderManager /> : kind === "team" ? <TeamManagement embedded /> : <SectionManager key={kind} kind={kind} />}
+      {kind === "hero" ? <HeaderManager /> : kind === "team" ? <TeamManagement embedded /> : kind === "agreement" ? <AgreementManager /> : <SectionManager key={kind} kind={kind} />}
     </section>
   );
 }

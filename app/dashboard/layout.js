@@ -1,3 +1,5 @@
+import OnboardingGate from "../../components/onboarding/OnboardingGate";
+
 // Every /dashboard/* route (Student/Volunteer/Facilitator/Director/Admin
 // workspaces — app/dashboard/[role]/page.jsx and its "use client" tree)
 // is login-gated real-time app UI, never content meant for search results.
@@ -8,6 +10,8 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+// Profile completion + member agreement popups shown after sign-in
+// (components/onboarding/OnboardingGate.jsx).
 export default function DashboardLayout({ children }) {
-  return children;
+  return <OnboardingGate>{children}</OnboardingGate>;
 }
