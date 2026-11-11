@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
 import { INSTRUCTOR_ROLES, isInstructorRole } from "../../../../lib/server/instructor-roles";
+import { loadTrainingCategories } from "../../../../lib/server/training-categories";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -114,6 +115,7 @@ function courseRow(course, teachers, classes, enrollments) {
     level: course.level || "",
     trainingType: "Offline",
     thumbnailUrl: course.thumbnailUrl || "",
+    thumbnailPath: course.thumbnailPath || "",
     price: typeof course.price === "number" ? course.price : 0,
     discountPrice: typeof course.discountPrice === "number" ? course.discountPrice : null,
     currency: "SGD",
@@ -277,9 +279,10 @@ export async function GET(request) {
     const courses = snapshots.docs.map(plain);
     if (managers.has(a.role)) await backfillCourseCodes(a.db, courses);
     const courseIds = courses.map((course) => course.id);
-    const [teacherRows, related] = await Promise.all([
+    const [teacherRows, related, categories] = await Promise.all([
       loadTeachers(a.db, courses, managers.has(a.role)),
       loadRelatedRows(a.db, courseIds),
+      managers.has(a.role) ? loadTrainingCategories(a.db) : [],
     ]);
     const teacherMap = new Map(
       teacherRows.map((teacher) => [
@@ -302,6 +305,7 @@ export async function GET(request) {
     return NextResponse.json({
       courses: rows,
       teachers: managers.has(a.role) ? [...teacherMap.values()] : [],
+      categories,
       canManage: managers.has(a.role),
     });
   } catch (error) {

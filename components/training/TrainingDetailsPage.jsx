@@ -42,6 +42,7 @@ import DirectorShell from "../dashboard/DirectorShell";
 import AdminShell from "../dashboard/AdminShell";
 import WorkspaceShell from "../dashboard/WorkspaceShell";
 import { SkeletonBar } from "../ui/Skeleton";
+import PersonPicker from "../ui/PersonPicker";
 import EnrollmentManager from "./EnrollmentManager";
 import DocumentsModule from "../documents/DocumentsModule";
 import DataTable, { StatusBadge as TableBadge } from "../data-table/DataTable";
@@ -1430,6 +1431,9 @@ function ClassEditDialog({ course, classItem, onClose }) {
   );
 }
 
+// Directors and Volunteers can teach too — tag them in the picker.
+const teacherLabel = (t) => `${t.displayName || t.email}${t.role && t.role !== "Teacher" ? ` (${t.role})` : ""}`;
+
 function AssignTab({ course }) {
   const [teachers, setTeachers] = useState([]);
   const [primaryTeacherId, setPrimaryTeacherId] = useState(
@@ -1463,42 +1467,34 @@ function AssignTab({ course }) {
   return (
     <Panel title="Assign Teachers">
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid gap-1 text-xs font-bold text-muted">
+        <div className="grid content-start gap-1 text-xs font-bold text-muted">
           Primary Teacher
-          <select
+          <PersonPicker
+            people={teachers.filter((t) => t.id !== assistantTeacherId)}
             value={primaryTeacherId}
-            onChange={(event) => setPrimaryTeacherId(event.target.value)}
-            className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
-          >
-            <option value="">Choose primary teacher</option>
-            {teachers
-              .filter((t) => t.id !== assistantTeacherId)
-              .map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.displayName || t.email}
-                  {t.role && t.role !== "Teacher" ? ` (${t.role})` : ""}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label className="grid gap-1 text-xs font-bold text-muted">
+            onChange={setPrimaryTeacherId}
+            getLabel={teacherLabel}
+            placeholder="Type a name or email to search"
+            noneLabel="Choose primary teacher"
+            noMatchLabel="No teacher matches"
+            ariaLabel="primary teacher"
+            className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm font-normal"
+          />
+        </div>
+        <div className="grid content-start gap-1 text-xs font-bold text-muted">
           Assistant Teacher (optional)
-          <select
+          <PersonPicker
+            people={teachers.filter((t) => t.id !== primaryTeacherId)}
             value={assistantTeacherId}
-            onChange={(event) => setAssistantTeacherId(event.target.value)}
-            className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm"
-          >
-            <option value="">None</option>
-            {teachers
-              .filter((t) => t.id !== primaryTeacherId)
-              .map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.displayName || t.email}
-                  {t.role && t.role !== "Teacher" ? ` (${t.role})` : ""}
-                </option>
-              ))}
-          </select>
-        </label>
+            onChange={setAssistantTeacherId}
+            getLabel={teacherLabel}
+            placeholder="Type a name or email to search"
+            noneLabel="None"
+            noMatchLabel="No teacher matches"
+            ariaLabel="assistant teacher"
+            className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm font-normal"
+          />
+        </div>
       </div>
       <button
         type="button"

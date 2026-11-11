@@ -20,17 +20,17 @@ function formatDate(value) {
 function ActivityChart({ months }) {
   const max = Math.max(1, ...months.map((m) => m.events + m.trainings));
   return (
-    <div className="mt-4 flex h-44 items-end gap-3">
+    <div className="mt-5 flex h-56 items-end gap-3">
       {months.map((m) => {
         const total = m.events + m.trainings;
         return (
-          <div key={m.label} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-            <span className="text-[10px] font-semibold text-muted">{total ? Math.round(total * 10) / 10 : "—"}</span>
-            <div className="flex w-full max-w-10 flex-col-reverse overflow-hidden rounded-md bg-page" style={{ height: "100%" }}>
+          <div key={m.label} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+            <span className="text-sm font-bold text-muted">{total ? Math.round(total * 10) / 10 : "—"}</span>
+            <div className="flex w-full max-w-12 flex-col-reverse overflow-hidden rounded-lg bg-page" style={{ height: "100%" }}>
               <div className="bg-teal" style={{ height: `${(m.trainings / max) * 100}%` }} title={`${m.trainings}h training`} />
               <div className="bg-primary" style={{ height: `${(m.events / max) * 100}%` }} title={`${m.events}h events`} />
             </div>
-            <span className="text-[10px] font-bold text-subtle">{m.label}</span>
+            <span className="text-xs font-bold text-subtle">{m.label}</span>
           </div>
         );
       })}
@@ -75,31 +75,31 @@ function MyContribution({ rows, certificates }) {
     <section className="rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(160deg,#fff7f7_0%,#ffffff_60%)] p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="font-black text-ink">My Contribution</h3>
-          <p className="text-xs text-muted">Every event and training you&apos;ve taken part in — your role and the hours you contributed.</p>
+          <h3 className="text-lg font-black text-ink">My Contribution</h3>
+          <p className="text-sm text-muted">Every event and training you&apos;ve taken part in — your role and the hours you contributed.</p>
         </div>
-        <span className="rounded-full bg-active px-3 py-1 text-sm font-black text-primary">{totalHours} hrs</span>
+        <span className="rounded-full bg-active px-4 py-1.5 text-base font-black text-primary">{totalHours} hrs</span>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
         {summary.map(([value, label, Icon]) => (
-          <div key={label} className="rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-center">
-            <p className="text-xl font-black text-primary">{value}</p>
-            <p className="mt-0.5 flex items-center justify-center gap-1 text-[10px] font-bold text-muted"><Icon className="h-3 w-3" aria-hidden="true" /> {label}</p>
+          <div key={label} className="rounded-xl border border-border-subtle bg-card px-3 py-3 text-center">
+            <p className="text-2xl font-black text-primary">{value}</p>
+            <p className="mt-1 flex items-center justify-center gap-1 text-xs font-bold text-muted"><Icon className="h-3.5 w-3.5" aria-hidden="true" /> {label}</p>
           </div>
         ))}
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search programme or location…" className="min-w-[200px] flex-1 rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm" />
-        <select value={role} onChange={(e) => setRole(e.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-2 text-xs font-semibold">
+        <select value={role} onChange={(e) => setRole(e.target.value)} className="rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm font-semibold">
           {roles.map((item) => <option key={item} value={item}>{item === "All" ? "All roles" : item}</option>)}
         </select>
       </div>
 
       <div className="mt-3 overflow-x-auto rounded-xl border border-border-subtle bg-card">
-        <table className="w-full min-w-[720px] text-left text-xs">
-          <thead className="bg-page text-[10px] font-black uppercase tracking-wider text-muted">
+        <table className="w-full min-w-[720px] text-left text-sm">
+          <thead className="bg-page text-xs font-black uppercase tracking-wider text-muted">
             <tr>{["Programme", "Date", "Location", "Role", "Hours", "Status"].map((h) => <th key={h} className={`px-4 py-3 ${h === "Hours" ? "text-right" : ""}`}>{h}</th>)}</tr>
           </thead>
           <tbody>
@@ -107,11 +107,11 @@ function MyContribution({ rows, certificates }) {
               <tr key={r.id} className="border-t border-border-subtle">
                 <td className="px-4 py-3">
                   <b className="block text-ink">{r.name}</b>
-                  <span className="text-[10px] uppercase tracking-wide text-subtle">{r.type}</span>
+                  <span className="text-[11px] uppercase tracking-wide text-subtle">{r.type}</span>
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-muted">{formatDate(r.date)}</td>
                 <td className="px-4 py-3 text-muted">{r.location || "—"}</td>
-                <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${ROLE_TONE[r.role] || "bg-page text-muted"}`}>{r.role}</span></td>
+                <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${ROLE_TONE[r.role] || "bg-page text-muted"}`}>{r.role}</span></td>
                 <td className="px-4 py-3 text-right font-bold text-ink">{r.status === "Completed" ? `${r.hours}h` : "—"}</td>
                 <td className={`px-4 py-3 font-semibold ${STATUS_TONE[r.status] || "text-muted"}`}>{r.status}</td>
               </tr>
@@ -154,23 +154,23 @@ export default function VolunteerHomePanel() {
   return (
     <div className="space-y-5">
       <section className="grid gap-4 lg:grid-cols-[1fr_auto]">
-        <div className="flex items-center gap-4 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-5 shadow-sm">
+        <div className="flex items-center gap-5 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 shadow-sm">
           {profile.photoURL ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.photoURL} alt="" className="h-16 w-16 shrink-0 rounded-full border-2 border-primary object-cover" />
+            <img src={profile.photoURL} alt="" className="h-20 w-20 shrink-0 rounded-full border-[3px] border-primary object-cover" />
           ) : (
-            <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-primary bg-active text-lg font-black text-primary">{firstName.slice(0, 2).toUpperCase()}</span>
+            <span className="grid h-20 w-20 shrink-0 place-items-center rounded-full border-[3px] border-primary bg-active text-2xl font-black text-primary">{firstName.slice(0, 2).toUpperCase()}</span>
           )}
           <div className="min-w-0">
-            <h2 className="text-xl font-black text-ink">👋 Welcome, <span className="text-primary">{firstName}!</span></h2>
-            <p className="mt-1 truncate text-xs text-muted"><b className="text-ink">{profile.role || "Member"}</b> · {profile.email}</p>
-            <p className="mt-1 text-xs text-muted">Keep learning, keep growing — your journey matters!</p>
+            <h2 className="text-2xl font-black text-ink md:text-3xl">👋 Welcome, <span className="text-primary">{firstName}!</span></h2>
+            <p className="mt-1.5 truncate text-sm text-muted md:text-base"><b className="text-ink">{profile.role || "Member"}</b> · {profile.email}</p>
+            <p className="mt-1 text-sm text-muted md:text-base">Keep learning, keep growing — your journey matters!</p>
           </div>
         </div>
-        <div className="rounded-2xl border border-border-subtle bg-card px-8 py-5 text-center shadow-sm">
-          <p className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-warning"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Impact Score</p>
-          <p className="mt-1 text-4xl font-black text-primary">{data.impactScore}</p>
-          <p className="mt-1 text-[10px] text-muted">{data.totalHours} hours · {data.eventsAttended} events completed</p>
+        <div className="rounded-2xl border border-border-subtle bg-card px-10 py-6 text-center shadow-sm">
+          <p className="flex items-center justify-center gap-1.5 text-sm font-bold uppercase tracking-wider text-warning"><Sparkles className="h-4 w-4" aria-hidden="true" /> Impact Score</p>
+          <p className="mt-1 text-5xl font-black text-primary">{data.impactScore}</p>
+          <p className="mt-2 text-sm text-muted">{data.totalHours} hours · {data.eventsAttended} events completed</p>
         </div>
       </section>
 
@@ -179,20 +179,20 @@ export default function VolunteerHomePanel() {
         <div className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="font-bold text-ink">Your Activity</h3>
-              <p className="text-xs text-muted">Hours credited over the last 6 months</p>
+              <h3 className="text-lg font-bold text-ink">Your Activity</h3>
+              <p className="text-sm text-muted">Hours credited over the last 6 months</p>
             </div>
-            <span className="rounded-full bg-active px-3 py-1 text-sm font-black text-primary">{data.activityTotal} hrs</span>
+            <span className="rounded-full bg-active px-4 py-1.5 text-lg font-black text-primary">{data.activityTotal} hrs</span>
           </div>
-          <p className="mt-2 flex gap-3 text-[10px] font-bold text-muted">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-primary" /> Events</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-teal" /> Trainings</span>
+          <p className="mt-3 flex gap-4 text-sm font-semibold text-muted">
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-primary" /> Events</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-teal" /> Trainings</span>
           </p>
           <ActivityChart months={data.activity} />
         </div>
         <div className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm">
-          <h3 className="font-bold text-ink">Quick Info</h3>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <h3 className="text-lg font-bold text-ink">Quick Info</h3>
+          <div className="mt-3 grid grid-cols-2 gap-2.5 text-sm">
             {[
               ["Member since", formatDate(profile.memberSince)],
               ["Phone", profile.phone || "—"],
@@ -201,16 +201,16 @@ export default function VolunteerHomePanel() {
               ["Missing event", `${data.missedEvents} missed`],
               ["Missing training", `${data.missedTrainings} missed`],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-xl bg-page p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label === "Phone" ? <Phone className="mr-1 inline h-3 w-3" aria-hidden="true" /> : null}{label}</p>
-                <p className="mt-0.5 font-semibold text-ink">{value}</p>
+              <div key={label} className="rounded-xl bg-page p-3.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-subtle">{label === "Phone" ? <Phone className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" /> : null}{label}</p>
+                <p className="mt-1 text-base font-bold text-ink">{value}</p>
               </div>
             ))}
           </div>
           {data.recentEvents.length > 0 && (
             <div className="mt-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-subtle">Recent events</p>
-              <ul className="mt-1 divide-y divide-border-subtle text-xs">
+              <p className="text-xs font-bold uppercase tracking-wider text-subtle">Recent events</p>
+              <ul className="mt-1 divide-y divide-border-subtle text-sm">
                 {data.recentEvents.map((e) => (
                   <li key={e.id} className="flex items-center justify-between gap-2 py-1.5">
                     <span className="min-w-0 truncate text-ink">{e.name}</span>
@@ -225,14 +225,14 @@ export default function VolunteerHomePanel() {
 
       <section className="flex flex-col gap-4 rounded-2xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-5 shadow-sm md:flex-row md:items-center md:justify-between">
         <div>
-          <h3 className="flex items-center gap-1.5 font-black text-ink"><Trophy className="h-5 w-5 text-warning" aria-hidden="true" /> Your Achievement Wall</h3>
-          <p className="mt-1 max-w-xl text-xs text-muted">Every certificate is proof of your dedication — keep going, your next milestone is closer than you think!</p>
+          <h3 className="flex items-center gap-2 text-lg font-black text-ink"><Trophy className="h-6 w-6 text-warning" aria-hidden="true" /> Your Achievement Wall</h3>
+          <p className="mt-1 max-w-xl text-sm text-muted">Every certificate is proof of your dedication — keep going, your next milestone is closer than you think!</p>
         </div>
         <div className="flex gap-2">
           {[[data.certificates, "Total earned"], [data.eventsAttended, "Events"], [Math.round(data.trainingHours), "Training hrs"]].map(([value, label]) => (
-            <div key={label} className="min-w-24 rounded-xl border border-border-subtle bg-card px-4 py-3 text-center">
-              <p className="text-lg font-black text-primary">{value}</p>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-muted">{label}</p>
+            <div key={label} className="min-w-28 rounded-xl border border-border-subtle bg-card px-4 py-3 text-center">
+              <p className="text-2xl font-black text-primary">{value}</p>
+              <p className="mt-0.5 text-[11px] font-bold uppercase tracking-wider text-muted">{label}</p>
             </div>
           ))}
         </div>

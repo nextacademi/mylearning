@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Eye, LayoutGrid, Pencil, Search, Table2, User, Users } from "lucide-react";
+import { BookOpen, Eye, LayoutGrid, Pencil, Search, Table2, Trash2, User, Users } from "lucide-react";
 import TrainingForm from "./TrainingForm";
+import JoinQrDialog from "./JoinQrDialog";
 import DataTable, { StatusBadge } from "../data-table/DataTable";
 import WordImportModal from "../word-import/WordImportModal";
-import { createCourse, loadTraining, updateCourse } from "../../lib/services/training-service";
+import { useConfirm } from "../ui/ConfirmDialog";
+import { addTrainingCategory, createCourse, deleteTrainingCategory, loadTraining, updateCourse } from "../../lib/services/training-service";
 import { uploadCourseThumbnail } from "../../lib/teacher-training";
 
 const COURSE_STATUS_TONE = { Active: "green", Upcoming: "blue", Draft: "orange", Completed: "gray", Archived: "gray", Cancelled: "red" };
@@ -144,6 +146,96 @@ function PriceLine({ course }) {
 function Dialog({ title, children, close }) {
   return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true"><div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl"><div className="mb-5 flex justify-between"><h2 className="text-lg font-bold">{title}</h2><button type="button" onClick={close} className="text-xl text-muted" aria-label="Close">×</button></div>{children}</div></div>;
 }
+// The list behind the Category dropdown on Add/Edit Training. Removing a
+// category only takes it off the list — trainings that use it keep it.
+function TrainingCategoriesDialog({ categories, courses, close, onChanged }) {
+  const confirm = useConfirm();
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const usage = (categoryName) => courses.filter((course) => course.category === categoryName).length;
+  // Categories typed on trainings before this list existed — one click adds them.
+  const listed = new Set(categories.map((item) => item.name.toLowerCase()));
+  const unlisted = [...new Set(courses.map((course) => (course.category || "").trim()).filter(Boolean))]
+    .filter((item) => !listed.has(item.toLowerCase()))
+    .sort((a, b) => a.localeCompare(b));
+
+  async function run(action, fallback) {
+    setBusy(true);
+    setError("");
+    try {
+      await action();
+      await onChanged();
+      return true;
+    } catch (err) {
+      setError(err.message || fallback);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function add(value) {
+    if (!value.trim() || busy) return;
+    if (await run(() => addTrainingCategory(value), "Unable to add the category.")) setName("");
+  }
+  async function remove(category) {
+    const used = usage(category.name);
+    if (!(await confirm({
+      title: "Remove category",
+      message: used
+        ? `Remove "${category.name}" from the list? The ${used} training${used === 1 ? "" : "s"} using it keep${used === 1 ? "s" : ""} it.`
+        : `Remove "${category.name}" from the list?`,
+      tone: "danger",
+      confirmLabel: "Remove",
+    }))) return;
+    await run(() => deleteTrainingCategory(category.id), "Unable to remove the category.");
+  }
+
+  return (
+    <Dialog title="Training Categories" close={close}>
+      <form onSubmit={(event) => { event.preventDefault(); add(name); }} className="flex gap-2">
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          maxLength={100}
+          placeholder="New category, e.g. Digital Marketing"
+          aria-label="New category name"
+          className="min-w-0 flex-1 rounded-xl border border-border-subtle px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+        />
+        <button type="submit" disabled={busy || !name.trim()} className="rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-40">Add</button>
+      </form>
+      {error && <p className="mt-3 rounded-xl bg-active p-3 text-xs text-primary">{error}</p>}
+      <ul className="mt-4 divide-y divide-border-subtle rounded-2xl border border-border-subtle">
+        {categories.length ? categories.map((category) => (
+          <li key={category.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+            <span className="min-w-0 truncate">
+              <b className="text-ink">{category.name}</b>
+              <span className="ml-2 text-xs text-muted">{usage(category.name)} training{usage(category.name) === 1 ? "" : "s"}</span>
+            </span>
+            <button type="button" onClick={() => remove(category)} disabled={busy} aria-label={`Remove ${category.name}`} className="rounded-lg p-1.5 text-primary hover:bg-active disabled:opacity-40">
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </li>
+        )) : (
+          <li className="px-4 py-6 text-center text-sm text-muted">No categories yet — add the first one above.</li>
+        )}
+      </ul>
+      {unlisted.length > 0 && (
+        <div className="mt-4 rounded-2xl bg-page p-3">
+          <p className="text-xs font-bold text-muted">Already used on trainings — click to add to the list</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {unlisted.map((item) => (
+              <button key={item} type="button" onClick={() => add(item)} disabled={busy} className="rounded-full border border-border-subtle bg-card px-3 py-1 text-xs font-semibold text-ink hover:bg-active hover:text-primary disabled:opacity-40">
+                + {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </Dialog>
+  );
+}
+
 function TeacherTrainingCard({ course }) {
   return (
     <article className="flex flex-col overflow-hidden rounded-3xl border border-border-subtle bg-card shadow-sm">
@@ -270,7 +362,7 @@ function AdminTrainingCard({ course, canManage, onEdit }) {
 }
 
 export default function TrainingManagement({ role }) {
-  const [data, setData] = useState({ courses: [], teachers: [], canManage: false });
+  const [data, setData] = useState({ courses: [], teachers: [], categories: [], canManage: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -285,6 +377,8 @@ export default function TrainingManagement({ role }) {
   const [thumbnailPreview, setThumbnailPreview] = useState("");
   const [viewMode, setViewMode] = useState("cards");
   const [wordOpen, setWordOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
   const isTeacher = role === "Teacher";
 
   const load = useCallback(async (force = false) => {
@@ -295,7 +389,7 @@ export default function TrainingManagement({ role }) {
       setError("");
     } catch (loadError) {
       console.error("[training] assigned course load failed", loadError);
-      setData({ courses: [], teachers: [], canManage: false });
+      setData({ courses: [], teachers: [], categories: [], canManage: false });
       setError(isTeacher ? "Failed to load your assigned courses." : (loadError.message || "Unable to load training data. Please try again."));
     } finally {
       setLoading(false);
@@ -333,6 +427,13 @@ export default function TrainingManagement({ role }) {
   function removeThumbnail() {
     selectThumbnail(null);
     setForm((current) => ({ ...current, thumbnailUrl: "", thumbnailPath: "" }));
+  }
+
+  // Reusing another training's thumbnail: point at the same stored image
+  // (uploads are public and never deleted), nothing to upload.
+  function pickThumbnail({ thumbnailUrl, thumbnailPath }) {
+    selectThumbnail(null);
+    setForm((current) => ({ ...current, thumbnailUrl, thumbnailPath }));
   }
 
   function open(course) {
@@ -410,7 +511,8 @@ export default function TrainingManagement({ role }) {
         // A brand-new training has no ID yet, and the thumbnail's Storage
         // path is keyed by courseId — so the course must be created first,
         // then the thumbnail is uploaded and attached in one more write.
-        const result = await createCourse({ ...form, thumbnailUrl: "", thumbnailPath: "" });
+        // A thumbnail reused from another training is saved straight away.
+        const result = await createCourse(thumbnailFile ? { ...form, thumbnailUrl: "", thumbnailPath: "" } : form);
         created = result.course;
         if (thumbnailFile) {
           ({ thumbnailUrl, thumbnailPath } = await uploadCourseThumbnail(created.id, thumbnailFile));
@@ -433,7 +535,7 @@ export default function TrainingManagement({ role }) {
   }
 
   return <div className="space-y-6">
-    <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl"><div><h2 className="text-3xl font-black">Training</h2><p className="mt-2 text-sm text-muted">{isTeacher ? "Your assigned offline classroom trainings." : "Manage offline classroom trainings, teachers, batches, and enrolled students."}</p></div>{data.canManage && <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setWordOpen(true)} className="rounded-xl border border-border-subtle bg-card px-4 py-3 text-xs font-bold text-ink">Import from Word</button><button type="button" onClick={() => open(null)} className="rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white">Add Training</button></div>}</section>
+    <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 text-ink shadow-xl"><div><h2 className="text-3xl font-black">Training</h2><p className="mt-2 text-sm text-muted">{isTeacher ? "Your assigned offline classroom trainings." : "Manage offline classroom trainings, teachers, batches, and enrolled students."}</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setJoinOpen(true)} className="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-primary-hover">Join us!</button>{data.canManage && <><button type="button" onClick={() => setWordOpen(true)} className="rounded-xl border border-border-subtle bg-card px-4 py-3 text-xs font-bold text-ink">Import from Word</button><button type="button" onClick={() => setCategoriesOpen(true)} className="rounded-xl border border-border-subtle bg-card px-4 py-3 text-xs font-bold text-ink">Training Categories</button><button type="button" onClick={() => open(null)} className="rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white">Add Training</button></>}</div></section>
     {notice && <p className="rounded-xl bg-success-soft p-4 text-sm text-success">{notice}</p>}
     {error && !editing && !adding && <p className="rounded-xl bg-active p-4 text-sm text-primary">{error}</p>}
     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[["Total Training", counts.total], ["Active", counts.active], ["Upcoming", counts.upcoming], ["Total Enrolled", counts.enrolled]].map(([label, value]) => <article key={label} className="rounded-2xl border border-border-subtle bg-card p-5 shadow-sm"><p className="text-[10px] font-bold uppercase tracking-wider text-subtle">{label}</p>{loading ? <div className="mt-2 h-7 w-12 animate-pulse rounded bg-page" /> : <p className="mt-2 text-2xl font-extrabold">{value}</p>}</article>)}</section>
@@ -477,8 +579,10 @@ export default function TrainingManagement({ role }) {
         )}
       </section>
     )}
-    {editing !== null && <Dialog title="Edit Training" close={() => !saving && closeForm()}><TrainingForm course={{ form, setForm, editing }} teachers={data.teachers} saving={saving} onCancel={closeForm} onSubmit={submit} thumbnailPreview={thumbnailPreview || form.thumbnailUrl} onThumbnailSelect={selectThumbnail} onThumbnailRemove={removeThumbnail}/>{error && <p className="mt-3 text-sm text-primary">{error}</p>}</Dialog>}
-    {editing === null && adding && <Dialog title="Add Training" close={closeForm}><TrainingForm course={{ form, setForm, editing: null }} teachers={data.teachers} saving={saving} onCancel={closeForm} onSubmit={submit} thumbnailPreview={thumbnailPreview} onThumbnailSelect={selectThumbnail} onThumbnailRemove={removeThumbnail}/>{error && <p className="mt-3 text-sm text-primary">{error}</p>}</Dialog>}
+    {editing !== null && <Dialog title="Edit Training" close={() => !saving && closeForm()}><TrainingForm course={{ form, setForm, editing }} teachers={data.teachers} categories={data.categories || []} courses={data.courses} saving={saving} onCancel={closeForm} onSubmit={submit} thumbnailPreview={thumbnailPreview || form.thumbnailUrl} onThumbnailSelect={selectThumbnail} onThumbnailRemove={removeThumbnail} onThumbnailPick={pickThumbnail}/>{error && <p className="mt-3 text-sm text-primary">{error}</p>}</Dialog>}
+    {editing === null && adding && <Dialog title="Add Training" close={closeForm}><TrainingForm course={{ form, setForm, editing: null }} teachers={data.teachers} categories={data.categories || []} courses={data.courses} saving={saving} onCancel={closeForm} onSubmit={submit} thumbnailPreview={thumbnailPreview || form.thumbnailUrl} onThumbnailSelect={selectThumbnail} onThumbnailRemove={removeThumbnail} onThumbnailPick={pickThumbnail}/>{error && <p className="mt-3 text-sm text-primary">{error}</p>}</Dialog>}
+    {joinOpen && <JoinQrDialog onClose={() => setJoinOpen(false)} />}
+    {categoriesOpen && <TrainingCategoriesDialog categories={data.categories || []} courses={data.courses} close={() => setCategoriesOpen(false)} onChanged={() => load(true)} />}
     <WordImportModal
       open={wordOpen}
       onClose={() => setWordOpen(false)}

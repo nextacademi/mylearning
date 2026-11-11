@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Image as ImageIcon } from "lucide-react";
 import EnrollmentManager from "./EnrollmentManager";
+import PersonPicker from "../ui/PersonPicker";
 import { stopEnterSubmit } from "../../lib/ui/keyboard";
 import { subscribeActiveCertificateTemplates } from "../../lib/achievement-data";
 
@@ -13,6 +14,21 @@ const instructorLabel = (teacher) => {
   const name = teacher.displayName || teacher.email || teacher.id;
   return teacher.role && teacher.role !== "Teacher" ? `${name} (${teacher.role})` : name;
 };
+const PICKER_FIELD = "rounded-xl border border-border-subtle px-3 py-2.5 text-sm font-normal outline-none focus:ring-2 focus:ring-primary";
+
+// Thumbnails other trainings already use, so the same image can be picked
+// again instead of uploaded again. Same-category ones come first and are
+// marked "Suggested"; the rest newest first.
+function recentThumbnails(courses, category) {
+  const seen = new Set();
+  const sameCategory = (course) => Boolean(category) && course.category === category;
+  return courses
+    .filter((course) => course.thumbnailUrl)
+    .sort((a, b) => Number(sameCategory(b)) - Number(sameCategory(a)) || (b.updatedAt || "").localeCompare(a.updatedAt || ""))
+    .filter((course) => !seen.has(course.thumbnailUrl) && seen.add(course.thumbnailUrl))
+    .slice(0, 8)
+    .map((course) => ({ url: course.thumbnailUrl, path: course.thumbnailPath || "", title: course.title, suggested: sameCategory(course) }));
+}
 
 // This is a long, multi-section form (Basic Info, Pricing, Schedule,
 // Instructor, Classroom, Enrollment, Assessment, plus the nested Enrollment
@@ -67,12 +83,15 @@ function Section({ title, children }) {
 export default function TrainingForm({
   course,
   teachers,
+  categories = [],
+  courses = [],
   saving,
   onCancel,
   onSubmit,
   thumbnailPreview,
   onThumbnailSelect,
   onThumbnailRemove,
+  onThumbnailPick,
 }) {
   const fileInputRef = useRef(null);
   // Course only ever references Achievement's own active template list —
@@ -84,6 +103,12 @@ export default function TrainingForm({
   const form = course.form;
   const assistantOptions = teachers.filter((teacher) => teacher.id !== form.primaryTeacherId);
   const primaryOptions = teachers.filter((teacher) => teacher.id !== form.assistantTeacherId);
+  const setValue = (key) => (value) => course.setForm({ ...course.form, [key]: value });
+  // A training saved before the category list existed keeps its typed-in
+  // category as an option, so editing it doesn't silently clear it.
+  const categoryNames = categories.map((item) => item.name);
+  const categoryOptions = form.category && !categoryNames.includes(form.category) ? [form.category, ...categoryNames] : categoryNames;
+  const recent = recentThumbnails(courses, form.category);
 
   const priceNum = form.price === "" ? null : Number(form.price);
   const discountNum = form.discountPrice === "" ? null : Number(form.discountPrice);
@@ -122,7 +147,13 @@ export default function TrainingForm({
           Description
           <textarea value={form.description} onChange={set("description")} maxLength={5000} rows={3} className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm font-normal" />
         </label>
-        <Field label="Category" value={form.category} onChange={set("category")} maxLength={100} placeholder="e.g. Web Development" />
+        <label className="grid gap-1 text-xs font-bold text-muted">
+          Category
+          <select value={form.category} onChange={set("category")} className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm">
+            <option value="">{categoryOptions.length ? "Select category" : "No categories yet — add them with Training Categories"}</option>
+            {categoryOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+          </select>
+        </label>
         <label className="grid gap-1 text-xs font-bold text-muted">
           Level
           <select value={form.level} onChange={set("level")} className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm">
@@ -176,6 +207,33 @@ export default function TrainingForm({
             )}
           </div>
           <p className="text-[11px] text-subtle">Recommended: 1280 × 720px, JPG, PNG or WebP</p>
+          {recent.length > 0 && (
+            <div className="mt-1 grid gap-2">
+              <span className="text-xs font-bold text-muted">Or reuse a recent thumbnail</span>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {recent.map((item) => {
+                  const active = thumbnailPreview === item.url;
+                  return (
+                    <button
+                      key={item.url}
+                      type="button"
+                      onClick={() => onThumbnailPick?.({ thumbnailUrl: item.url, thumbnailPath: item.path })}
+                      aria-pressed={active}
+                      title={item.title}
+                      className={`relative overflow-hidden rounded-xl border-2 bg-page text-left transition ${active ? "border-primary" : "border-transparent hover:border-border-subtle"}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.url} alt="" className="aspect-video w-full object-cover" />
+                      {item.suggested && (
+                        <span className="absolute left-1.5 top-1.5 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">Suggested</span>
+                      )}
+                      <span className="block truncate px-2 py-1 text-[11px] font-semibold text-muted">{item.title || "Training"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </Section>
 
@@ -207,24 +265,35 @@ export default function TrainingForm({
       </Section>
 
       <Section title="Instructor">
-        <label className="grid gap-1 text-xs font-bold text-muted">
+        <div className="grid content-start gap-1 text-xs font-bold text-muted">
           Primary Teacher
-          <select value={form.primaryTeacherId} onChange={set("primaryTeacherId")} required className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm">
-            <option value="">Choose primary teacher</option>
-            {primaryOptions.map((teacher) => (
-              <option key={teacher.id} value={teacher.id}>{instructorLabel(teacher)}</option>
-            ))}
-          </select>
-        </label>
-        <label className="grid gap-1 text-xs font-bold text-muted">
+          <PersonPicker
+            people={primaryOptions}
+            value={form.primaryTeacherId}
+            onChange={setValue("primaryTeacherId")}
+            getLabel={instructorLabel}
+            placeholder="Type a name or email to search"
+            noneLabel="Choose primary teacher"
+            noMatchLabel="No teacher matches"
+            ariaLabel="primary teacher"
+            required
+            className={PICKER_FIELD}
+          />
+        </div>
+        <div className="grid content-start gap-1 text-xs font-bold text-muted">
           Assistant Teacher (optional)
-          <select value={form.assistantTeacherId} onChange={set("assistantTeacherId")} className="rounded-xl border border-border-subtle px-3 py-2.5 text-sm">
-            <option value="">None</option>
-            {assistantOptions.map((teacher) => (
-              <option key={teacher.id} value={teacher.id}>{instructorLabel(teacher)}</option>
-            ))}
-          </select>
-        </label>
+          <PersonPicker
+            people={assistantOptions}
+            value={form.assistantTeacherId}
+            onChange={setValue("assistantTeacherId")}
+            getLabel={instructorLabel}
+            placeholder="Type a name or email to search"
+            noneLabel="None"
+            noMatchLabel="No teacher matches"
+            ariaLabel="assistant teacher"
+            className={PICKER_FIELD}
+          />
+        </div>
       </Section>
 
       <Section title="Physical Classroom">
