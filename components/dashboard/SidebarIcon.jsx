@@ -1,12 +1,12 @@
 ﻿import {
-  Award, BookOpen, ChartNoAxesCombined, Globe, FileText, CalendarCheck, CalendarDays, ClipboardList, Contact, DoorOpen, Files,
+  Award, BookOpen, ChartNoAxesCombined, Globe, FilePen, FileText, CalendarCheck, CalendarDays, ClipboardList, Contact, DoorOpen, Files,
   Gift, GraduationCap, HeartHandshake, LayoutDashboard, Mail, Megaphone, MessageCircle, Presentation, QrCode, ScanQrCode,
   Settings, ShoppingBag, Sparkles, Ticket, Trophy, UserRound, UsersRound, WalletCards,
 } from "lucide-react";
 
 const icons = {
   Dashboard: LayoutDashboard, Students: UsersRound, Teacher: Presentation,
-  Teachers: Presentation, Training: BookOpen, "My Training": BookOpen,
+  Teachers: Presentation, Training: BookOpen, "My Training": BookOpen, Assignment: FilePen,
   Event: CalendarDays, Events: CalendarDays, Volunteer: HeartHandshake, "Room Booking": DoorOpen, Finance: WalletCards,
   Documents: Files, "My Shop": ShoppingBag, User: UserRound, Users: UserRound,
   Chat: MessageCircle, Achievement: Trophy, Achievements: Trophy,

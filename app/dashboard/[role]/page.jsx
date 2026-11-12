@@ -24,6 +24,7 @@ import DirectorShell from "../../../components/dashboard/DirectorShell";
 import AdminShell from "../../../components/dashboard/AdminShell";
 import UserManagement from "../../../components/users/UserManagement";
 import TrainingManagement from "../../../components/training/TrainingManagement";
+import AssignmentPortal from "../../../components/assignments/AssignmentPortal";
 import FinanceManagement from "../../../components/finance/FinanceManagement";
 import MyPaymentSummary from "../../../components/students/MyPaymentSummary";
 import LoadingScreen from "../../../components/dashboard/LoadingScreen";
@@ -145,6 +146,7 @@ export const roleConfig = {
     modules: [
       "Dashboard",
       "Training",
+      "Assignment",
       "Event",
       "Volunteer",
       "Prize Draw",
@@ -171,6 +173,7 @@ export const roleConfig = {
     modules: [
       "Dashboard",
       "Training",
+      "Assignment",
       "Event",
       "Volunteer",
       "Prize Draw",
@@ -286,6 +289,8 @@ function DirectorDashboard({ profile, user }) {
               <UserManagement role="Director" currentUserId={user.uid} onNavigate={setActive} />
             ) : active === "Training" ? (
               <TrainingManagement role="Director" />
+            ) : active === "Assignment" ? (
+              <AssignmentPortal onNavigate={setActive} />
             ) : active === "Event" ? (
               <EventManagement />
             ) : active === "Volunteer" ? (
@@ -479,6 +484,8 @@ function DashboardContent({ role, profile, user }) {
               <MyPaymentSummary />
             ) : (active === "Training" || active === "My Training") ? (
               <TrainingManagement role={role} />
+            ) : role === "Admin" && active === "Assignment" ? (
+              <AssignmentPortal onNavigate={setActive} />
             ) : role === "Admin" && active === "Event" ? (
               <EventManagement />
             ) : role === "Admin" && active === "Volunteer" ? (
