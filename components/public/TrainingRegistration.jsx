@@ -123,10 +123,13 @@ function CourseArt({ course }) {
   }
 }
 
+const courseAnchor = (title) => `course-${String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
+
 function CourseCard({ course, onRegister }) {
   const { header, price } = theme(course);
   return (
     <article
+      id={courseAnchor(course.title)}
       className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-red-100 bg-white shadow-xl transition duration-300 hover:-translate-y-1 hover:shadow-2xl ${course.featured ? "ring-2 ring-[#E31B23]/30" : ""}`}
     >
       <div className="grid min-h-[84px] place-items-center px-4 py-5 text-center text-white" style={{ backgroundColor: header }}>

@@ -1,6 +1,7 @@
 "use client";
 
 import heroVideoSrc from "../../public/hero-intro.mp4";
+import heroPoster from "../../public/hero-intro-poster.jpg";
 
 // Homepage hero video. public/hero-intro.mp4 is a short intro: the logo
 // with a light shine, then the academy's own class photos (slow camera
@@ -14,6 +15,7 @@ export default function HeroVideo({ className = "" }) {
       <video
         className="h-full w-full object-contain"
         src={heroVideoSrc}
+        poster={heroPoster.src}
         autoPlay
         muted
         loop

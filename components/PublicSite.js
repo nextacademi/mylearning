@@ -1177,7 +1177,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
               "radial-gradient(ellipse at 80% 50%, rgba(229,57,53,0.35), rgba(11,13,16,0) 70%)",
           }}
         />
-        <div className="mx-auto max-w-7xl px-5 pt-8 md:px-10 md:pt-14">
+        <div className="mx-auto max-w-7xl px-5 pt-4 md:px-10 md:pt-5">
           <div className="grid items-center gap-8 md:grid-cols-2 md:gap-10">
             <div>
               <Eyebrow light tone="amber" className="text-xs">
