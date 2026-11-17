@@ -13,6 +13,7 @@ import SeoManager from "./SeoManager";
 import PhotoField from "./PhotoField";
 import { useConfirm } from "../ui/ConfirmDialog";
 import PaymentDetailsManager from "./PaymentDetailsManager";
+import HeroVideoManager from "./HeroVideoManager";
 import { COURSE_COLORS, COURSE_ICONS, COURSE_LIMITS, MAX_COURSE_PRICE, formatPrice } from "../../lib/training-offer";
 
 // Director / Admin "Website" tab — manages the public homepage: the hero
@@ -22,6 +23,7 @@ import { COURSE_COLORS, COURSE_ICONS, COURSE_LIMITS, MAX_COURSE_PRICE, formatPri
 // slider (formerly its own sidebar item).
 const HEADER_TAB = { label: "Header" };
 const PAYMENT_TAB = { label: "Payment details" };
+const HERO_VIDEO_TAB = { label: "Hero video" };
 const TEAM_TAB = { label: "Team" };
 const AGREEMENT_TAB = { label: "Agreement" };
 const SEO_TAB = { label: "SEO" };
@@ -44,7 +46,7 @@ const SECTIONS = {
   course: {
     label: "Courses",
     hint: "Course cards in “Empower Your Career With Professional Skills”. The same list (with prices) fills the Training Registration form.",
-    fields: [["title", "Course title", "Basic Computer Course"], ["duration", "Duration", "3 Months"], ["schedule", "Schedule badge", "Every Sunday"], ["price", "Price (S$)", "298"], ["color", "Card colour", ""], ["icon", "Card artwork", ""], ["tagline", "Small label under the artwork (optional)", "ChatGPT & GenAI"], ["featured", "Highlight this card with a red outline", ""]],
+    fields: [["title", "Course title", "Basic Computer Course"], ["duration", "Duration", "3 Months"], ["schedule", "Schedule badge", "Every Sunday"], ["price", "Price (S$)", "298"], ["color", "Card colour", ""], ["icon", "Card artwork", ""], ["tagline", "Small label under the artwork (optional)", "ChatGPT & GenAI"], ["iconImage", "Custom icon (optional — replaces the artwork)", "Upload a logo, or paste https://…"], ["featured", "Highlight this card with a red outline", ""]],
   },
 };
 const COURSE_DEFAULTS = { schedule: "Every Sunday", price: "", color: "red", icon: "general", featured: false };
@@ -93,8 +95,8 @@ function ItemForm({ kind, initial, saving, onSave, onCancel }) {
         className="max-h-[92vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl bg-card p-6 shadow-2xl"
       >
         <h2 className="text-lg font-bold text-ink">{initial?.id ? "Edit" : "Add"} · {SECTIONS[kind].label}</h2>
-        {fields.map(([key, label, placeholder]) => key === "photo" ? (
-          <PhotoField key={key} value={form.photo} onChange={(photo) => setForm((current) => ({ ...current, photo }))} placeholder={placeholder} inputClassName={inputClass} />
+        {fields.map(([key, label, placeholder]) => key === "photo" || key === "iconImage" ? (
+          <PhotoField key={key} label={key === "iconImage" ? label : "Photo"} value={form[key]} onChange={(url) => setForm((current) => ({ ...current, [key]: url }))} placeholder={placeholder} inputClassName={inputClass} />
         ) : kind === "course" && COURSE_INPUTS[key] ? (
           <CourseInput key={key} field={key} label={label} form={form} setForm={setForm} />
         ) : (
@@ -321,7 +323,7 @@ export default function WebsiteContent() {
         <p className="text-xs text-muted">Edit the header, cards and team shown on the public homepage.</p>
       </div>
       <nav className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-2 shadow-sm">
-        {Object.entries({ hero: HEADER_TAB, ...SECTIONS, payment: PAYMENT_TAB, team: TEAM_TAB, agreement: AGREEMENT_TAB, seo: SEO_TAB }).map(([key, { label }]) => (
+        {Object.entries({ hero: HEADER_TAB, heroVideo: HERO_VIDEO_TAB, ...SECTIONS, payment: PAYMENT_TAB, team: TEAM_TAB, agreement: AGREEMENT_TAB, seo: SEO_TAB }).map(([key, { label }]) => (
           <button
             key={key}
             type="button"
@@ -332,7 +334,7 @@ export default function WebsiteContent() {
           </button>
         ))}
       </nav>
-      {kind === "hero" ? <HeaderManager /> : kind === "payment" ? <PaymentDetailsManager /> : kind === "team" ? <TeamManagement embedded /> : kind === "agreement" ? <AgreementManager /> : kind === "seo" ? <SeoManager /> : <SectionManager key={kind} kind={kind} />}
+      {kind === "hero" ? <HeaderManager /> : kind === "heroVideo" ? <HeroVideoManager /> : kind === "payment" ? <PaymentDetailsManager /> : kind === "team" ? <TeamManagement embedded /> : kind === "agreement" ? <AgreementManager /> : kind === "seo" ? <SeoManager /> : <SectionManager key={kind} kind={kind} />}
     </section>
   );
 }

@@ -47,6 +47,15 @@ const theme = (course) => COURSE_COLORS[course.color] || COURSE_COLORS.red;
 // Artwork in the middle of each card, picked per course in the editor.
 function CourseArt({ course }) {
   const { accent } = theme(course);
+  if (course.iconImage) {
+    return (
+      <div className="text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={resolvePhoto(course.iconImage)} alt="" className="mx-auto h-16 w-16 object-contain" loading="lazy" />
+        {course.tagline && <span className="mt-2 block text-xs font-bold" style={{ color: accent }}>{course.tagline}</span>}
+      </div>
+    );
+  }
   const tagline = course.tagline ? (
     <span className="mt-2 inline-block rounded px-2 py-0.5 text-xs font-bold" style={{ color: accent, backgroundColor: `${accent}12` }}>
       {course.tagline}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getAdminAuth, getAdminDb } from "../../../../lib/firebase-admin";
 import { getCachedUserSnapshot } from "../../../../lib/server/cached-profile";
-import { deleteContent, getHero, getPaymentSettings, listContentSeeded, reorderContent, saveContent, saveHero, savePaymentSettings } from "../../../../lib/server/site-content-core";
+import { deleteContent, getHero, getHeroVideo, getPaymentSettings, saveHeroVideo, listContentSeeded, reorderContent, saveContent, saveHero, savePaymentSettings } from "../../../../lib/server/site-content-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +38,7 @@ export async function GET(request) {
     const kind = new URL(request.url).searchParams.get("kind");
     if (kind === "hero") return NextResponse.json({ hero: await getHero(a.db) });
     if (kind === "payment") return NextResponse.json({ payment: await getPaymentSettings(a.db) });
+    if (kind === "heroVideo") return NextResponse.json({ heroVideo: await getHeroVideo(a.db) });
     return NextResponse.json({ items: await listContentSeeded(a.db, kind) });
   } catch (error) {
     return respondError("list", error);
@@ -55,6 +56,11 @@ export async function POST(request) {
       return NextResponse.json({ ok: true, hero });
     }
     if (body.kind === "payment") return NextResponse.json({ ok: true, payment: await savePaymentSettings(a.db, body) });
+    if (body.kind === "heroVideo") {
+      const heroVideo = await saveHeroVideo(a.db, body);
+      revalidatePath("/"); // the hero is in the homepage's first paint
+      return NextResponse.json({ ok: true, heroVideo });
+    }
     const saved = await saveContent(a.db, body.kind, body);
     if (body.kind === "course") revalidatePath("/"); // course cards are in the homepage's first paint
     return NextResponse.json({ ok: true, ...saved });

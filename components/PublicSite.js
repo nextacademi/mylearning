@@ -22,6 +22,8 @@ import VideoLibrarySection from "./public/VideoLibrarySection";
 import TrainingRegistration from "./public/TrainingRegistration";
 import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
 import HeroVideo from "./brand/HeroVideo";
+import HeroSlideshow from "./brand/HeroSlideshow";
+import { HERO_VIDEO_DEFAULTS } from "../lib/hero-video";
 import founderPhotoAsset from "../public/team/founder.jpg";
 import coFounderPhotoAsset from "../public/team/co-founder.jpg";
 import jewelShahinPhotoAsset from "../public/team/jewel-shahin.jpg";
@@ -920,7 +922,7 @@ function ContactForm() {
   );
 }
 
-export default function PublicSite({ initialHero = null, initialCourses = null }) {
+export default function PublicSite({ initialHero = null, initialCourses = null, initialHeroVideo = null }) {
   const router = useRouter();
   const { user, profile, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -983,6 +985,8 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
   // Course cards + registration form (Website content → Courses / Payment
   // details). null = not loaded → built-in list inside the component.
   const courseList = Array.isArray(siteContent?.courses) ? siteContent.courses : initialCourses;
+  // Hero "video" (Website → Hero video): live slideshow unless switched off.
+  const heroVideo = siteContent?.heroVideo || initialHeroVideo || HERO_VIDEO_DEFAULTS;
   const verifiedUser = Boolean(user);
 
   function goToLearning() {
@@ -1223,7 +1227,16 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
                   phone, framed with a soft red glow. */}
             <div className="relative">
               <div className="pointer-events-none absolute -inset-4 -z-10 rounded-lg bg-[#E53935]/20 blur-3xl" />
-              <HeroVideo className="aspect-video w-full rounded-lg shadow-[0_30px_80px_-24px_rgba(229,57,53,0.55)] ring-1 ring-white/10" />
+              {heroVideo.enabled !== false ? (
+                <HeroSlideshow
+                  config={heroVideo}
+                  courses={courseList}
+                  displayClassName={displayFont.className}
+                  className="aspect-video w-full rounded-lg shadow-[0_30px_80px_-24px_rgba(229,57,53,0.55)] ring-1 ring-white/10"
+                />
+              ) : (
+                <HeroVideo className="aspect-video w-full rounded-lg shadow-[0_30px_80px_-24px_rgba(229,57,53,0.55)] ring-1 ring-white/10" />
+              )}
             </div>
           </div>
 

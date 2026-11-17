@@ -2,7 +2,8 @@ import PublicSite from "../components/PublicSite";
 import { SITE_NAME, SITE_URL } from "../lib/seo";
 import { loadSeoSettingsSafe } from "../lib/server/seo-settings";
 import { getAdminDb } from "../lib/firebase-admin";
-import { getHero, listCourses } from "../lib/server/site-content-core";
+import { getHero, getHeroVideo, listCourses } from "../lib/server/site-content-core";
+import { HERO_VIDEO_DEFAULTS } from "../lib/hero-video";
 import { ACADEMY_INFO } from "../lib/academy-info";
 import { listTeam } from "../lib/server/team-core";
 import { realSocialLinks } from "../lib/team-socials";
@@ -31,6 +32,14 @@ async function loadTeam() {
     return await listTeam(getAdminDb());
   } catch {
     return [];
+  }
+}
+
+async function loadHeroVideo() {
+  try {
+    return await getHeroVideo(getAdminDb());
+  } catch {
+    return HERO_VIDEO_DEFAULTS;
   }
 }
 
@@ -180,16 +189,16 @@ function heroVideoJsonLd() {
 const jsonLd = (data) => ({ __html: JSON.stringify(data).replace(/</g, "\\u003c") });
 
 export default async function Home() {
-  const [hero, seo, courses, team] = await Promise.all([loadHero(), loadSeoSettingsSafe(), loadCourses(), loadTeam()]);
+  const [hero, seo, courses, team, heroVideo] = await Promise.all([loadHero(), loadSeoSettingsSafe(), loadCourses(), loadTeam(), loadHeroVideo()]);
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organizationJsonLd(seo, team))} />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(websiteJsonLd())} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(heroVideoJsonLd())} />
+      {heroVideo.enabled === false && <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(heroVideoJsonLd())} />}
       {(courses || DEFAULT_COURSES).length > 0 && (
         <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(coursesJsonLd(courses || DEFAULT_COURSES))} />
       )}
-      <PublicSite initialHero={hero} initialCourses={courses} />
+      <PublicSite initialHero={hero} initialCourses={courses} initialHeroVideo={heroVideo} />
     </>
   );
 }
