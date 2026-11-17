@@ -3,8 +3,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  BookOpen, Bot, CalendarDays, ChartPie, CircleCheck, DraftingCompass, FilePen, FileSpreadsheet, FileText,
-  GraduationCap, Headphones, Landmark, Laptop, QrCode, ReceiptText, Send, UserRound, WandSparkles, X,
+  BrainCircuit, CalendarDays, CircleCheck, DraftingCompass, FilePen, FileSpreadsheet, FileText,
+  GraduationCap, Landmark, Languages, Laptop, QrCode, ReceiptText, Send, UserRound, X,
 } from "lucide-react";
 import {
   COURSE_COLORS,
@@ -43,84 +43,34 @@ function Rise({ children, index = 0, className }) {
 
 const theme = (course) => COURSE_COLORS[course.color] || COURSE_COLORS.red;
 
-function Tile({ children, color }) {
-  return (
-    <span className="grid h-8 w-8 place-items-center rounded text-xs font-bold text-white shadow-sm" style={{ backgroundColor: color }}>
-      {children}
-    </span>
-  );
-}
+// Card artwork: one icon per preset (picked in Website → Courses) in a
+// softly tinted square of the card's colour, plus a one-line subtitle (the
+// course's own label from the editor, or the preset's default).
+const ART = {
+  office: { Icon: Laptop, subtitle: "Word · Excel · PowerPoint" },
+  excel: { Icon: FileSpreadsheet, subtitle: "Spreadsheets & Charts" },
+  autocad: { Icon: DraftingCompass, subtitle: "Drafting & Design" },
+  ai: { Icon: BrainCircuit, subtitle: "ChatGPT & GenAI" },
+  wpln: { Icon: Languages, subtitle: "WPLN Assessment Prep" },
+  general: { Icon: GraduationCap, subtitle: "" },
+};
 
-// Artwork in the middle of each card, picked per course in the editor.
 function CourseArt({ course }) {
-  const { accent, header, price } = theme(course);
-  const tagline = course.tagline ? (
-    <span className="mt-2 inline-block rounded px-2 py-0.5 text-xs font-bold" style={{ color: accent, backgroundColor: `${accent}12` }}>
-      {course.tagline}
-    </span>
-  ) : null;
-  switch (course.icon) {
-    case "office":
-      return (
-        <div className="text-center">
-          <div className="mb-3 flex justify-center gap-2">
-            <Tile color={header}>W</Tile>
-            <Tile color="#DC2626">X</Tile>
-            <Tile color={price}>P</Tile>
-          </div>
-          <Laptop className="mx-auto h-10 w-10" style={{ color: accent }} aria-hidden="true" />
-          {tagline}
-        </div>
-      );
-    case "excel":
-      return (
-        <div className="text-center">
-          <div className="mb-3 flex items-center justify-center gap-2">
-            <Tile color={header}>X</Tile>
-            <ChartPie className="h-7 w-7" style={{ color: accent }} aria-hidden="true" />
-          </div>
-          <FileSpreadsheet className="mx-auto h-10 w-10" style={{ color: accent }} aria-hidden="true" />
-          {tagline}
-        </div>
-      );
-    case "autocad":
-      return (
-        <div className="text-center">
-          <span className="block text-5xl font-black italic leading-none tracking-tighter" style={{ color: accent }}>A</span>
-          <span className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#6B7280]">
-            <DraftingCompass className="h-4 w-4" style={{ color: accent }} aria-hidden="true" />
-            {course.tagline || "Drafting & Design"}
-          </span>
-        </div>
-      );
-    case "ai":
-      return (
-        <div className="text-center">
-          <div className="mb-1 flex items-center justify-center gap-2">
-            <Bot className="h-9 w-9" style={{ color: accent }} aria-hidden="true" />
-            <WandSparkles className="h-7 w-7 text-[#E11D48]" aria-hidden="true" />
-          </div>
-          {tagline}
-        </div>
-      );
-    case "wpln":
-      return (
-        <div className="text-center">
-          <div className="mb-1 flex items-center justify-center gap-2">
-            <Headphones className="h-9 w-9" style={{ color: accent }} aria-hidden="true" />
-            <BookOpen className="h-7 w-7 text-[#DC2626]" aria-hidden="true" />
-          </div>
-          {course.tagline && <span className="mt-1 block text-xs font-bold" style={{ color: accent }}>{course.tagline}</span>}
-        </div>
-      );
-    default:
-      return (
-        <div className="text-center">
-          <GraduationCap className="mx-auto h-10 w-10" style={{ color: accent }} aria-hidden="true" />
-          {tagline}
-        </div>
-      );
-  }
+  const { header } = theme(course);
+  const art = ART[course.icon] || ART.general;
+  const { Icon } = art;
+  const subtitle = course.tagline || art.subtitle;
+  return (
+    <div className="flex flex-col items-center text-center">
+      <span
+        className="grid h-20 w-20 place-items-center rounded-2xl transition duration-300 group-hover:scale-105"
+        style={{ background: `linear-gradient(145deg, ${header}12, ${header}2B)`, boxShadow: `inset 0 0 0 1px ${header}24` }}
+      >
+        <Icon className="h-10 w-10" style={{ color: header }} strokeWidth={1.7} aria-hidden="true" />
+      </span>
+      {subtitle && <span className="mt-3 text-xs font-semibold text-[#4B5563]">{subtitle}</span>}
+    </div>
+  );
 }
 
 const courseAnchor = (title) => `course-${String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
@@ -132,23 +82,21 @@ function CourseCard({ course, onRegister }) {
       id={courseAnchor(course.title)}
       className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-red-100 bg-white shadow-xl transition duration-300 hover:-translate-y-1 hover:shadow-2xl ${course.featured ? "ring-2 ring-[#E31B23]/30" : ""}`}
     >
-      <div className="grid min-h-[84px] place-items-center px-4 py-5 text-center text-white" style={{ backgroundColor: header }}>
-        <h3 className="text-lg font-black uppercase leading-tight tracking-wide">{course.title}</h3>
+      <div className="flex h-[92px] items-center justify-center px-4 text-center text-white" style={{ backgroundColor: header }}>
+        <h3 className="line-clamp-2 text-lg font-black uppercase leading-tight tracking-wide">{course.title}</h3>
       </div>
-      <div className="border-b border-red-100 bg-red-50/50 p-4 text-center">
+      <div className="flex min-h-[88px] flex-col items-center justify-center gap-2 border-b border-red-100 bg-red-50/50 px-4 py-3 text-center">
         <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#111827] shadow-xs">
           <CalendarDays className="h-3.5 w-3.5" style={{ color: header }} aria-hidden="true" />
           {course.duration}
         </span>
         {course.schedule && (
-          <div className="mt-2">
-            <span className="inline-block rounded-full px-3 py-0.5 text-[11px] font-bold uppercase text-white shadow-xs" style={{ backgroundColor: NEXT_RED }}>
-              {course.schedule}
-            </span>
-          </div>
+          <span className="inline-block rounded-full px-3 py-0.5 text-[11px] font-bold uppercase text-white shadow-xs" style={{ backgroundColor: NEXT_RED }}>
+            {course.schedule}
+          </span>
         )}
       </div>
-      <div className="flex flex-1 items-center justify-center bg-white p-5">
+      <div className="flex flex-1 items-center justify-center bg-white px-5 py-7">
         <CourseArt course={course} />
       </div>
       <div className="py-4 text-center text-2xl font-black tracking-wider text-white" style={{ backgroundColor: price }}>
@@ -188,15 +136,15 @@ export default function TrainingRegistration({ courses, payment, displayClassNam
         </p>
       </Rise>
 
-      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-        {list.map((course, index) => (
-          <Rise key={course.id || course.title} index={index} className="h-full">
-            <CourseCard course={course} onRegister={openForm} />
-          </Rise>
-        ))}
-      </div>
+      <Rise className="mt-6 md:mt-8">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+          {list.map((course) => (
+            <CourseCard key={course.id || course.title} course={course} onRegister={openForm} />
+          ))}
+        </div>
+      </Rise>
 
-      <Rise className="mt-10">
+      <Rise className="mt-8 md:mt-10">
         <div className="relative flex flex-col items-center justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-r from-[#E31B23] via-[#DC2626] to-[#BE123C] p-8 text-white shadow-2xl md:flex-row md:p-12">
           <GraduationCap className="pointer-events-none absolute -bottom-8 -right-6 h-40 w-40 opacity-10" aria-hidden="true" />
           <div className="z-10 text-center md:text-left">
