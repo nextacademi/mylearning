@@ -35,7 +35,7 @@ function VideoPlayer({ clip, onClose }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="aspect-video overflow-hidden rounded-xl bg-black">
+        <div className="aspect-video overflow-hidden rounded-lg bg-black">
           <iframe
             src={toVideoEmbedUrl(clip.videoUrl)}
             title={clip.title}
@@ -71,7 +71,7 @@ export default function VideoLibrarySection({ clips = CLIPS }) {
               <Card
                 key={clip.id || clip.title}
                 {...(playable ? { type: "button", onClick: () => setPlaying(clip), "aria-label": `Play ${clip.title}` } : {})}
-                className={`group relative block aspect-video w-full overflow-hidden rounded-xl bg-black text-left ${playable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]" : ""}`}
+                className={`group relative block aspect-video w-full overflow-hidden rounded-lg bg-black text-left ${playable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]" : ""}`}
               >
                 {image ? (
                   // eslint-disable-next-line @next/next/no-img-element

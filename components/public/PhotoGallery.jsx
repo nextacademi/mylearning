@@ -6,7 +6,7 @@ export default function PhotoGallery({ items }) {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
-        <div key={item.title} className="group relative aspect-[4/3] overflow-hidden rounded-2xl">
+        <div key={item.title} className="group relative aspect-[4/3] overflow-hidden rounded-lg">
           <img
             src={item.src}
             alt={item.title}

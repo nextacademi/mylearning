@@ -3,8 +3,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  BrainCircuit, CalendarDays, CircleCheck, DraftingCompass, FilePen, FileSpreadsheet, FileText,
-  GraduationCap, Landmark, Languages, Laptop, QrCode, ReceiptText, Send, UserRound, X,
+  BookOpen, CalendarDays, ChartPie, CircleCheck, DraftingCompass, FilePen, FileSpreadsheet, FileText,
+  GraduationCap, Headphones, Landmark, Laptop, QrCode, ReceiptText, Send, UserRound, WandSparkles, X,
 } from "lucide-react";
 import {
   COURSE_COLORS,
@@ -19,6 +19,7 @@ import {
   validWhatsapp,
 } from "../../lib/training-offer";
 import { resolvePhoto } from "../../lib/public-assets";
+import { AutoCadIcon, ChatGptIcon, ExcelIcon, PowerPointIcon, WordIcon } from "./BrandIcons";
 
 // Homepage "Empower Your Career" course cards + the red "Want to join our
 // upcoming training?" banner + the Training Registration popup. Cards and
@@ -43,34 +44,76 @@ function Rise({ children, index = 0, className }) {
 
 const theme = (course) => COURSE_COLORS[course.color] || COURSE_COLORS.red;
 
-// Card artwork: one icon per preset (picked in Website → Courses) in a
-// softly tinted square of the card's colour, plus a one-line subtitle (the
-// course's own label from the editor, or the preset's default).
-const ART = {
-  office: { Icon: Laptop, subtitle: "Word · Excel · PowerPoint" },
-  excel: { Icon: FileSpreadsheet, subtitle: "Spreadsheets & Charts" },
-  autocad: { Icon: DraftingCompass, subtitle: "Drafting & Design" },
-  ai: { Icon: BrainCircuit, subtitle: "ChatGPT & GenAI" },
-  wpln: { Icon: Languages, subtitle: "WPLN Assessment Prep" },
-  general: { Icon: GraduationCap, subtitle: "" },
-};
-
+// Artwork in the middle of each card, picked per course in the editor.
 function CourseArt({ course }) {
-  const { header } = theme(course);
-  const art = ART[course.icon] || ART.general;
-  const { Icon } = art;
-  const subtitle = course.tagline || art.subtitle;
-  return (
-    <div className="flex flex-col items-center text-center">
-      <span
-        className="grid h-20 w-20 place-items-center rounded-2xl transition duration-300 group-hover:scale-105"
-        style={{ background: `linear-gradient(145deg, ${header}12, ${header}2B)`, boxShadow: `inset 0 0 0 1px ${header}24` }}
-      >
-        <Icon className="h-10 w-10" style={{ color: header }} strokeWidth={1.7} aria-hidden="true" />
-      </span>
-      {subtitle && <span className="mt-3 text-xs font-semibold text-[#4B5563]">{subtitle}</span>}
-    </div>
-  );
+  const { accent } = theme(course);
+  const tagline = course.tagline ? (
+    <span className="mt-2 inline-block rounded px-2 py-0.5 text-xs font-bold" style={{ color: accent, backgroundColor: `${accent}12` }}>
+      {course.tagline}
+    </span>
+  ) : null;
+  switch (course.icon) {
+    case "office":
+      return (
+        <div className="text-center">
+          <div className="mb-3 flex justify-center gap-2.5">
+            <WordIcon size={40} />
+            <ExcelIcon size={40} />
+            <PowerPointIcon size={40} />
+          </div>
+          <Laptop className="mx-auto h-9 w-9" style={{ color: accent }} aria-hidden="true" />
+          {tagline}
+        </div>
+      );
+    case "excel":
+      return (
+        <div className="text-center">
+          <div className="mb-3 flex items-center justify-center gap-3">
+            <ExcelIcon size={52} />
+            <ChartPie className="h-8 w-8" style={{ color: accent }} aria-hidden="true" />
+          </div>
+          <FileSpreadsheet className="mx-auto h-9 w-9" style={{ color: accent }} aria-hidden="true" />
+          {tagline}
+        </div>
+      );
+    case "autocad":
+      return (
+        <div className="text-center">
+          <span className="flex justify-center"><AutoCadIcon size={56} /></span>
+          <span className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#6B7280]">
+            <DraftingCompass className="h-4 w-4" style={{ color: accent }} aria-hidden="true" />
+            {course.tagline || "Drafting & Design"}
+          </span>
+        </div>
+      );
+    case "ai":
+      return (
+        <div className="text-center">
+          <div className="mb-1 flex items-center justify-center gap-2">
+            <ChatGptIcon size={44} />
+            <WandSparkles className="h-7 w-7 text-[#E11D48]" aria-hidden="true" />
+          </div>
+          {tagline}
+        </div>
+      );
+    case "wpln":
+      return (
+        <div className="text-center">
+          <div className="mb-1 flex items-center justify-center gap-2">
+            <Headphones className="h-9 w-9" style={{ color: accent }} aria-hidden="true" />
+            <BookOpen className="h-7 w-7 text-[#DC2626]" aria-hidden="true" />
+          </div>
+          {course.tagline && <span className="mt-1 block text-xs font-bold" style={{ color: accent }}>{course.tagline}</span>}
+        </div>
+      );
+    default:
+      return (
+        <div className="text-center">
+          <GraduationCap className="mx-auto h-10 w-10" style={{ color: accent }} aria-hidden="true" />
+          {tagline}
+        </div>
+      );
+  }
 }
 
 const courseAnchor = (title) => `course-${String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
@@ -80,7 +123,7 @@ function CourseCard({ course, onRegister }) {
   return (
     <article
       id={courseAnchor(course.title)}
-      className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-red-100 bg-white shadow-xl transition duration-300 hover:-translate-y-1 hover:shadow-2xl ${course.featured ? "ring-2 ring-[#E31B23]/30" : ""}`}
+      className={`group relative flex h-full flex-col overflow-hidden rounded-lg border border-red-100 bg-white shadow-xl transition duration-300 hover:-translate-y-1 hover:shadow-2xl ${course.featured ? "ring-2 ring-[#E31B23]/30" : ""}`}
     >
       <div className="flex h-[92px] items-center justify-center px-4 text-center text-white" style={{ backgroundColor: header }}>
         <h3 className="line-clamp-2 text-lg font-black uppercase leading-tight tracking-wide">{course.title}</h3>
@@ -106,7 +149,7 @@ function CourseCard({ course, onRegister }) {
       <button
         type="button"
         onClick={() => onRegister(course.id)}
-        className="absolute inset-0 rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-[#E31B23]/40"
+        className="absolute inset-0 rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-[#E31B23]/40"
         aria-label={`Register for ${course.title}`}
       />
     </article>
@@ -145,7 +188,7 @@ export default function TrainingRegistration({ courses, payment, displayClassNam
       </Rise>
 
       <Rise className="mt-8 md:mt-10">
-        <div className="relative flex flex-col items-center justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-r from-[#E31B23] via-[#DC2626] to-[#BE123C] p-8 text-white shadow-2xl md:flex-row md:p-12">
+        <div className="relative flex flex-col items-center justify-between gap-6 overflow-hidden rounded-xl bg-gradient-to-r from-[#E31B23] via-[#DC2626] to-[#BE123C] p-8 text-white shadow-2xl md:flex-row md:p-12">
           <GraduationCap className="pointer-events-none absolute -bottom-8 -right-6 h-40 w-40 opacity-10" aria-hidden="true" />
           <div className="z-10 text-center md:text-left">
             <span className="mb-3 inline-block rounded-full bg-white/25 px-3 py-1 text-xs font-bold uppercase tracking-wider">Enrollment Open</span>
@@ -157,7 +200,7 @@ export default function TrainingRegistration({ courses, payment, displayClassNam
           <button
             type="button"
             onClick={() => openForm("")}
-            className="z-10 flex shrink-0 items-center gap-3 rounded-2xl bg-white px-7 py-4 text-base font-extrabold text-[#E31B23] shadow-xl transition hover:scale-105 hover:bg-gray-100 active:scale-95 md:text-lg"
+            className="z-10 flex shrink-0 items-center gap-3 rounded-lg bg-white px-7 py-4 text-base font-extrabold text-[#E31B23] shadow-xl transition hover:scale-105 hover:bg-gray-100 active:scale-95 md:text-lg"
           >
             <FilePen className="h-5 w-5" aria-hidden="true" />
             Submit a Training Registration
@@ -184,7 +227,7 @@ const EMPTY_PERSON = { name: "", title: "", email: "", whatsapp: "" };
 const RECEIPT_EXT = /\.(pdf|jpe?g|png|webp|heic|heif)$/i;
 
 const inputClass = (error) =>
-  `w-full rounded-xl border ${error ? "border-[#E31B23]" : "border-gray-300"} bg-white px-4 py-3 text-sm text-gray-800 outline-none transition focus:ring-2 focus:ring-[#E31B23] read-only:bg-gray-100 read-only:text-gray-600`;
+  `w-full rounded-lg border ${error ? "border-[#E31B23]" : "border-gray-300"} bg-white px-4 py-3 text-sm text-gray-800 outline-none transition focus:ring-2 focus:ring-[#E31B23] read-only:bg-gray-100 read-only:text-gray-600`;
 const labelClass = "mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700";
 
 function Field({ label, error, children }) {
@@ -248,7 +291,7 @@ function PaymentBlock({ payment, file, fileError, onFile, required }) {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-red-200 bg-red-50/40 p-5">
+    <div className="space-y-4 rounded-lg border border-red-200 bg-red-50/40 p-5">
       <div className="flex items-center justify-between gap-3 border-b border-red-200 pb-3">
         <h4 className="flex items-center text-sm font-black text-gray-900">
           <QrCode className="mr-2 h-5 w-5 text-[#E31B23]" aria-hidden="true" /> Payment Details &amp; Transfer
@@ -259,7 +302,7 @@ function PaymentBlock({ payment, file, fileError, onFile, required }) {
       {configured ? (
         <div className={`grid grid-cols-1 items-center gap-4 ${payment.paynowQr && bankRows.length ? "sm:grid-cols-2" : ""}`}>
           {payment.paynowQr && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-xs">
+            <div className="rounded-lg border border-gray-200 bg-white p-4 text-center shadow-xs">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={resolvePhoto(payment.paynowQr)} alt="PayNow QR code" className="mx-auto h-40 w-40 rounded-lg object-contain" />
               <p className="mt-2 text-[11px] font-bold text-gray-600">Scan with your PayNow banking app</p>
@@ -267,7 +310,7 @@ function PaymentBlock({ payment, file, fileError, onFile, required }) {
             </div>
           )}
           {bankRows.length > 0 && (
-            <div className="space-y-2 rounded-xl border border-gray-200 bg-white p-4 text-xs shadow-xs">
+            <div className="space-y-2 rounded-lg border border-gray-200 bg-white p-4 text-xs shadow-xs">
               <div className="flex items-center gap-1.5 border-b pb-1 font-bold text-gray-900">
                 <Landmark className="h-3.5 w-3.5 text-[#E31B23]" aria-hidden="true" /> Bank Account Transfer:
               </div>
@@ -282,7 +325,7 @@ function PaymentBlock({ payment, file, fileError, onFile, required }) {
           {payment.note && <p className="text-xs leading-5 text-gray-600 sm:col-span-2">{payment.note}</p>}
         </div>
       ) : (
-        <p className="rounded-xl border border-gray-200 bg-white p-4 text-xs leading-5 text-gray-600">
+        <p className="rounded-lg border border-gray-200 bg-white p-4 text-xs leading-5 text-gray-600">
           We&apos;ll send you the payment details by email/WhatsApp when we confirm your seat. If you have already paid, you can upload the receipt below.
         </p>
       )}
@@ -297,7 +340,7 @@ function PaymentBlock({ payment, file, fileError, onFile, required }) {
           onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={(event) => { event.preventDefault(); setDragging(false); pick(event.dataTransfer.files); }}
-          className={`flex min-h-28 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-5 text-center transition ${fileError ? "border-[#E31B23] bg-red-50" : dragging ? "border-[#E31B23] bg-red-50" : "border-gray-300 bg-white hover:bg-gray-50"}`}
+          className={`flex min-h-28 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-5 text-center transition ${fileError ? "border-[#E31B23] bg-red-50" : dragging ? "border-[#E31B23] bg-red-50" : "border-gray-300 bg-white hover:bg-gray-50"}`}
         >
           {file ? (
             <>
@@ -435,7 +478,7 @@ function RegistrationModal({ courses, payment, initialCourse, onClose }) {
       data-lenis-prevent
       onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}
     >
-      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="my-8 w-full max-w-2xl overflow-hidden rounded-3xl bg-white text-left shadow-2xl">
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="my-8 w-full max-w-2xl overflow-hidden rounded-xl bg-white text-left shadow-2xl">
         <div className="flex items-center justify-between gap-4 p-6 text-white" style={{ backgroundColor: NEXT_RED }}>
           <div>
             <h3 id={titleId} className="text-xl font-black tracking-wide">Training Registration Form</h3>
@@ -459,12 +502,12 @@ function RegistrationModal({ courses, payment, initialCourse, onClose }) {
               <p className="text-sm text-gray-600">Your reference: <b className="font-mono text-gray-900">{reference}</b></p>
             )}
             <div className="pt-4">
-              <button type="button" onClick={onClose} className="rounded-xl bg-gray-900 px-8 py-3 font-bold text-white transition hover:bg-black">Close Window</button>
+              <button type="button" onClick={onClose} className="rounded-lg bg-gray-900 px-8 py-3 font-bold text-white transition hover:bg-black">Close Window</button>
             </div>
           </div>
         ) : (
           <form ref={scrollRef} onSubmit={submit} noValidate className="max-h-[75vh] space-y-6 overflow-y-auto p-6 md:p-8">
-            {message && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-[#B91C1C]">{message}</p>}
+            {message && <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-[#B91C1C]">{message}</p>}
 
             <Field label="Select Course *" error={errors.courseId}>
               <select ref={firstFieldRef} value={courseId} onChange={(event) => setCourseId(event.target.value)} className={`${inputClass(errors.courseId)} bg-gray-50`}>
@@ -477,7 +520,7 @@ function RegistrationModal({ courses, payment, initialCourse, onClose }) {
               </select>
             </Field>
 
-            <div className="space-y-4 rounded-2xl border border-red-100 bg-red-50/60 p-4">
+            <div className="space-y-4 rounded-lg border border-red-100 bg-red-50/60 p-4">
               <h4 className="flex items-center text-xs font-black uppercase tracking-wider text-[#E31B23]">
                 <GraduationCap className="mr-2 h-4 w-4" aria-hidden="true" /> Trainee / Student Details
               </h4>
@@ -490,12 +533,12 @@ function RegistrationModal({ courses, payment, initialCourse, onClose }) {
               />
             </div>
 
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3.5">
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3.5">
               <input type="checkbox" checked={sameAsTrainee} onChange={(event) => toggleSame(event.target.checked)} className="h-5 w-5 cursor-pointer rounded border-gray-300 accent-[#E31B23]" />
               <span className="text-xs font-semibold text-gray-800 md:text-sm">Requester (Payer) is the same person as the trainee (Auto-fill contact details)</span>
             </label>
 
-            <div className={`space-y-4 rounded-2xl border border-gray-200 p-4 transition ${sameAsTrainee ? "bg-gray-100 opacity-75" : "bg-gray-50"}`}>
+            <div className={`space-y-4 rounded-lg border border-gray-200 p-4 transition ${sameAsTrainee ? "bg-gray-100 opacity-75" : "bg-gray-50"}`}>
               <h4 className="flex items-center text-xs font-black uppercase tracking-wider text-gray-700">
                 <UserRound className="mr-2 h-4 w-4" aria-hidden="true" /> Requester / Payer Details
               </h4>
@@ -532,7 +575,7 @@ function RegistrationModal({ courses, payment, initialCourse, onClose }) {
               <button
                 type="submit"
                 disabled={status === "submitting"}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#E31B23] py-4 text-base font-extrabold text-white shadow-lg transition hover:bg-[#B91C1C] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#E31B23] py-4 text-base font-extrabold text-white shadow-lg transition hover:bg-[#B91C1C] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <Send className="h-5 w-5" aria-hidden="true" />
                 {status === "submitting" ? "Submitting…" : file || receiptRequired ? "Submit Registration & Payment" : "Submit Registration"}

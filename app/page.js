@@ -4,6 +4,8 @@ import { loadSeoSettingsSafe } from "../lib/server/seo-settings";
 import { getAdminDb } from "../lib/firebase-admin";
 import { getHero, listCourses } from "../lib/server/site-content-core";
 import { ACADEMY_INFO } from "../lib/academy-info";
+import { listTeam } from "../lib/server/team-core";
+import { realSocialLinks } from "../lib/team-socials";
 import { DEFAULT_COURSES } from "../lib/training-offer";
 import heroVideoSrc from "../public/hero-intro.mp4";
 import heroThumb from "../public/hero-intro-thumb.jpg";
@@ -23,6 +25,15 @@ async function loadHero() {
 
 // Course cards (Website content → Courses), also in the first paint so a
 // changed price never flashes the old one.
+// Team (Website → Team) for the organization's people in structured data.
+async function loadTeam() {
+  try {
+    return await listTeam(getAdminDb());
+  } catch {
+    return [];
+  }
+}
+
 async function loadCourses() {
   try {
     return await listCourses(getAdminDb());
@@ -56,7 +67,19 @@ const postalAddress = {
   addressCountry: "SG",
 };
 
-function organizationJsonLd(seo) {
+function organizationJsonLd(seo, team = []) {
+  const people = team
+    .filter((member) => member.name && member.role)
+    .map((member) => {
+      const sameAs = Object.values(realSocialLinks(member.socials));
+      return {
+        "@type": "Person",
+        name: member.name,
+        jobTitle: member.role,
+        ...(member.photo ? { image: absolute(member.photo) } : {}),
+        ...(sameAs.length ? { sameAs } : {}),
+      };
+    });
   return {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
@@ -72,6 +95,7 @@ function organizationJsonLd(seo) {
     address: seo.address ? { "@type": "PostalAddress", streetAddress: seo.address, addressCountry: "SG" } : postalAddress,
     areaServed: { "@type": "Country", name: "Singapore" },
     ...(seo.socialLinks?.length ? { sameAs: seo.socialLinks } : {}),
+    ...(people.length ? { employee: people } : {}),
   };
 }
 function websiteJsonLd() {
@@ -156,10 +180,10 @@ function heroVideoJsonLd() {
 const jsonLd = (data) => ({ __html: JSON.stringify(data).replace(/</g, "\\u003c") });
 
 export default async function Home() {
-  const [hero, seo, courses] = await Promise.all([loadHero(), loadSeoSettingsSafe(), loadCourses()]);
+  const [hero, seo, courses, team] = await Promise.all([loadHero(), loadSeoSettingsSafe(), loadCourses(), loadTeam()]);
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organizationJsonLd(seo))} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(organizationJsonLd(seo, team))} />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(websiteJsonLd())} />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(heroVideoJsonLd())} />
       {(courses || DEFAULT_COURSES).length > 0 && (

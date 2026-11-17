@@ -16,6 +16,7 @@ import AppointmentBookingWidget from "./public/AppointmentBookingWidget";
 import SmoothScroll from "./public/SmoothScroll";
 import { resolvePhoto } from "../lib/public-assets";
 import { HERO_DEFAULTS } from "../lib/site-hero";
+import { realSocialLinks } from "../lib/team-socials";
 import PhotoGallery from "./public/PhotoGallery";
 import VideoLibrarySection from "./public/VideoLibrarySection";
 import TrainingRegistration from "./public/TrainingRegistration";
@@ -346,7 +347,7 @@ function EventListRow({ event }) {
 // CalendarSubscribeButton used elsewhere, wired to the live .ics feed).
 function TrainingListCard({ title, events, emptyText, loading }) {
   return (
-    <div className="min-w-0 rounded-xl border border-[#E5E7EB] border-t-4 border-t-[#E53935] bg-white p-4 shadow-sm">
+    <div className="min-w-0 rounded-lg border border-[#E5E7EB] border-t-4 border-t-[#E53935] bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <b className="flex min-w-0 items-center gap-2 text-base font-black text-[#111827]">
           {title}
@@ -550,16 +551,17 @@ function TeamCard({ member, index }) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
-  const activeSocials = SOCIAL_LINKS.filter(({ key }) => member.socials?.[key]);
+  const socials = realSocialLinks(member.socials);
+  const activeSocials = SOCIAL_LINKS.filter(({ key }) => socials[key]);
 
   return (
     <Reveal
       as="article"
       index={index}
-      className="group relative flex h-full min-h-[220px] w-full shrink-0 flex-col items-center overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white px-1.5 pb-3 pt-3 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-[#E53935]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] sm:min-h-[320px] sm:rounded-3xl sm:px-5 sm:pb-5 sm:pt-7 lg:min-h-[350px]"
+      className="group relative flex h-full w-full shrink-0 flex-col items-center overflow-hidden rounded-lg border border-[#E5E7EB] bg-white px-1.5 pb-3 pt-3 text-center shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:border-[#E53935]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] sm:rounded-lg sm:px-5 sm:pb-5 sm:pt-6"
     >
       <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#E53935] via-[#fb7185] to-[#f59e0b]" />
-      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-white bg-[#FAFAF7] shadow-[0_4px_18px_rgba(15,23,42,0.12)] ring-1 ring-[#E5E7EB] transition duration-300 group-hover:ring-[#E53935]/40 sm:h-28 sm:w-28 sm:border-4 lg:h-36 lg:w-36">
+      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-white bg-[#FAFAF7] shadow-[0_4px_18px_rgba(15,23,42,0.12)] ring-1 ring-[#E5E7EB] transition duration-300 group-hover:ring-[#E53935]/40 sm:h-28 sm:w-28 sm:border-4 lg:h-32 lg:w-32">
         {!member.photo || imgFailed ? (
           <span className="grid h-full w-full place-items-center bg-[#FAFAF7] text-lg font-black text-[#B91C1C]">
             {initials}
@@ -567,24 +569,24 @@ function TeamCard({ member, index }) {
         ) : (
           <img
             src={member.photo}
-            alt={member.name || member.role}
+            alt={member.name ? `${member.name}, ${member.role} at Next Academy` : member.role}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
             onError={() => setImgFailed(true)}
           />
         )}
       </div>
       {member.name && (
-        <h3 className="mt-2 flex min-h-8 items-center justify-center text-center text-xs font-bold leading-tight text-[#111827] sm:mt-4 sm:min-h-12 sm:whitespace-nowrap sm:text-base">{member.name}</h3>
+        <h3 className="mt-2 flex min-h-8 items-center justify-center text-center text-xs font-bold leading-tight text-[#111827] sm:mt-3 sm:min-h-0 sm:whitespace-nowrap sm:text-base">{member.name}</h3>
       )}
       <p className={`${member.name ? "mt-1" : "mt-4"} inline-flex max-w-full rounded-full bg-[#FFF1F0] px-1.5 py-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wide text-[#C62828] sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-[0.14em]`}>
         {member.role}
       </p>
       {activeSocials.length > 0 && (
-        <div className="mt-auto flex items-center justify-center gap-1 pt-2 sm:gap-3 sm:pt-5">
+        <div className="mt-auto flex items-center justify-center gap-1 pt-2 sm:gap-2.5 sm:pt-4">
           {activeSocials.map(({ key, label, Icon }) => (
             <a
               key={key}
-              href={member.socials[key]}
+              href={socials[key]}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${member.name || member.role} on ${label}`}
@@ -822,7 +824,7 @@ function ContactForm() {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-sm md:p-8"
+      className="rounded-lg border border-[#E5E7EB] bg-white p-6 shadow-sm md:p-8"
     >
       {feedback && (
         <p
@@ -910,7 +912,7 @@ function ContactForm() {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="mt-5 w-full rounded-full bg-[#E53935] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#F04438] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className="mt-5 w-full rounded-lg bg-[#E53935] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#F04438] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {status === "submitting" ? "Sending..." : "Submit Inquiry"}
       </button>
@@ -1079,7 +1081,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
               <>
                 <button
                   onClick={goToLearning}
-                  className="whitespace-nowrap rounded-full bg-[#E53935] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#F04438] sm:px-4 sm:py-2.5 sm:text-xs"
+                  className="whitespace-nowrap rounded-lg bg-[#E53935] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#F04438] sm:px-4 sm:py-2.5 sm:text-xs"
                 >
                   My Learning <span className="ml-1 sm:ml-2">↗</span>
                 </button>
@@ -1127,7 +1129,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
                 </Link>
                 <Link
                   href="/register"
-                  className="whitespace-nowrap rounded-full bg-[#E53935] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#F04438] sm:px-4 sm:py-2.5 sm:text-xs"
+                  className="whitespace-nowrap rounded-lg bg-[#E53935] px-3 py-2 text-[11px] font-bold text-white transition hover:bg-[#F04438] sm:px-4 sm:py-2.5 sm:text-xs"
                 >
                   Join Us
                 </Link>
@@ -1220,7 +1222,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
             {/* Side by side with the text on desktop; right under it on a
                   phone, framed with a soft red glow. */}
             <div className="relative">
-              <div className="pointer-events-none absolute -inset-4 -z-10 rounded-2xl bg-[#E53935]/20 blur-3xl" />
+              <div className="pointer-events-none absolute -inset-4 -z-10 rounded-lg bg-[#E53935]/20 blur-3xl" />
               <HeroVideo className="aspect-video w-full rounded-lg shadow-[0_30px_80px_-24px_rgba(229,57,53,0.55)] ring-1 ring-white/10" />
             </div>
           </div>
@@ -1247,7 +1249,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
           </p>
         </div>
         <div className="grid gap-5 md:grid-cols-[1.25fr_.75fr]">
-          <div className="group relative min-h-[340px] overflow-hidden rounded-2xl">
+          <div className="group relative min-h-[340px] overflow-hidden rounded-lg">
             <img
               src={photos.about}
               alt="Learners collaborating in a bright classroom"
@@ -1260,7 +1262,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
               </span>
             </div>
           </div>
-          <div className="flex flex-col justify-end rounded-2xl bg-[#7F1D1D] p-7 text-white">
+          <div className="flex flex-col justify-end rounded-lg bg-[#7F1D1D] p-7 text-white">
             <span className="font-mono text-[10px] uppercase tracking-widest text-white/70">
               Our vision
             </span>
@@ -1302,7 +1304,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
                 <Reveal
                   as="article"
                   index={index}
-                  className="group overflow-hidden rounded-2xl border border-[#E5E7EB] border-t-4 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  className="group overflow-hidden rounded-lg border border-[#E5E7EB] border-t-4 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
                   style={{ borderTopColor: program.accent || (index % 2 ? RED_DEEP : RED) }}
                   key={program.id || program.title}
                 >
@@ -1411,7 +1413,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
                 <Reveal
                   as="article"
                   index={index}
-                  className="group overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  className="group overflow-hidden rounded-lg border border-[#E5E7EB] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
                   key={event.id}
                 >
                   {event.bannerUrl ? (
@@ -1519,7 +1521,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
 
       {/* GRADIENT CTA BANNER */}
       <section className="mx-auto max-w-7xl px-5 py-3 md:px-10 md:py-4">
-        <Reveal className="rounded-3xl bg-gradient-to-br from-[#E53935] to-[#B91C1C] px-6 py-7 text-center text-white md:px-16 md:py-9">
+        <Reveal className="rounded-xl bg-gradient-to-br from-[#E53935] to-[#B91C1C] px-6 py-7 text-center text-white md:px-16 md:py-9">
           <h2 className={`${displayFont.className} mx-auto max-w-2xl text-3xl font-black leading-tight md:text-4xl`}>
             Your next skill is one enrollment away.
           </h2>
@@ -1530,13 +1532,13 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/register"
-              className="rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#B91C1C] transition hover:bg-white/90"
+              className="rounded-lg bg-white px-6 py-3.5 text-sm font-bold text-[#B91C1C] transition hover:bg-white/90"
             >
               Join as a Learner
             </Link>
             <a
               href="#contact"
-              className="rounded-full border border-white/40 px-6 py-3.5 text-sm font-bold text-white transition hover:border-white"
+              className="rounded-lg border border-white/40 px-6 py-3.5 text-sm font-bold text-white transition hover:border-white"
             >
               Talk to Someone First
             </a>
@@ -1576,7 +1578,7 @@ export default function PublicSite({ initialHero = null, initialCourses = null }
             </p>
             <button
               onClick={goToLearning}
-              className="mt-5 inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20"
+              className="mt-5 inline-flex items-center rounded-lg bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20"
             >
               Go to My Learning <span className="ml-2">↗</span>
             </button>

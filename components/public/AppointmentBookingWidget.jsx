@@ -223,7 +223,7 @@ function BookingCard({ onBooked }) {
             ← Change date or time
           </button>
 
-          <div className="mt-2 flex items-center gap-2 rounded-xl border border-[#E5E7EB] bg-[#FAFAF7] px-3 py-2">
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-[#FAFAF7] px-3 py-2">
             <span aria-hidden="true">📅</span>
             <span className="text-xs font-bold text-[#111827]">{selectedDateLabel} · {selectedTime}</span>
           </div>
@@ -267,7 +267,7 @@ export default function AppointmentBookingWidget() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.3, ease: EASE }}
-      className="max-w-xl rounded-2xl border bg-white p-4 shadow-sm md:p-5"
+      className="max-w-xl rounded-lg border bg-white p-4 shadow-sm md:p-5"
       style={{ borderColor: "#F3AAAA" }}
     >
       <p className="flex items-center gap-2 text-sm font-bold text-[#111827]">
