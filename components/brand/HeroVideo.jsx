@@ -3,9 +3,9 @@
 import heroVideoSrc from "../../public/hero-intro.mp4";
 
 // Homepage hero video. public/hero-intro.mp4 is a short intro: the logo
-// with a light shine, then the academy's own class photos (camera moves,
-// slide/iris transitions, light leaks, sliding captions): practical skills,
-// real trainers, learning by doing, the course list with durations, and a
+// with a light shine, then the academy's own class photos (slow camera
+// moves, soft dissolves, sliding captions): practical skills,
+// real trainers, learning by doing, the course list, and a
 // "Join our next batch · Register now · nextacademy.sg" end card. Rebuild it
 // when the course list changes. object-contain shows the whole 16:9 frame.
 export default function HeroVideo({ className = "" }) {
