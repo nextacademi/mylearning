@@ -52,6 +52,7 @@ import VolunteerModule from "../../../components/volunteer/VolunteerModule";
 import VolunteerHomePanel from "../../../components/volunteer/VolunteerHomePanel";
 import SocialMediaPerformance from "../../../components/social-media/SocialMediaPerformance";
 import PrizeDraw from "../../../components/prize-draw/PrizeDraw";
+import TrainingRegistrations from "../../../components/registrations/TrainingRegistrations";
 
 export const roleConfig = {
   // Every self-registered account lands here first (see createProfile in
@@ -146,6 +147,7 @@ export const roleConfig = {
     modules: [
       "Dashboard",
       "Training",
+      "Registrations",
       "Assignment",
       "Event",
       "Volunteer",
@@ -173,6 +175,7 @@ export const roleConfig = {
     modules: [
       "Dashboard",
       "Training",
+      "Registrations",
       "Assignment",
       "Event",
       "Volunteer",
@@ -267,6 +270,7 @@ function DirectorDashboard({ profile, user }) {
   // Appointments now live under Chat (components/chat/ChatHub.jsx), so new
   // bookings count toward Chat's sidebar badge too.
   const newAppointmentCount = useUnreadNotificationsByType(user.uid, "appointment").length;
+  const newRegistrationCount = useUnreadNotificationsByType(user.uid, "training-registration").length;
 
   return (
     <DirectorShell
@@ -281,7 +285,7 @@ function DirectorDashboard({ profile, user }) {
       headerTitle={active === "Dashboard" ? "Director Dashboard" : active}
       headerSubtitle="Organization overview"
       onLogout={logout}
-      badges={{ Chat: newInquiryCount + newAppointmentCount }}
+      badges={{ Chat: newInquiryCount + newAppointmentCount, Registrations: newRegistrationCount }}
     >
             {active === "Dashboard" ? (
               <DirectorOverview onNavigate={setActive} />
@@ -289,6 +293,8 @@ function DirectorDashboard({ profile, user }) {
               <UserManagement role="Director" currentUserId={user.uid} onNavigate={setActive} />
             ) : active === "Training" ? (
               <TrainingManagement role="Director" />
+            ) : active === "Registrations" ? (
+              <TrainingRegistrations />
             ) : active === "Assignment" ? (
               <AssignmentPortal onNavigate={setActive} />
             ) : active === "Event" ? (
@@ -381,6 +387,7 @@ function DashboardContent({ role, profile, user }) {
     "Member";
   const initials = name.slice(0, 2).toUpperCase();
   const newInquiryCount = useNewInquiryCount(role === "Admin");
+  const newRegistrationCount = useUnreadNotificationsByType(role === "Admin" ? user.uid : null, "training-registration").length;
 
   useEffect(() => {
     if (role === "Teacher") router.replace("/teacher/dashboard");
@@ -474,7 +481,7 @@ function DashboardContent({ role, profile, user }) {
       userEmail={user.email}
       headerTitle={active === "Dashboard" ? `${role} Dashboard` : active}
       onLogout={logout}
-      badges={{ Chat: newInquiryCount }}
+      badges={{ Chat: newInquiryCount, Registrations: newRegistrationCount }}
     >
             {role === "Admin" && active === "User" ? (
               <UserManagement role="Admin" currentUserId={user.uid} onNavigate={setActive} />
@@ -484,6 +491,8 @@ function DashboardContent({ role, profile, user }) {
               <MyPaymentSummary />
             ) : (active === "Training" || active === "My Training") ? (
               <TrainingManagement role={role} />
+            ) : role === "Admin" && active === "Registrations" ? (
+              <TrainingRegistrations />
             ) : role === "Admin" && active === "Assignment" ? (
               <AssignmentPortal onNavigate={setActive} />
             ) : role === "Admin" && active === "Event" ? (

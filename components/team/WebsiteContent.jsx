@@ -12,12 +12,16 @@ import AgreementManager from "./AgreementManager";
 import SeoManager from "./SeoManager";
 import PhotoField from "./PhotoField";
 import { useConfirm } from "../ui/ConfirmDialog";
+import PaymentDetailsManager from "./PaymentDetailsManager";
+import { COURSE_COLORS, COURSE_ICONS, COURSE_LIMITS, MAX_COURSE_PRICE, formatPrice } from "../../lib/training-offer";
 
 // Director / Admin "Website" tab — manages the public homepage: the hero
 // "Header" (headline + stat numbers), the cards in "What we do",
-// "Activities / gallery" and "Exciting New Videos", and the "Team"
+// "Activities / gallery" and "Exciting New Videos", the "Courses" cards and
+// the Training Registration form's "Payment details", and the "Team"
 // slider (formerly its own sidebar item).
 const HEADER_TAB = { label: "Header" };
+const PAYMENT_TAB = { label: "Payment details" };
 const TEAM_TAB = { label: "Team" };
 const AGREEMENT_TAB = { label: "Agreement" };
 const SEO_TAB = { label: "SEO" };
@@ -37,12 +41,50 @@ const SECTIONS = {
     hint: "Cards in the “Exciting New Videos” strip. Add a picture, a YouTube / Facebook / Google Drive video link, or both — a card with a link plays the video when clicked (a YouTube link with no picture uses the video's own thumbnail).",
     fields: [["title", "Title", ""], ["photo", "Picture", "https://… or /tranning2.jpeg"], ["videoUrl", "Video link (YouTube, Facebook or Google Drive)", "https://youtu.be/…"]],
   },
+  course: {
+    label: "Courses",
+    hint: "Course cards in “Empower Your Career With Professional Skills”. The same list (with prices) fills the Training Registration form.",
+    fields: [["title", "Course title", "Basic Computer Course"], ["duration", "Duration", "3 Months"], ["schedule", "Schedule badge", "Every Sunday"], ["price", "Price (S$)", "298"], ["color", "Card colour", ""], ["icon", "Card artwork", ""], ["tagline", "Small label under the artwork (optional)", "ChatGPT & GenAI"], ["featured", "Highlight this card with a red outline", ""]],
+  },
 };
+const COURSE_DEFAULTS = { schedule: "Every Sunday", price: "", color: "red", icon: "general", featured: false };
 const inputClass = "mt-1 w-full rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
+
+// Course cards: price, colour, artwork and highlight inputs.
+const COURSE_INPUTS = { price: true, color: true, icon: true, featured: true };
+function CourseInput({ field, label, form, setForm }) {
+  const set = (value) => setForm((current) => ({ ...current, [field]: value }));
+  if (field === "featured") {
+    return (
+      <label className="flex items-center gap-2 text-xs font-bold text-muted">
+        <input type="checkbox" checked={form.featured === true} onChange={(e) => set(e.target.checked)} className="h-4 w-4 accent-[#e31b23]" />
+        {label}
+      </label>
+    );
+  }
+  if (field === "price") {
+    return (
+      <label className="block text-xs font-bold text-muted">{label}
+        <input required type="number" min="0" max={MAX_COURSE_PRICE} step="0.01" value={form.price} onChange={(e) => set(e.target.value)} className={inputClass} />
+      </label>
+    );
+  }
+  const options = field === "color" ? Object.entries(COURSE_COLORS).map(([key, value]) => [key, value.label]) : Object.entries(COURSE_ICONS);
+  return (
+    <label className="block text-xs font-bold text-muted">{label}
+      <span className="flex items-center gap-2">
+        {field === "color" && <span className="mt-1 h-10 w-10 shrink-0 rounded-xl border border-border-subtle" style={{ backgroundColor: COURSE_COLORS[form.color]?.header }} aria-hidden="true" />}
+        <select value={form[field]} onChange={(e) => set(e.target.value)} className={inputClass}>
+          {options.map(([key, text]) => <option key={key} value={key}>{text}</option>)}
+        </select>
+      </span>
+    </label>
+  );
+}
 
 function ItemForm({ kind, initial, saving, onSave, onCancel }) {
   const fields = SECTIONS[kind].fields;
-  const [form, setForm] = useState(() => ({ ...Object.fromEntries(fields.map(([key]) => [key, ""])), ...initial }));
+  const [form, setForm] = useState(() => ({ ...Object.fromEntries(fields.map(([key]) => [key, ""])), ...(kind === "course" ? COURSE_DEFAULTS : {}), ...initial }));
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4" role="dialog" aria-modal="true">
@@ -53,12 +95,14 @@ function ItemForm({ kind, initial, saving, onSave, onCancel }) {
         <h2 className="text-lg font-bold text-ink">{initial?.id ? "Edit" : "Add"} · {SECTIONS[kind].label}</h2>
         {fields.map(([key, label, placeholder]) => key === "photo" ? (
           <PhotoField key={key} value={form.photo} onChange={(photo) => setForm((current) => ({ ...current, photo }))} placeholder={placeholder} inputClassName={inputClass} />
+        ) : kind === "course" && COURSE_INPUTS[key] ? (
+          <CourseInput key={key} field={key} label={label} form={form} setForm={setForm} />
         ) : (
           <label key={key} className="block text-xs font-bold text-muted">{label}
             {key === "copy" ? (
               <textarea rows={3} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className={inputClass} />
             ) : (
-              <input required={key === "title"} type={key === "videoUrl" ? "url" : "text"} value={form[key]} placeholder={placeholder} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className={inputClass} />
+              <input required={key === "title" || (kind === "course" && key === "duration")} maxLength={kind === "course" ? COURSE_LIMITS[key] : undefined} type={key === "videoUrl" ? "url" : "text"} value={form[key]} placeholder={placeholder} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className={inputClass} />
             )}
             {key === "videoUrl" && form.videoUrl && !toVideoEmbedUrl(form.videoUrl) && (
               <span className="mt-1 block font-semibold text-primary">Use a YouTube, Facebook or Google Drive video link.</span>
@@ -145,12 +189,18 @@ function SectionManager({ kind }) {
         <div className="divide-y divide-border-subtle rounded-3xl border border-border-subtle bg-card shadow-sm">
           {items.map((item, index) => (
             <div key={item.id} className="flex items-center gap-3 p-3 sm:p-4">
-              <span className="grid h-14 w-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-page text-xs font-black text-subtle">
-                {item.photo || youTubeThumbnailUrl(item.videoUrl) ? <img src={item.photo ? resolvePhoto(item.photo) : youTubeThumbnailUrl(item.videoUrl)} alt="" className="h-full w-full object-cover" /> : item.videoUrl ? "Video" : "No photo"}
-              </span>
+              {kind === "course" ? (
+                <span className="grid h-14 w-20 shrink-0 place-items-center rounded-xl text-sm font-black text-white" style={{ backgroundColor: COURSE_COLORS[item.color]?.price || COURSE_COLORS.red.price }}>
+                  {formatPrice(item.price)}
+                </span>
+              ) : (
+                <span className="grid h-14 w-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-page text-xs font-black text-subtle">
+                  {item.photo || youTubeThumbnailUrl(item.videoUrl) ? <img src={item.photo ? resolvePhoto(item.photo) : youTubeThumbnailUrl(item.videoUrl)} alt="" className="h-full w-full object-cover" /> : item.videoUrl ? "Video" : "No photo"}
+                </span>
+              )}
               <div className="min-w-0 flex-1">
                 <b className="block truncate text-sm text-ink">{item.title}</b>
-                <span className="block truncate text-xs text-muted">{[item.category, item.stat].filter(Boolean).join(" · ") || "—"}</span>
+                <span className="block truncate text-xs text-muted">{(kind === "course" ? [item.duration, item.schedule, item.featured ? "Highlighted" : ""] : [item.category, item.stat]).filter(Boolean).join(" · ") || "—"}</span>
               </div>
               <div className="flex items-center gap-1">
                 <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label="Move up" className="rounded-lg p-2 text-muted hover:bg-page disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
@@ -271,7 +321,7 @@ export default function WebsiteContent() {
         <p className="text-xs text-muted">Edit the header, cards and team shown on the public homepage.</p>
       </div>
       <nav className="flex flex-wrap gap-2 overflow-x-auto rounded-2xl border border-border-subtle bg-card p-2 shadow-sm">
-        {Object.entries({ hero: HEADER_TAB, ...SECTIONS, team: TEAM_TAB, agreement: AGREEMENT_TAB, seo: SEO_TAB }).map(([key, { label }]) => (
+        {Object.entries({ hero: HEADER_TAB, ...SECTIONS, payment: PAYMENT_TAB, team: TEAM_TAB, agreement: AGREEMENT_TAB, seo: SEO_TAB }).map(([key, { label }]) => (
           <button
             key={key}
             type="button"
@@ -282,7 +332,7 @@ export default function WebsiteContent() {
           </button>
         ))}
       </nav>
-      {kind === "hero" ? <HeaderManager /> : kind === "team" ? <TeamManagement embedded /> : kind === "agreement" ? <AgreementManager /> : kind === "seo" ? <SeoManager /> : <SectionManager key={kind} kind={kind} />}
+      {kind === "hero" ? <HeaderManager /> : kind === "payment" ? <PaymentDetailsManager /> : kind === "team" ? <TeamManagement embedded /> : kind === "agreement" ? <AgreementManager /> : kind === "seo" ? <SeoManager /> : <SectionManager key={kind} kind={kind} />}
     </section>
   );
 }

@@ -35,7 +35,7 @@ export async function GET() {
         endDate: course.endDate || "",
         startTime: course.startTime || "",
         endTime: course.endTime || "",
-        location: [course.campus, course.building].filter(Boolean).join(", "),
+        location: [...new Set([course.campus, course.building].map((part) => (part || "").trim()).filter(Boolean))].join(", "),
         current: course.startDate <= today,
       }))
       .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.title.localeCompare(b.title));

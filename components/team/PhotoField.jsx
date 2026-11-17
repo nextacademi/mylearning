@@ -23,7 +23,7 @@ async function uploadPhoto(file, folder) {
 
 // Photo picker for Website content cards and Team members: upload a file
 // from the device, or paste a URL / /public path as before. Shows a preview.
-export default function PhotoField({ value, onChange, folder = "site", placeholder, inputClassName }) {
+export default function PhotoField({ value, onChange, folder = "site", placeholder, inputClassName, label = "Photo" }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -45,7 +45,7 @@ export default function PhotoField({ value, onChange, folder = "site", placehold
 
   return (
     <div className="space-y-2">
-      <span className="block text-xs font-bold text-muted">Photo</span>
+      <span className="block text-xs font-bold text-muted">{label}</span>
       <div className="flex items-center gap-3">
         <span className="grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded-xl border border-border-subtle bg-page text-[10px] font-bold text-subtle">
           {/* eslint-disable-next-line @next/next/no-img-element */}

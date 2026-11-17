@@ -1,25 +1,14 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import { Space_Grotesk } from "next/font/google";
-import heroVideoSrc from "../../public/hero-video-red.mp4";
+import heroVideoSrc from "../../public/hero-intro.mp4";
 
-// Same config as PublicSite.js's displayFont — Next.js dedupes identical
-// next/font/google configs at build time, so this doesn't load the font
-// twice; it just lets this component style its wordmark without importing
-// the whole page file.
-const displayFont = Space_Grotesk({ subsets: ["latin"], weight: ["700"] });
-
-// Real campus footage instead of an abstract graphic. object-contain (not
-// object-cover) shows the whole frame with no cropping — the letterbox
-// area behind it is solid black (no AI background-removal tool available
-// to key out the video's own background, so this is the explicit fallback
-// instead). Keeps the same news-lower-third "Next Academy" reveal used on
-// the other hero variants, so this still carries the one branded
-// "highlight" beat.
+// Homepage hero video. public/hero-intro.mp4 is a short intro: the logo
+// with a light shine, then the academy's own class photos (camera moves,
+// slide/iris transitions, light leaks, sliding captions): practical skills,
+// real trainers, learning by doing, the course list with durations, and a
+// "Join our next batch · Register now · nextacademy.sg" end card. Rebuild it
+// when the course list changes. object-contain shows the whole 16:9 frame.
 export default function HeroVideo({ className = "" }) {
-  const reduceMotion = useReducedMotion();
-
   return (
     <div className={`relative overflow-hidden bg-black ${className}`}>
       <video
@@ -30,26 +19,8 @@ export default function HeroVideo({ className = "" }) {
         loop
         playsInline
         preload="metadata"
-        aria-hidden="true"
+        aria-label="Next Academy: practical training with real trainers. Courses: Basic Computer Course, Advance Excel, Basic AutoCAD, AI Learning and WPLN Preparatory. Register at nextacademy.sg."
       />
-
-      {!reduceMotion && (
-        <motion.div
-          className="absolute inset-x-0 bottom-4 flex justify-center"
-          initial={{ opacity: 0, x: 28 }}
-          animate={{ opacity: [0, 0, 1, 1, 0], x: [28, 28, 0, 0, 28] }}
-          transition={{ duration: 8, times: [0, 0.5, 0.6, 0.85, 0.95], repeat: Infinity, ease: "easeOut" }}
-        >
-          <div
-            className="flex items-center gap-2.5 rounded-md border-l-4 px-3 py-1.5 backdrop-blur-sm"
-            style={{ borderColor: "#F04438", background: "rgba(11,13,16,0.55)" }}
-          >
-            <span className={`${displayFont.className} text-sm font-bold uppercase tracking-[.14em] text-white md:text-base`}>
-              Next <span style={{ color: "#F04438" }}>Academy</span>
-            </span>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 }

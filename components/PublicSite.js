@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Space_Grotesk, Inter } from "next/font/google";
 import { motion } from "framer-motion";
+import { Clock, MapPin } from "lucide-react";
 import { useAuth } from "../lib/auth-context";
 import { ACADEMY_INFO } from "../lib/academy-info";
 import { submitContactInquiry } from "../lib/contact-inquiries-data";
@@ -17,6 +18,7 @@ import { resolvePhoto } from "../lib/public-assets";
 import { HERO_DEFAULTS } from "../lib/site-hero";
 import PhotoGallery from "./public/PhotoGallery";
 import VideoLibrarySection from "./public/VideoLibrarySection";
+import TrainingRegistration from "./public/TrainingRegistration";
 import CalendarSubscribeButton from "./events/CalendarSubscribeButton";
 import HeroVideo from "./brand/HeroVideo";
 import founderPhotoAsset from "../public/team/founder.jpg";
@@ -290,68 +292,78 @@ function formatEventWeekday(isoDate) {
   if (!year || !month || !day) return "";
   return new Date(year, month - 1, day).toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
 }
-function formatEventMonthYear(isoDate) {
-  if (!isoDate) return "";
-  const [year, month, day] = isoDate.split("-").map(Number);
-  if (!year || !month || !day) return "";
-  return new Date(year, month - 1, day).toLocaleDateString(undefined, { month: "long", year: "numeric" });
-}
 
-// Compact date+title+meta row — a denser presentation of the exact same
-// real event data as the full image cards below, reused by both the
-// Events section's "Up-coming Event" list and What We Do's Current/
-// Up-coming Training lists.
+// Compact date + title + details row — a denser presentation of the same
+// real event/training data as the full image cards below, reused by the
+// Events section's "Upcoming Events" list and What We Do's Current /
+// Upcoming Training lists. Everything wraps or shrinks, so a long batch name
+// or category can never push the card wider than a phone screen.
 function EventListRow({ event }) {
   const day = event.eventDate ? event.eventDate.slice(8, 10) : null;
+  const month = event.eventDate ? MONTH_ABBR[Number(event.eventDate.slice(5, 7)) - 1] : null;
+  const weekday = formatEventWeekday(event.eventDate);
   const startTime = formatEventTime(event.startTime);
+  const when = [weekday && weekday[0] + weekday.slice(1).toLowerCase(), startTime].filter(Boolean).join(" · ");
+  const name = event.name || "";
+  const tag = event.type && !name.toLowerCase().startsWith(event.type.toLowerCase()) ? event.type : "";
   return (
     <a
       href="#contact"
-      className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white p-2.5 transition hover:border-[#E53935]/50 hover:shadow-sm"
+      className="flex items-start gap-3 rounded-lg border border-[#E5E7EB] bg-white p-3 transition hover:border-[#E53935]/50 hover:shadow-sm"
     >
-      <span className="h-8 w-[3px] shrink-0 rounded-full bg-[#E53935]" />
-      <span className="w-9 shrink-0 text-center">
-        <b className="block text-base leading-none text-[#111827]">{day}</b>
-        <small className="mt-1 block text-[9px] font-bold uppercase tracking-wide text-[#9CA3AF]">
-          {formatEventWeekday(event.eventDate)}
-        </small>
+      <span className="w-12 shrink-0 rounded-md bg-red-50 py-1.5 text-center">
+        <b className="block text-lg leading-none text-[#B91C1C]">{day || "—"}</b>
+        <small className="mt-1 block text-[10px] font-bold uppercase tracking-wide text-[#B91C1C]/70">{month}</small>
       </span>
       <span className="min-w-0 flex-1">
-        <b className="block truncate text-sm text-[#111827]">{event.name}</b>
-        <span className="mt-0.5 block truncate text-xs text-[#6B7280]">
-          {[startTime, event.location].filter(Boolean).join(" · ")}
-        </span>
-      </span>
-      <span className="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold text-[#B91C1C]">
-        {event.type || "Event"}
+        <b className="line-clamp-2 break-words text-sm font-bold leading-snug text-[#111827]">{name}</b>
+        {(when || event.location) && (
+          <span className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[#6B7280]">
+            {when && (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3 w-3 shrink-0" aria-hidden="true" /> {when}
+              </span>
+            )}
+            {event.location && (
+              <span className="inline-flex min-w-0 items-center gap-1">
+                <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-words">{event.location}</span>
+              </span>
+            )}
+          </span>
+        )}
+        {tag && (
+          <span className="mt-1.5 inline-block max-w-full truncate rounded bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-bold text-[#4B5563]">
+            {tag}
+          </span>
+        )}
       </span>
     </a>
   );
 }
 
-// Red-bordered list card — real events, a real (working) Subscribe button
-// (the same CalendarSubscribeButton used elsewhere, wired to the live
-// .ics feed), never a static/decorative copy.
-function TrainingListCard({ title, events, emptyText, loading, tone = "red" }) {
+// List card with a real (working) Subscribe button (the same
+// CalendarSubscribeButton used elsewhere, wired to the live .ics feed).
+function TrainingListCard({ title, events, emptyText, loading }) {
   return (
-    <div className="rounded-2xl border-2 border-[#E53935] bg-white p-4">
-      <div className="flex items-center justify-between gap-3">
-        <b className={`text-base font-black ${tone === "dark" ? "text-[#111827]" : "text-[#B91C1C]"}`}>{title}</b>
+    <div className="min-w-0 rounded-xl border border-[#E5E7EB] border-t-4 border-t-[#E53935] bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <b className="flex min-w-0 items-center gap-2 text-base font-black text-[#111827]">
+          {title}
+          {!loading && events.length > 0 && (
+            <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold text-[#B91C1C]">{events.length}</span>
+          )}
+        </b>
         <CalendarSubscribeButton />
       </div>
       {loading ? (
         <p className="mt-3 text-xs text-[#6B7280]">Loading…</p>
       ) : events.length ? (
-        <>
-          <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-[#9CA3AF]">
-            {formatEventMonthYear(events[0].eventDate)}
-          </p>
-          <div className="mt-2 space-y-2">
-            {events.map((event) => (
-              <EventListRow key={event.id} event={event} />
-            ))}
-          </div>
-        </>
+        <div className="mt-3 space-y-2">
+          {events.map((event) => (
+            <EventListRow key={event.id} event={event} />
+          ))}
+        </div>
       ) : (
         <p className="mt-3 text-xs text-[#6B7280]">{emptyText}</p>
       )}
@@ -906,7 +918,7 @@ function ContactForm() {
   );
 }
 
-export default function PublicSite({ initialHero = null }) {
+export default function PublicSite({ initialHero = null, initialCourses = null }) {
   const router = useRouter();
   const { user, profile, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -966,6 +978,9 @@ export default function PublicSite({ initialHero = null }) {
   const programList = siteContent?.program?.length ? withSrc(siteContent.program) : programs.slice(0, 2);
   const galleryList = siteContent?.gallery?.length ? withSrc(siteContent.gallery) : galleryItems;
   const sessionList = siteContent?.session?.length ? withSrc(siteContent.session) : undefined;
+  // Course cards + registration form (Website content → Courses / Payment
+  // details). null = not loaded → built-in list inside the component.
+  const courseList = Array.isArray(siteContent?.courses) ? siteContent.courses : initialCourses;
   const verifiedUser = Boolean(user);
 
   function goToLearning() {
@@ -1143,7 +1158,18 @@ export default function PublicSite({ initialHero = null }) {
             mesh graphic. Ambient red-to-black radial glow on the right
             sits behind everything (-z-10) so it never competes with the
             mesh or text for clicks/readability. */}
-      <section id="home" className="relative overflow-hidden bg-[#0B0D10]">
+      <section id="home" className="relative isolate overflow-hidden bg-[#0B0D10]">
+        {/* Faint grid + red glow behind the content */}
+        <div
+          className="pointer-events-none absolute inset-0 -z-10 opacity-70"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
+            maskImage: "radial-gradient(ellipse at 50% 35%, black 25%, transparent 75%)",
+            WebkitMaskImage: "radial-gradient(ellipse at 50% 35%, black 25%, transparent 75%)",
+          }}
+        />
         <div
           className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-full max-w-3xl opacity-60"
           style={{
@@ -1151,15 +1177,15 @@ export default function PublicSite({ initialHero = null }) {
               "radial-gradient(ellipse at 80% 50%, rgba(229,57,53,0.35), rgba(11,13,16,0) 70%)",
           }}
         />
-        <div className="mx-auto max-w-7xl px-5  md:px-10 md:py-2">
-          <div className="grid items-center gap-6 md:grid-cols-2 md:gap-6">
+        <div className="mx-auto max-w-7xl px-5 pt-8 md:px-10 md:pt-14">
+          <div className="grid items-center gap-8 md:grid-cols-2 md:gap-10">
             <div>
               <Eyebrow light tone="amber" className="text-xs">
                 <BrandShimmer>Next Academy</BrandShimmer>
                 {hero.tagline ? ` · ${hero.tagline}` : ""}
               </Eyebrow>
 
-              <h1 className={`${displayFont.className} mt-4 max-w-xl text-5xl font-black leading-[1.03] tracking-[-.03em] text-white md:text-6xl lg:text-7xl`}>
+              <h1 className={`${displayFont.className} mt-3 max-w-xl text-4xl font-black leading-[1.05] tracking-[-.03em] text-white sm:text-5xl md:mt-4 md:text-6xl lg:text-7xl`}>
                 {heroLines.map((line, index) => (
                   <span key={index}>
                     {line}
@@ -1170,40 +1196,36 @@ export default function PublicSite({ initialHero = null }) {
               </h1>
 
               {hero.description && (
-                <p className="mt-4 max-w-lg text-base leading-7 text-white/60 md:text-lg">
+                <p className="mt-4 max-w-lg text-[15px] leading-6 text-white/65 md:text-lg md:leading-7">
                   {hero.description}
                 </p>
               )}
 
-              <div className="mt-6 flex flex-wrap gap-4">
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-4">
                 <a
-                  href="#training"
-                  className="rounded-xl bg-white px-8 py-3.5 text-base font-bold text-[#111827] transition hover:bg-white/90"
+                  href="#courses"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-white px-4 py-3 text-sm font-bold text-[#111827] transition hover:bg-white/90 sm:px-7 sm:py-3.5 sm:text-base"
                 >
-                  Explore programs <span className="ml-3">→</span>
+                  View courses <span aria-hidden="true">→</span>
                 </a>
                 <button
                   onClick={goToLearning}
-                  className="rounded-xl border border-white/20 px-8 py-3.5 text-base font-bold text-white transition hover:border-white/40"
+                  className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-white/20 px-4 py-3 text-sm font-bold text-white transition hover:border-white/40 hover:bg-white/5 sm:px-7 sm:py-3.5 sm:text-base"
                 >
-                  My Learning <span className="ml-3">↗</span>
+                  My Learning <span aria-hidden="true">↗</span>
                 </button>
               </div>
             </div>
 
-            {/* Side by side with the text, not stacked below — equal
-                  columns (not a narrow side slot) so a landscape video has
-                  enough width to render without huge empty letterbox
-                  space. */}
-            <div className="relative mt-6 md:mt-0">
-              <div className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-[#ff2d2d]/15 blur-[100px]" />
-              <HeroVideo className="aspect-video w-full" />
+            {/* Side by side with the text on desktop; right under it on a
+                  phone, framed with a soft red glow. */}
+            <div className="relative">
+              <div className="pointer-events-none absolute -inset-4 -z-10 rounded-2xl bg-[#E53935]/20 blur-3xl" />
+              <HeroVideo className="aspect-video w-full rounded-lg shadow-[0_30px_80px_-24px_rgba(229,57,53,0.55)] ring-1 ring-white/10" />
             </div>
           </div>
 
-          {/* Full-width stat strip below both columns — matches the
-                24asia.pages.dev reference's edge-to-edge divided row,
-                rather than being squeezed into just the text column. */}
+          {/* Full-width stat strip below both columns. */}
           {heroStats.length > 0 && <HeroStatsRow items={heroStats} />}
         </div>
       </section>
@@ -1315,8 +1337,7 @@ export default function PublicSite({ initialHero = null }) {
             <div className="space-y-5">
               <Reveal index={1}>
                 <TrainingListCard
-                  title="Current Training:"
-                  tone="dark"
+                  title="Current Training"
                   events={[
                     ...trainings.filter((item) => item.current),
                     ...upcomingEvents.filter((event) => event.computedStatus === "Ongoing"),
@@ -1327,7 +1348,7 @@ export default function PublicSite({ initialHero = null }) {
               </Reveal>
               <Reveal index={2}>
                 <TrainingListCard
-                  title="Up-coming Training:"
+                  title="Upcoming Training"
                   events={[
                     ...trainings.filter((item) => !item.current),
                     ...upcomingEvents.filter((event) => event.computedStatus === "Upcoming"),
@@ -1342,6 +1363,9 @@ export default function PublicSite({ initialHero = null }) {
           </div>
         </div>
       </section>
+
+      {/* COURSE CARDS + "Submit a Training Registration" banner and form */}
+      <TrainingRegistration courses={courseList} payment={siteContent?.payment || null} displayClassName={displayFont.className} />
 
       {/* EVENTS */}
       <section
@@ -1451,7 +1475,7 @@ export default function PublicSite({ initialHero = null }) {
             })}
             <Reveal index={2}>
               <TrainingListCard
-                title="Up-coming Event:"
+                title="Upcoming Events"
                 events={upcomingEvents}
                 emptyText="No upcoming events at the moment."
               />

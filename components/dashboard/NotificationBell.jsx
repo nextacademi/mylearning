@@ -11,6 +11,7 @@ const typeIcon = {
   enrollment: { Icon: UserCheck, bg: "bg-purple-soft", color: "text-purple" },
   attendance: { Icon: CheckCheck, bg: "bg-warning-soft", color: "text-warning" },
   appointment: { Icon: CalendarClock, bg: "bg-info-soft", color: "text-info" },
+  "training-registration": { Icon: UserCheck, bg: "bg-warning-soft", color: "text-warning" },
   "account.approved": { Icon: UserCheck, bg: "bg-success-soft", color: "text-success" },
   "account.rejected": { Icon: UserX, bg: "bg-active", color: "text-primary" },
 };

@@ -2,7 +2,7 @@ import PublicSite from "../components/PublicSite";
 import { SITE_NAME, SITE_URL } from "../lib/seo";
 import { loadSeoSettingsSafe } from "../lib/server/seo-settings";
 import { getAdminDb } from "../lib/firebase-admin";
-import { getHero } from "../lib/server/site-content-core";
+import { getHero, listCourses } from "../lib/server/site-content-core";
 
 // ISR: the hero header (Website content → Header) is read here so the
 // edited headline/numbers are in the first paint, not swapped in after
@@ -14,6 +14,16 @@ async function loadHero() {
     return await getHero(getAdminDb());
   } catch {
     return null; // e.g. no Admin credentials at build time — PublicSite uses its defaults
+  }
+}
+
+// Course cards (Website content → Courses), also in the first paint so a
+// changed price never flashes the old one.
+async function loadCourses() {
+  try {
+    return await listCourses(getAdminDb());
+  } catch {
+    return null; // PublicSite falls back to the built-in course list
   }
 }
 
@@ -54,14 +64,14 @@ function websiteJsonLd() {
 }
 
 export default async function Home() {
-  const [hero, seo] = await Promise.all([loadHero(), loadSeoSettingsSafe()]);
+  const [hero, seo, courses] = await Promise.all([loadHero(), loadSeoSettingsSafe(), loadCourses()]);
   return (
     <>
       {/* eslint-disable-next-line react/no-danger -- static, server-built JSON-LD, not user input */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd(seo)) }} />
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }} />
-      <PublicSite initialHero={hero} />
+      <PublicSite initialHero={hero} initialCourses={courses} />
     </>
   );
 }
