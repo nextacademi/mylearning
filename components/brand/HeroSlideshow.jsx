@@ -82,7 +82,7 @@ function SceneText({ scene, config, courses, reduce, displayClassName }) {
           )}
         </motion.div>
         {config.intro?.text && (
-          <motion.p {...slideIn(true, 0.6)} className="font-bold uppercase tracking-[0.18em] text-[#FCA5A5]" style={size(9, 1.9, 15)}>
+          <motion.p {...slideIn(true, 0.6)} className="font-bold uppercase tracking-[0.18em] text-[#FCA5A5]" style={size(11, 1.9, 15)}>
             {config.intro.text}
           </motion.p>
         )}
@@ -95,11 +95,11 @@ function SceneText({ scene, config, courses, reduce, displayClassName }) {
       <div className="absolute inset-x-0 bottom-0 px-[7.5%] pb-[7%]">
         <Bar reduce={reduce} />
         {scene.slide.label && (
-          <motion.p {...slideIn(reduce, 0.05)} className="mt-[1.4cqw] font-bold uppercase tracking-wide text-[#F87171]" style={size(9, 2.1, 16)}>
+          <motion.p {...slideIn(reduce, 0.05)} className="mt-[1.4cqw] font-bold uppercase tracking-wide text-[#FCA5A5] [text-shadow:0_1px_8px_rgba(0,0,0,0.65)]" style={size(11, 2.1, 16)}>
             {scene.slide.label}
           </motion.p>
         )}
-        <motion.p {...slideIn(reduce, 0.18)} className={`${displayClassName} mt-[0.6cqw] font-bold leading-tight text-white drop-shadow`} style={size(15, 4.6, 36)}>
+        <motion.p {...slideIn(reduce, 0.18)} className={`${displayClassName} mt-[0.6cqw] font-bold leading-tight text-white drop-shadow`} style={size(18, 4.6, 36)}>
           {scene.slide.caption}
         </motion.p>
       </div>
@@ -111,13 +111,13 @@ function SceneText({ scene, config, courses, reduce, displayClassName }) {
       <div className="absolute inset-0 flex flex-col justify-center px-[7.5%]">
         <Bar reduce={reduce} />
         {config.courses?.label && (
-          <motion.p {...slideIn(reduce, 0.05)} className="mt-[1.4cqw] font-bold uppercase tracking-wide text-[#F87171]" style={size(9, 2, 15)}>
+          <motion.p {...slideIn(reduce, 0.05)} className="mt-[1.4cqw] font-bold uppercase tracking-wide text-[#FCA5A5] [text-shadow:0_1px_8px_rgba(0,0,0,0.65)]" style={size(11, 2, 15)}>
             {config.courses.label}
           </motion.p>
         )}
         <ul className="mt-[1.6cqw] space-y-[0.9cqw]">
           {courses.slice(0, 6).map((course, i) => (
-            <motion.li key={course.id || course.title} {...slideIn(reduce, 0.2 + i * 0.16)} className="font-bold leading-tight text-white" style={size(12, 3.5, 26)}>
+            <motion.li key={course.id || course.title} {...slideIn(reduce, 0.2 + i * 0.16)} className="font-bold leading-tight text-white" style={size(14, 3.5, 26)}>
               {course.title}
             </motion.li>
           ))}
@@ -133,29 +133,44 @@ function SceneText({ scene, config, courses, reduce, displayClassName }) {
       </motion.div>
       <Bar reduce={reduce} />
       {config.end?.heading && (
-        <motion.p {...slideIn(reduce, 0.1)} className={`${displayClassName} mt-[1.4cqw] font-bold leading-tight text-white drop-shadow`} style={size(16, 5.2, 40)}>
+        <motion.p {...slideIn(reduce, 0.1)} className={`${displayClassName} mt-[1.4cqw] font-bold leading-tight text-white drop-shadow`} style={size(19, 5.2, 40)}>
           {config.end.heading}
         </motion.p>
       )}
       <motion.div {...slideIn(reduce, 0.3)} className="mt-[2cqw] flex flex-wrap items-center gap-[2.4cqw]">
         {config.end?.button && (
-          <a href="#courses" className="rounded-md bg-[#E53935] px-[2.6cqw] py-[1.2cqw] font-bold text-white shadow-lg transition hover:bg-[#F04438]" style={size(11, 2.9, 20)}>
+          <a href="#courses" className="rounded-md bg-[#E53935] px-[2.6cqw] py-[1.2cqw] font-bold text-white shadow-lg transition hover:bg-[#F04438]" style={size(13, 2.9, 20)}>
             {config.end.button}
           </a>
         )}
-        {config.end?.website && <span className="text-white/90" style={size(10, 2.6, 18)}>{config.end.website}</span>}
+        {config.end?.website && <span className="text-white/90" style={size(12, 2.6, 18)}>{config.end.website}</span>}
       </motion.div>
     </div>
   );
 }
 
-function Background({ scene, config, active, reduce }) {
+function Background({ scene, config, introPhoto, active, reduce, priority }) {
+  // The browser fetches the first photo straight away; the rest wait their
+  // turn in the queue instead of competing with it.
+  const fetchPriority = priority ? "high" : "low";
   if (scene.type === "intro") {
     return (
-      <div
-        className="absolute inset-0"
-        style={{ background: "radial-gradient(ellipse at 50% 44%, rgba(185,28,28,0.75), rgba(11,13,16,1) 62%)" }}
-      />
+      <div className="absolute inset-0 overflow-hidden bg-[#0B0D10]">
+        {introPhoto && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={photoSrc(introPhoto)}
+            alt=""
+            fetchPriority={fetchPriority}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ filter: "blur(2px) brightness(0.5) saturate(0.8)", transform: "scale(1.06)" }}
+          />
+        )}
+        <div
+          className="absolute inset-0"
+          style={{ background: `radial-gradient(ellipse at 50% 44%, rgba(185,28,28,${introPhoto ? 0.55 : 0.75}), rgba(11,13,16,${introPhoto ? 0.92 : 1}) 68%)` }}
+        />
+      </div>
     );
   }
   const photo = scene.type === "slide" ? scene.slide.photo : scene.type === "courses" ? config.courses?.photo : config.end?.photo;
@@ -169,6 +184,7 @@ function Background({ scene, config, active, reduce }) {
           src={photoSrc(photo)}
           alt=""
           decoding="async"
+          fetchPriority={fetchPriority}
           className="absolute inset-0 h-full w-full object-cover"
           style={{
             transformOrigin: origin,
@@ -197,7 +213,12 @@ export default function HeroSlideshow({ config, courses, className = "", display
   const [tick, setTick] = useState(0);
   const [visible, setVisible] = useState(true);
   const rootRef = useRef(null);
+  const remainingRef = useRef(0);
   const active = scenes.length ? Math.min(index, scenes.length - 1) : 0;
+  const running = visible && scenes.length > 1;
+  // The intro shows the first slide's photo behind the logo, so the very
+  // first frame is a real picture (and the browser fetches it first).
+  const introPhoto = settings.slides?.find((slide) => slide.photo)?.photo || "";
 
   useEffect(() => {
     const el = rootRef.current;
@@ -207,17 +228,28 @@ export default function HeroSlideshow({ config, courses, className = "", display
     return () => observer.disconnect();
   }, []);
 
+  // Each scene gets its full time when it starts; scrolling away pauses it
+  // and keeps whatever is left.
   useEffect(() => {
-    if (!visible || scenes.length < 2) return undefined;
+    remainingRef.current = (scenes[active]?.seconds || 3) * 1000;
+  }, [active, tick, scenes]);
+
+  useEffect(() => {
+    if (!running) return undefined;
+    const started = Date.now();
     const timer = setTimeout(() => {
       setIndex((value) => (value + 1) % scenes.length);
       setTick((value) => value + 1);
-    }, (scenes[active]?.seconds || 3) * 1000);
-    return () => clearTimeout(timer);
-  }, [active, visible, scenes]);
+    }, Math.max(remainingRef.current, 0));
+    return () => {
+      clearTimeout(timer);
+      remainingRef.current -= Date.now() - started;
+    };
+  }, [active, tick, running, scenes]);
 
   if (!scenes.length) return null;
   const scene = scenes[active];
+  const firstPhotoScene = scenes.findIndex((item) => item.type === "intro" ? introPhoto : item.type === "slide");
 
   return (
     <div
@@ -235,7 +267,7 @@ export default function HeroSlideshow({ config, courses, className = "", display
           className="absolute inset-0"
           style={{ opacity: i === active ? 1 : 0, transition: `opacity ${HERO_VIDEO_TIMING.fade}s ease-in-out` }}
         >
-          <Background scene={item} config={settings} active={i === active} reduce={reduce} />
+          <Background scene={item} config={settings} introPhoto={introPhoto} active={i === active} reduce={reduce} priority={i === firstPhotoScene} />
         </div>
       ))}
       <AnimatePresence initial={true}>
