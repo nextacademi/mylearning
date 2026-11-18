@@ -16,12 +16,10 @@ import { resolvePhoto } from "../../lib/public-assets";
 const EASE = [0.16, 1, 0.3, 1];
 const size = (min, cqw, max) => ({ fontSize: `clamp(${min}px, ${cqw}cqw, ${max}px)` });
 
-// Local photos go through Next's image optimizer (smaller downloads);
-// uploaded ones (https://) are used as they are.
-function photoSrc(photo) {
-  const src = resolvePhoto(photo);
-  return src.startsWith("/") ? `/_next/image?url=${encodeURIComponent(src)}&w=1200&q=75` : src;
-}
+// Local photos resolve to their bundled /_next/static/media URL; uploaded
+// ones (https://) are used as they are. Not via /_next/image: Firebase App
+// Hosting answers that route with a 404, which left every slide black.
+const photoSrc = (photo) => resolvePhoto(photo);
 
 function buildScenes(config, courses) {
   const scenes = [];
