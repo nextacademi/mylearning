@@ -22,9 +22,9 @@ function loadImage(src) {
 }
 
 // The QR with the Next Academy logo in the middle, as a PNG data URL.
-async function joinQrImage() {
+async function joinQrImage(url) {
   const canvas = document.createElement("canvas");
-  await QRCode.toCanvas(canvas, JOIN_URL, {
+  await QRCode.toCanvas(canvas, url, {
     errorCorrectionLevel: "H",
     margin: 2,
     width: SIZE,
@@ -47,17 +47,25 @@ async function joinQrImage() {
 // "Join us" — a full white screen with a large QR code students scan with
 // their phone camera to open the sign-up page. White on purpose (also in
 // dark mode) so the code scans reliably from a projector or screen.
-export default function JoinQrDialog({ onClose }) {
+// The Assignment tab reuses it for its own QR (url/heading/caption/fileName).
+export default function JoinQrDialog({
+  onClose,
+  url = JOIN_URL,
+  heading = <>Join <span className="text-[#ff2d2d]">Next Academy</span></>,
+  caption = "Scan with your phone camera to sign up",
+  label = "Join Next Academy",
+  fileName = "next-academy-join-qr.png",
+}) {
   const [image, setImage] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    joinQrImage()
+    joinQrImage(url)
       .then((dataUrl) => { if (!cancelled) setImage(dataUrl); })
       .catch(() => { if (!cancelled) setError("Unable to create the QR code."); });
     return () => { cancelled = true; };
-  }, []);
+  }, [url]);
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -68,7 +76,7 @@ export default function JoinQrDialog({ onClose }) {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-y-auto bg-white p-6 text-center text-slate-900" role="dialog" aria-modal="true" aria-label="Join Next Academy">
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-y-auto bg-white p-6 text-center text-slate-900" role="dialog" aria-modal="true" aria-label={label}>
       <button
         type="button"
         onClick={onClose}
@@ -77,23 +85,21 @@ export default function JoinQrDialog({ onClose }) {
       >
         <X className="h-6 w-6" aria-hidden="true" />
       </button>
-      <h2 className="text-2xl font-black md:text-4xl">
-        Join <span className="text-[#ff2d2d]">Next Academy</span>
-      </h2>
-      <p className="mt-2 text-base text-slate-600 md:text-lg">Scan with your phone camera to sign up</p>
+      <h2 className="text-2xl font-black md:text-4xl">{heading}</h2>
+      <p className="mt-2 text-base text-slate-600 md:text-lg">{caption}</p>
       {error ? (
         <p className="mt-8 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>
       ) : image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt={`QR code for ${JOIN_URL}`} className="mt-6 aspect-square w-[min(80vw,62vh)] max-w-[560px]" />
+        <img src={image} alt={`QR code for ${url}`} className="mt-6 aspect-square w-[min(80vw,62vh)] max-w-[560px]" />
       ) : (
         <div className="mt-6 grid aspect-square w-[min(80vw,62vh)] max-w-[560px] place-items-center text-sm text-slate-500">Creating QR code…</div>
       )}
-      <p className="mt-4 break-all text-sm font-semibold text-slate-600">{JOIN_URL}</p>
+      <p className="mt-4 break-all text-sm font-semibold text-slate-600">{url}</p>
       {image && (
         <a
           href={image}
-          download="next-academy-join-qr.png"
+          download={fileName}
           className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-900 hover:bg-slate-50"
         >
           <Download className="h-4 w-4" aria-hidden="true" /> Download QR

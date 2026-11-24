@@ -42,6 +42,7 @@ import EventManagement from "./events/EventManagement";
 import StudentEvents from "./events/StudentEvents";
 import Shop from "./shop/Shop";
 import TeacherExams from "./exams/TeacherExams";
+import AssignmentPortal from "./assignments/AssignmentPortal";
 
 // Sidebar nav is intentionally a fixed 9-item list per product spec — do not
 // add Promote/Notifications/etc. here. Their pages still exist and remain
@@ -1187,7 +1188,8 @@ export default function TeacherWorkspacePage({ module = "Dashboard" }) {
   ) : module === "Certificates" ? (
     <CertificatesView data={data} teacherId={user.uid} />
   ) : module === "Assignments" ? (
-    <ScopedRecordsView title="Assignments" records={data.assignments} empty="No assignments found for your assigned classes." />
+    // Read-only Assignment Portal for the trainings this teacher teaches.
+    <AssignmentPortal />
   ) : module === "Submissions" ? (
     <ScopedRecordsView title="Submissions" records={data.submissions} empty="No submissions found for your assigned classes." />
   ) : module === "Results" ? (

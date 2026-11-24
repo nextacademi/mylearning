@@ -2,23 +2,39 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft, Check, ChevronRight, FileCheck2, FilePen, LayoutGrid, Minus, Plus, Presentation, Search, Table2, UserCheck, Users, X,
+  ArrowLeft, ChevronRight, FileCheck2, FilePen, LayoutGrid, ListTodo, Plus, Presentation, QrCode, Search, Table2, UserCheck, Users, X,
 } from "lucide-react";
 import DataTable from "../data-table/DataTable";
 import PersonPicker from "../ui/PersonPicker";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
+import JoinQrDialog from "../training/JoinQrDialog";
+import AssignmentCharts from "./AssignmentCharts";
+import AssignmentMatrix from "./AssignmentMatrix";
+import OutstandingList from "./OutstandingList";
+import StatusMark from "./StatusMark";
+import { applyFilters, batchLabel, batchOptions, courseOptions, doneCount, percent, totalsOf } from "./portal-view";
+import { ASSIGNMENT_QR_URL, assignmentNumberLabel } from "../../lib/assignment-shared";
+import { useSessionTab } from "../../lib/page-refresh";
 import { createStandardAssignments, loadAssignmentPortal, recordAssignmentSubmission } from "../../lib/services/assignment-portal-service";
 
-// Assignment Portal — Admin/Director: every training batch with each
-// student's status on its published assignments (Model Test → Assignment),
-// a per-student "all modules completed" check, and recording a submission
-// handed in outside the app. Data: /api/admin/assignment-portal.
+// Assignment Portal — Admin/Director (and a Teacher, read-only, for the
+// trainings they teach): every training batch with each student's status on
+// its published assignments (Model Test → Assignment). Three tabs share one
+// filter bar (course, training batch, dates): Dashboard (3 headline cards +
+// 3 charts + the batch cards), Submission Table (✓ / ✗ per Assignment 01,
+// 02, …) and Outstanding (who still owes what). Managers can also record a
+// submission handed in outside the app. Data: /api/admin/assignment-portal.
+// Students submit from their own Assignment tab (StudentAssignmentPortal).
 
-const doneCount = (student) => student.expected.filter((id) => student.done[id]).length;
 const completedAll = (student) => student.expected.length > 0 && doneCount(student) === student.expected.length;
-const percent = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);
 const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "");
+const TABS = [
+  { key: "Dashboard", icon: LayoutGrid },
+  { key: "Submission Table", icon: Table2 },
+  { key: "Outstanding", icon: ListTodo },
+];
+const NO_FILTERS = { course: "", batchId: "", from: "", to: "" };
 
 function batchStats(batch) {
   const fully = batch.students.filter(completedAll).length;
@@ -42,19 +58,8 @@ function ProgressBar({ value, className = "h-2" }) {
   );
 }
 
-function Tick({ item, owed }) {
-  if (!owed) return <span className="text-xs text-subtle">n/a</span>;
-  if (!item) {
-    return <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-subtle bg-page text-subtle" title="Not submitted"><Minus className="h-4 w-4" aria-label="Not submitted" /></span>;
-  }
-  return (
-    <span className="inline-flex flex-col items-center gap-0.5">
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-success/30 bg-success-soft text-success" title="Submitted"><Check className="h-4 w-4" aria-label="Submitted" /></span>
-      {(item.score != null || item.late) && (
-        <span className="text-[11px] font-semibold text-muted">{[item.score != null ? `${item.score} pts` : "", item.late ? "late" : ""].filter(Boolean).join(" · ")}</span>
-      )}
-    </span>
-  );
+function Tick({ item, owed, assignment }) {
+  return <StatusMark status={!owed ? "none" : item ? "done" : "missing"} submission={item} assignment={assignment} detail />;
 }
 
 function Modal({ title, subtitle, children, onClose }) {
@@ -152,7 +157,7 @@ function SubmitModal({ batches, initial, onClose, onSaved }) {
               {student && !owed.length && <option value="">No assignment is set for this student</option>}
               {owed.map((item, index) => (
                 <option key={item.id} value={item.id}>
-                  {`Assignment ${batch.assignments.indexOf(item) + 1 || index + 1}: ${item.title}${student.done[item.id] ? " (already submitted)" : ""}`}
+                  {`${assignmentNumberLabel(item.number || index + 1)}: ${item.title}${student.done[item.id] ? " (already submitted)" : ""}`}
                 </option>
               ))}
             </select>
@@ -231,8 +236,8 @@ function CompletionModal({ batches, onClose }) {
                   <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {owed.map((item) => (
                       <div key={item.id} className="rounded-lg border border-border-subtle bg-card p-2.5 text-center">
-                        <span className="block truncate text-[11px] font-bold uppercase text-subtle" title={item.title}>Assign {batch.assignments.indexOf(item) + 1}</span>
-                        <span className="mt-1 inline-flex"><Tick item={student.done[item.id]} owed /></span>
+                        <span className="block truncate text-[11px] font-bold uppercase text-subtle" title={item.title}>{assignmentNumberLabel(item.number)}</span>
+                        <span className="mt-1 inline-flex"><Tick item={student.done[item.id]} owed assignment={item} /></span>
                       </div>
                     ))}
                   </div>
@@ -295,7 +300,7 @@ function BatchCard({ batch, onOpen }) {
   );
 }
 
-function BatchDetail({ batch, onBack, onRecord, onCheck, onAddAssignment, onChanged }) {
+function BatchDetail({ batch, canManage, onBack, onRecord, onCheck, onAddAssignment, onChanged }) {
   const stats = batchStats(batch);
   const confirm = useConfirm();
   const toast = useToast();
@@ -318,13 +323,13 @@ function BatchDetail({ batch, onBack, onRecord, onCheck, onAddAssignment, onChan
     { key: "name", header: "Student", sortable: true, accessor: (s) => s.name, sortValue: (s) => `${s.name} ${s.email}`, render: (s) => <span><b className="block text-ink">{s.name}</b><span className="text-xs text-muted">{s.email}</span></span> },
     ...batch.assignments.map((item, index) => ({
       key: `a_${item.id}`,
-      header: `Assignment ${index + 1}`,
+      header: assignmentNumberLabel(item.number || index + 1),
       align: "center",
       sortable: true,
       searchable: false,
       accessor: (s) => (s.done[item.id] ? 1 : 0),
       exportValue: (s) => (!s.expected.includes(item.id) ? "Not set" : s.done[item.id] ? "Submitted" : "Missing"),
-      render: (s) => <Tick item={s.done[item.id]} owed={s.expected.includes(item.id)} />,
+      render: (s) => <Tick item={s.done[item.id]} owed={s.expected.includes(item.id)} assignment={item} />,
     })),
     {
       key: "file", header: "File Link", align: "center", searchable: false, accessor: latestLink,
@@ -370,7 +375,7 @@ function BatchDetail({ batch, onBack, onRecord, onCheck, onAddAssignment, onChan
         <div className="flex flex-wrap gap-2 text-sm">
           {batch.assignments.map((item, index) => (
             <span key={item.id} className="rounded-full border border-border-subtle bg-card px-3 py-1 text-muted">
-              <b className="text-ink">Assignment {index + 1}:</b> {item.title}{item.dueDate ? ` · due ${formatDate(item.dueDate)}` : ""}
+              <b className="text-ink">{assignmentNumberLabel(item.number || index + 1)}:</b> {item.title}{item.dueDate ? ` · due ${formatDate(item.dueDate)}` : ""}
             </span>
           ))}
         </div>
@@ -389,25 +394,67 @@ function BatchDetail({ batch, onBack, onRecord, onCheck, onAddAssignment, onChan
             pageSize={20}
             emptyLabel="No students enrolled yet."
             actionsHeader="Action"
-            rowActions={(s) => (
+            rowActions={canManage ? (s) => (
               <button type="button" onClick={() => onRecord(s.studentId)} disabled={!s.expected.length} className="rounded-lg border border-border-subtle px-3 py-1.5 text-xs font-bold text-ink hover:bg-page disabled:opacity-40">
                 Record Submission
               </button>
-            )}
+            ) : undefined}
           />
         ) : (
           <div className="rounded-xl border border-dashed border-border-subtle p-8 text-center">
             <p className="text-sm text-muted">This training has no published assignment yet.</p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {canManage && <div className="mt-4 flex flex-wrap justify-center gap-2">
               <button type="button" onClick={setUpStandard} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-hover">
                 <Plus className="h-4 w-4" aria-hidden="true" /> Create Assignment 1–4
               </button>
               <button type="button" onClick={onAddAssignment} className="rounded-xl border border-border-subtle px-4 py-2.5 text-sm font-bold text-ink hover:bg-page">Make my own in Model Test</button>
-            </div>
+            </div>}
           </div>
         )}
       </section>
     </div>
+  );
+}
+
+const SELECT = "rounded-xl border border-border-subtle bg-card px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-primary";
+
+// Course → training batch → date range. Shared by all three tabs.
+function FilterBar({ batches, filters, onChange }) {
+  const courses = courseOptions(batches);
+  const batchChoices = batchOptions(batches, filters.course);
+  const set = (patch) => onChange({ ...filters, ...patch });
+  const active = filters.course || filters.batchId || filters.from || filters.to;
+  return (
+    <section className="flex flex-wrap items-end gap-3 rounded-2xl border border-border-subtle bg-card p-4 shadow-sm" aria-label="Filters">
+      <label className="grid min-w-40 flex-1 gap-1 text-[11px] font-bold uppercase tracking-wider text-muted">
+        Course
+        <select value={filters.course} onChange={(e) => set({ course: e.target.value, batchId: "" })} className={`${SELECT} normal-case tracking-normal`}>
+          <option value="">All courses</option>
+          {courses.map((course) => <option key={course} value={course}>{course}</option>)}
+        </select>
+      </label>
+      <label className="grid min-w-52 flex-[2] gap-1 text-[11px] font-bold uppercase tracking-wider text-muted">
+        Training batch
+        <select value={filters.batchId} onChange={(e) => set({ batchId: e.target.value })} className={`${SELECT} normal-case tracking-normal`}>
+          <option value="">All training batches</option>
+          {batchChoices.map((batch) => <option key={batch.id} value={batch.id}>{batchLabel(batch)}</option>)}
+        </select>
+      </label>
+      <label className="grid gap-1 text-[11px] font-bold uppercase tracking-wider text-muted">
+        From
+        <input type="date" value={filters.from} max={filters.to || undefined} onChange={(e) => set({ from: e.target.value })} className={`${SELECT} normal-case tracking-normal`} />
+      </label>
+      <label className="grid gap-1 text-[11px] font-bold uppercase tracking-wider text-muted">
+        To
+        <input type="date" value={filters.to} min={filters.from || undefined} onChange={(e) => set({ to: e.target.value })} className={`${SELECT} normal-case tracking-normal`} />
+      </label>
+      {active && (
+        <button type="button" onClick={() => onChange(NO_FILTERS)} className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold text-primary hover:bg-active">
+          <X className="h-3.5 w-3.5" aria-hidden="true" /> Clear
+        </button>
+      )}
+      <p className="basis-full text-[11px] text-subtle">Dates use each assignment&apos;s due date (or the day it was set, when it has none).</p>
+    </section>
   );
 }
 
@@ -419,6 +466,9 @@ export default function AssignmentPortal({ onNavigate }) {
   const [openId, setOpenId] = useState("");
   const [submitFor, setSubmitFor] = useState(null);
   const [checking, setChecking] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [filters, setFilters] = useState(NO_FILTERS);
+  const [tab, setTab] = useSessionTab("assignment-portal", TABS[0].key, TABS.map((item) => item.key));
 
   const load = useCallback(() => {
     loadAssignmentPortal()
@@ -427,28 +477,13 @@ export default function AssignmentPortal({ onNavigate }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const canManage = data?.canManage !== false;
   const batches = useMemo(() => data?.batches || [], [data]);
-  const totals = useMemo(() => {
-    const students = new Map();
-    batches.forEach((batch) => batch.students.forEach((s) => {
-      const prev = students.get(s.studentId) || { owed: 0, done: 0 };
-      students.set(s.studentId, { owed: prev.owed + s.expected.length, done: prev.done + doneCount(s) });
-    }));
-    const owing = [...students.values()].filter((s) => s.owed);
-    const owed = owing.reduce((sum, s) => sum + s.owed, 0);
-    const submitted = owing.reduce((sum, s) => sum + s.done, 0);
-    return {
-      students: students.size,
-      engagement: percent(owing.filter((s) => s.done).length, owing.length),
-      active: batches.filter((b) => b.status === "Active").length,
-      submitted,
-      rate: percent(submitted, owed),
-      biggest: [...batches].sort((a, b) => b.students.length - a.students.length).slice(0, 6),
-    };
-  }, [batches]);
+  const filtered = useMemo(() => applyFilters(batches, filters), [batches, filters]);
+  const totals = useMemo(() => totalsOf(filtered), [filtered]);
 
   const q = search.trim().toLowerCase();
-  const shown = q ? batches.filter((b) => [b.courseCode, b.title, b.category, b.teacherName].some((v) => String(v || "").toLowerCase().includes(q))) : batches;
+  const shown = q ? filtered.filter((b) => [b.courseCode, b.title, b.category, b.teacherName].some((v) => String(v || "").toLowerCase().includes(q))) : filtered;
   const openBatch = batches.find((b) => b.id === openId);
 
   function addAssignment() {
@@ -456,6 +491,7 @@ export default function AssignmentPortal({ onNavigate }) {
     try { window.sessionStorage.setItem("tab:model-test", "Assignment"); } catch { /* opens on its default tab */ }
     onNavigate?.("Model Test");
   }
+  const record = (batchId, studentId) => setSubmitFor({ batchId, studentId });
 
   const tableColumns = [
     { key: "title", header: "Batch", sortable: true, accessor: (b) => `${b.courseCode} ${b.title}`, render: (b) => <span><b className="block text-xs text-primary">{b.courseCode}</b><span className="font-semibold text-ink">{b.title}</span></span> },
@@ -471,12 +507,19 @@ export default function AssignmentPortal({ onNavigate }) {
     <div className="space-y-6">
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#f3aaaa] bg-[linear-gradient(120deg,#fff0f0_0%,#fff7f7_45%,#ffffff_100%)] p-6 shadow-sm">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-primary">Organization overview</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-primary">{canManage ? "Organization overview" : "Your trainings"}</p>
           <h2 className="mt-1 text-3xl font-black text-ink">{openBatch ? `${openBatch.title} — Assignments` : "Assignment Portal"}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setSubmitFor({ batchId: openBatch?.id })} className="rounded-xl border border-border-subtle bg-card px-4 py-3 text-sm font-bold text-ink hover:bg-page">Submit / Upload Assignment</button>
-          <button type="button" onClick={addAssignment} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary-hover"><Plus className="h-4 w-4" aria-hidden="true" /> Add Assignment</button>
+          <button type="button" onClick={() => setQrOpen(true)} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-slate-800">
+            <QrCode className="h-4 w-4 text-red-300" aria-hidden="true" /> Submit your assignment
+          </button>
+          {canManage && (
+            <>
+              <button type="button" onClick={() => setSubmitFor({ batchId: openBatch?.id })} className="rounded-xl border border-border-subtle bg-card px-4 py-3 text-sm font-bold text-ink hover:bg-page">Submit / Upload Assignment</button>
+              <button type="button" onClick={addAssignment} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary-hover"><Plus className="h-4 w-4" aria-hidden="true" /> Add Assignment</button>
+            </>
+          )}
         </div>
       </section>
 
@@ -485,82 +528,120 @@ export default function AssignmentPortal({ onNavigate }) {
       ) : openBatch ? (
         <BatchDetail
           batch={openBatch}
+          canManage={canManage}
           onBack={() => setOpenId("")}
-          onRecord={(studentId) => setSubmitFor({ batchId: openBatch.id, studentId })}
+          onRecord={(studentId) => record(openBatch.id, studentId)}
           onCheck={() => setChecking(true)}
           onAddAssignment={addAssignment}
           onChanged={load}
         />
       ) : (
         <>
-          <section className="grid gap-5 lg:grid-cols-3">
-            <StatCard label="Total Active Students" value={totals.students} icon={Users} tone="bg-active text-primary">
-              <div className="mb-1 flex justify-between text-xs text-muted"><span>Submission engagement</span><b className="text-ink">{totals.engagement}% active</b></div>
-              <ProgressBar value={totals.engagement} />
-            </StatCard>
-            <StatCard
-              label="Training Batches"
-              value={`${batches.length} Batches`}
-              icon={Presentation}
-              tone="bg-warning-soft text-warning"
-              badge={<span className="rounded-full bg-warning-soft px-2 py-0.5 text-xs font-bold text-warning">{totals.active} active</span>}
-            >
-              <div className="flex h-10 items-end gap-1.5" aria-label="Students per batch">
-                {totals.biggest.map((b) => (
-                  <span key={b.id} title={`${b.title}: ${b.students.length} students`} className="flex-1 rounded-t bg-primary/30" style={{ height: `${Math.max(12, percent(b.students.length, totals.biggest[0]?.students.length || 1))}%` }} />
-                ))}
-              </div>
-            </StatCard>
-            <StatCard
-              label="Assignments Submitted"
-              value={totals.submitted}
-              icon={FileCheck2}
-              tone="bg-success-soft text-success"
-              badge={<span className="rounded-full bg-success-soft px-2 py-0.5 text-xs font-bold text-success">{totals.rate}% rate</span>}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted">Of every assignment students owe</span>
-                <span className="grid h-12 w-12 place-items-center rounded-full" style={{ background: `conic-gradient(var(--color-primary) ${totals.rate * 3.6}deg, var(--color-page, #f3f4f6) 0deg)` }}>
-                  <span className="h-8 w-8 rounded-full bg-card" />
-                </span>
-              </div>
-            </StatCard>
-          </section>
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Assignment views">
+            {TABS.map(({ key, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={tab === key}
+                onClick={() => setTab(key)}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition ${tab === key ? "bg-primary text-white shadow-sm" : "border border-border-subtle bg-card text-muted hover:text-ink"}`}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" /> {key}
+              </button>
+            ))}
+          </div>
 
-          <section className="rounded-2xl border border-border-subtle bg-card p-6 shadow-sm">
-            <div className="flex flex-col justify-between gap-4 border-b border-border-subtle pb-5 md:flex-row md:items-center">
-              <div>
-                <h3 className="text-lg font-bold text-ink">Training Batches &amp; Assignment Progress</h3>
-                <p className="text-sm text-muted">Open a batch to see each student&apos;s assignment submissions.</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="relative w-64 max-w-full">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden="true" />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search training batch…" className="w-full rounded-xl border border-border-subtle bg-page py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
-                </label>
-                <div className="inline-flex overflow-hidden rounded-xl border border-border-subtle">
-                  <button type="button" onClick={() => setView("cards")} className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${view === "cards" ? "bg-ink text-card" : "bg-card text-muted"}`}><LayoutGrid className="h-3.5 w-3.5" /> Cards</button>
-                  <button type="button" onClick={() => setView("table")} className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${view === "table" ? "bg-ink text-card" : "bg-card text-muted"}`}><Table2 className="h-3.5 w-3.5" /> Table</button>
+          <FilterBar batches={batches} filters={filters} onChange={setFilters} />
+
+          {tab === "Submission Table" ? (
+            <AssignmentMatrix batches={filtered} canManage={canManage} onRecord={record} />
+          ) : tab === "Outstanding" ? (
+            <OutstandingList batches={filtered} canManage={canManage} onRecord={record} />
+          ) : (
+            <>
+              <section className="grid gap-5 lg:grid-cols-3">
+                <StatCard label="Total Active Students" value={totals.students} icon={Users} tone="bg-active text-primary">
+                  <div className="mb-1 flex justify-between text-xs text-muted"><span>Submission engagement</span><b className="text-ink">{totals.engagement}% active</b></div>
+                  <ProgressBar value={totals.engagement} />
+                </StatCard>
+                <StatCard
+                  label="Training Batches"
+                  value={`${filtered.length} Batches`}
+                  icon={Presentation}
+                  tone="bg-warning-soft text-warning"
+                  badge={<span className="rounded-full bg-warning-soft px-2 py-0.5 text-xs font-bold text-warning">{totals.active} active</span>}
+                >
+                  <div className="flex h-10 items-end gap-1.5" aria-label="Students per batch">
+                    {totals.biggest.map((b) => (
+                      <span key={b.id} title={`${b.title}: ${b.students.length} students`} className="flex-1 rounded-t bg-primary/30" style={{ height: `${Math.max(12, percent(b.students.length, totals.biggest[0]?.students.length || 1))}%` }} />
+                    ))}
+                  </div>
+                </StatCard>
+                <StatCard
+                  label="Assignments Submitted"
+                  value={totals.submitted}
+                  icon={FileCheck2}
+                  tone="bg-success-soft text-success"
+                  badge={<span className="rounded-full bg-success-soft px-2 py-0.5 text-xs font-bold text-success">{totals.rate}% rate</span>}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted">{totals.submitted} of {totals.owed} owed assignments</span>
+                    <span className="grid h-12 w-12 place-items-center rounded-full" style={{ background: `conic-gradient(var(--color-primary) ${totals.rate * 3.6}deg, var(--color-page, #f3f4f6) 0deg)` }}>
+                      <span className="h-8 w-8 rounded-full bg-card" />
+                    </span>
+                  </div>
+                </StatCard>
+              </section>
+
+              <AssignmentCharts batches={filtered} filters={filters} />
+
+              <section className="rounded-2xl border border-border-subtle bg-card p-6 shadow-sm">
+                <div className="flex flex-col justify-between gap-4 border-b border-border-subtle pb-5 md:flex-row md:items-center">
+                  <div>
+                    <h3 className="text-lg font-bold text-ink">Training Batches &amp; Assignment Progress</h3>
+                    <p className="text-sm text-muted">Open a batch to see each student&apos;s assignment submissions.</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="relative w-64 max-w-full">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden="true" />
+                      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search training batch…" className="w-full rounded-xl border border-border-subtle bg-page py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
+                    </label>
+                    <div className="inline-flex overflow-hidden rounded-xl border border-border-subtle">
+                      <button type="button" onClick={() => setView("cards")} className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${view === "cards" ? "bg-ink text-card" : "bg-card text-muted"}`}><LayoutGrid className="h-3.5 w-3.5" /> Cards</button>
+                      <button type="button" onClick={() => setView("table")} className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${view === "table" ? "bg-ink text-card" : "bg-card text-muted"}`}><Table2 className="h-3.5 w-3.5" /> Table</button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            {!shown.length ? (
-              <p className="py-10 text-center text-sm text-muted">{q ? "No training batch matches your search." : "No training batches with students or assignments yet."}</p>
-            ) : view === "cards" ? (
-              <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                {shown.map((batch) => <BatchCard key={batch.id} batch={batch} onOpen={() => setOpenId(batch.id)} />)}
-              </div>
-            ) : (
-              <div className="mt-5">
-                <DataTable title="training batches" name="assignment-batches" columns={tableColumns} rows={shown} initialSort={{ key: "title", dir: "desc" }} pageSize={10} onRowClick={(b) => setOpenId(b.id)} rowActions={(b) => <button type="button" onClick={(e) => { e.stopPropagation(); setOpenId(b.id); }} className="rounded-lg bg-active px-3 py-1.5 text-xs font-bold text-primary">View Details</button>} />
-              </div>
-            )}
-          </section>
+                {!shown.length ? (
+                  <p className="py-10 text-center text-sm text-muted">{q ? "No training batch matches your search." : batches.length ? "No training batch matches these filters." : "No training batches with students or assignments yet."}</p>
+                ) : view === "cards" ? (
+                  <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                    {shown.map((batch) => <BatchCard key={batch.id} batch={batch} onOpen={() => setOpenId(batch.id)} />)}
+                  </div>
+                ) : (
+                  <div className="mt-5">
+                    <DataTable title="training batches" name="assignment-batches" columns={tableColumns} rows={shown} initialSort={{ key: "title", dir: "desc" }} pageSize={10} onRowClick={(b) => setOpenId(b.id)} rowActions={(b) => <button type="button" onClick={(e) => { e.stopPropagation(); setOpenId(b.id); }} className="rounded-lg bg-active px-3 py-1.5 text-xs font-bold text-primary">View Details</button>} />
+                  </div>
+                )}
+              </section>
+            </>
+          )}
         </>
       )}
 
-      {submitFor && <SubmitModal batches={batches} initial={submitFor} onClose={() => setSubmitFor(null)} onSaved={load} />}
+      {submitFor && canManage && <SubmitModal batches={batches} initial={submitFor} onClose={() => setSubmitFor(null)} onSaved={load} />}
       {checking && <CompletionModal batches={batches} onClose={() => setChecking(false)} />}
+      {qrOpen && (
+        <JoinQrDialog
+          onClose={() => setQrOpen(false)}
+          url={ASSIGNMENT_QR_URL}
+          heading={<>Submit your <span className="text-[#ff2d2d]">assignment</span></>}
+          caption="Scan with your phone camera to open the assignment portal"
+          label="Submit your assignment"
+          fileName="next-academy-assignment-qr.png"
+        />
+      )}
     </div>
   );
 }

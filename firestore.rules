@@ -117,11 +117,21 @@ service cloud.firestore {
       allow update: if admin() || (teacher() && resource.data.teacherId == request.auth.uid && request.resource.data.teacherId == resource.data.teacherId && request.resource.data.classId == resource.data.classId && request.resource.data.courseId == resource.data.courseId);
       allow delete: if admin() || (teacher() && resource.data.teacherId == request.auth.uid);
     }
+    // A student may only ever touch their own submission: the doc id is
+    // {assignmentId}_{their uid}, for a published assignment of a class
+    // they're enrolled in, copying that assignment's course/class/teacher,
+    // and never carrying a score, feedback or grade. A resubmit changes only
+    // the answer, link, time, late flag and try count (+1, up to the
+    // assignment's max tries), and only before it is graded. Students can't
+    // delete one (that would reset their tries or erase a graded record).
+    // Used by Model Test → Assignment and the Assignment tab's Submit
+    // Assignment portal (lib/assignment-data.js submitAssignment).
     match /submissions/{submissionId} {
+      function assignmentOf(id) { return get(/databases/$(database)/documents/assignments/$(id)).data; }
       allow read: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.studentId == request.auth.uid);
-      allow create: if admin() || (teacher() && request.resource.data.teacherId == request.auth.uid && ownsClass(request.resource.data.classId)) || (signedIn() && request.resource.data.studentId == request.auth.uid && exists(/databases/$(database)/documents/assignments/$(request.resource.data.assignmentId)) && get(/databases/$(database)/documents/assignments/$(request.resource.data.assignmentId)).data.classId == request.resource.data.classId && enrolledInClass(request.resource.data.classId));
-      allow update: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.studentId == request.auth.uid && request.resource.data.studentId == resource.data.studentId && request.resource.data.assignmentId == resource.data.assignmentId && request.resource.data.score == resource.data.score);
-      allow delete: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.studentId == request.auth.uid);
+      allow create: if admin() || (teacher() && request.resource.data.teacherId == request.auth.uid && ownsClass(request.resource.data.classId)) || (signedIn() && request.resource.data.studentId == request.auth.uid && submissionId == request.resource.data.assignmentId + '_' + request.auth.uid && exists(/databases/$(database)/documents/assignments/$(request.resource.data.assignmentId)) && assignmentOf(request.resource.data.assignmentId).get('status', '') == 'published' && assignmentOf(request.resource.data.assignmentId).classId == request.resource.data.classId && assignmentOf(request.resource.data.assignmentId).get('courseId', '') == request.resource.data.get('courseId', '') && assignmentOf(request.resource.data.assignmentId).get('teacherId', '') == request.resource.data.get('teacherId', '') && enrolledInClass(request.resource.data.classId) && request.resource.data.get('score', null) == null && request.resource.data.get('feedback', '') == '' && request.resource.data.get('gradedAt', null) == null && request.resource.data.get('attempts', 1) == 1);
+      allow update: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.studentId == request.auth.uid && resource.data.get('score', null) == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answer', 'link', 'submittedAt', 'attempts', 'late']) && request.resource.data.get('attempts', 1) == resource.data.get('attempts', 1) + 1 && request.resource.data.get('attempts', 1) <= assignmentOf(resource.data.assignmentId).get('maxAttempts', 1));
+      allow delete: if admin() || (teacher() && resource.data.teacherId == request.auth.uid);
     }
     match /attendance/{attendanceId} {
       allow read: if admin() || (teacher() && resource.data.teacherId == request.auth.uid) || (signedIn() && resource.data.studentId == request.auth.uid);

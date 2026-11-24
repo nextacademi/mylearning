@@ -25,6 +25,7 @@ import AdminShell from "../../../components/dashboard/AdminShell";
 import UserManagement from "../../../components/users/UserManagement";
 import TrainingManagement from "../../../components/training/TrainingManagement";
 import AssignmentPortal from "../../../components/assignments/AssignmentPortal";
+import StudentAssignmentPortal from "../../../components/assignments/StudentAssignmentPortal";
 import FinanceManagement from "../../../components/finance/FinanceManagement";
 import MyPaymentSummary from "../../../components/students/MyPaymentSummary";
 import LoadingScreen from "../../../components/dashboard/LoadingScreen";
@@ -71,6 +72,8 @@ export const roleConfig = {
     modules: [
       "Dashboard",
       "My Training",
+      // Submit Assignment portal (the Assignment QR opens this tab).
+      "Assignment",
       "Appointments",
       "Events",
       "Attendance",
@@ -91,6 +94,7 @@ export const roleConfig = {
     modules: [
       "Dashboard",
       "My Training",
+      "Assignment",
       "Appointments",
       "Events",
       "Volunteer",
@@ -495,6 +499,8 @@ function DashboardContent({ role, profile, user }) {
               <TrainingRegistrations />
             ) : role === "Admin" && active === "Assignment" ? (
               <AssignmentPortal onNavigate={setActive} />
+            ) : isLearnerRole(role) && active === "Assignment" ? (
+              <StudentAssignmentPortal uid={user.uid} name={name} />
             ) : role === "Admin" && active === "Event" ? (
               <EventManagement />
             ) : role === "Admin" && active === "Volunteer" ? (
