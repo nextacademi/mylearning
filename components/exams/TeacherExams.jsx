@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Circle, ClipboardList, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { CheckCircle2, Circle, ClipboardList, FileUp, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { subscribeTeacherCourses } from "../../lib/teacher-data";
 import { subscribeCourses } from "../../lib/room-booking-data";
 import { subscribeModules } from "../../lib/course-modules-data";
@@ -9,10 +9,15 @@ import {
   createQuiz, deleteQuiz, getCachedManagerQuizzes, loadQuizAnswerKey, setQuizStatus, subscribeAllQuizzes,
   subscribeQuizAttemptsForQuiz, subscribeQuizAttemptsForTeacher, subscribeTeacherQuizzes, updateQuiz,
 } from "../../lib/exam-data";
+import {
+  compareQuizTitles, MAX_OPTION_TEXT, MAX_OPTIONS, MAX_PASSAGE_BODY, MAX_PASSAGE_INSTRUCTIONS, MAX_PASSAGE_TITLE,
+  MAX_QUESTION_TEXT, MIN_OPTIONS, newPassageId,
+} from "../../lib/exam-shared";
 import { useToast } from "../ui/Toast";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { SkeletonGrid } from "../ui/Skeleton";
 import { LayoutToggle, StaffAssignments } from "./AssignmentsPanel";
+import ImportExamsDialog from "./ImportExamsDialog";
 import { useSessionTab } from "../../lib/page-refresh";
 
 const MODEL_TEST_TABS = ["Model Test", "Assignment"];
@@ -20,7 +25,9 @@ const MODEL_TEST_TABS = ["Model Test", "Assignment"];
 const LABEL = "grid gap-1 text-xs font-bold text-muted";
 const FIELD = "rounded-xl border border-border-subtle bg-card px-3 py-2.5 text-sm font-normal text-ink outline-none focus:ring-2 focus:ring-primary";
 const blankQuestion = () => ({ text: "", options: ["", ""], correctOptionIndex: 0 });
-const blankForm = () => ({ courseId: "", moduleId: "", title: "", description: "", timeLimitMinutes: "", maxAttempts: "1", questions: [blankQuestion()] });
+const blankPassage = () => ({ id: newPassageId(), title: "", instructions: "", body: "" });
+const blankForm = () => ({ courseId: "", moduleId: "", title: "", description: "", timeLimitMinutes: "", maxAttempts: "1", passages: [], questions: [blankQuestion()] });
+const passageLabel = (passage, index) => passage.title || `Passage ${index + 1}`;
 
 function Dialog({ title, children, onClose, wide }) {
   return (
@@ -36,7 +43,34 @@ function Dialog({ title, children, onClose, wide }) {
   );
 }
 
-function QuestionEditor({ question, index, onChange, onRemove, canRemove }) {
+function PassageEditor({ passage, index, onChange, onRemove }) {
+  function setField(field) {
+    return (e) => onChange(index, { ...passage, [field]: e.target.value });
+  }
+  return (
+    <div className="space-y-3 rounded-2xl border border-border-subtle bg-page p-4">
+      <div className="flex items-start justify-between gap-3">
+        <label className={`${LABEL} flex-1`}>
+          Passage {index + 1} title <span className="font-normal text-subtle">(optional)</span>
+          <input value={passage.title} onChange={setField("title")} maxLength={MAX_PASSAGE_TITLE} className={FIELD} placeholder="A Lucky Day" />
+        </label>
+        <button type="button" onClick={() => onRemove(index)} className="mt-6 rounded-lg p-1.5 text-muted hover:bg-active hover:text-primary" aria-label={`Remove passage ${index + 1}`}>
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      <label className={LABEL}>
+        Instructions <span className="font-normal text-subtle">(optional, shown in bold)</span>
+        <textarea value={passage.instructions} onChange={setField("instructions")} rows={2} maxLength={MAX_PASSAGE_INSTRUCTIONS} className={FIELD} placeholder="Read the email and choose one word for each gap." />
+      </label>
+      <label className={LABEL}>
+        Passage text <span className="font-normal text-subtle">(leave a blank line between paragraphs)</span>
+        <textarea value={passage.body} onChange={setField("body")} rows={8} maxLength={MAX_PASSAGE_BODY} className={FIELD} />
+      </label>
+    </div>
+  );
+}
+
+function QuestionEditor({ question, index, passages, onChange, onRemove, canRemove }) {
   function setField(field, value) {
     onChange(index, { ...question, [field]: value });
   }
@@ -45,11 +79,11 @@ function QuestionEditor({ question, index, onChange, onRemove, canRemove }) {
     setField("options", options);
   }
   function addOption() {
-    if (question.options.length >= 6) return;
+    if (question.options.length >= MAX_OPTIONS) return;
     setField("options", [...question.options, ""]);
   }
   function removeOption(optIndex) {
-    if (question.options.length <= 2) return;
+    if (question.options.length <= MIN_OPTIONS) return;
     const options = question.options.filter((_, i) => i !== optIndex);
     const correctOptionIndex = question.correctOptionIndex >= options.length ? 0 : question.correctOptionIndex;
     onChange(index, { ...question, options, correctOptionIndex });
@@ -59,7 +93,7 @@ function QuestionEditor({ question, index, onChange, onRemove, canRemove }) {
       <div className="flex items-start justify-between gap-3">
         <label className={`${LABEL} flex-1`}>
           Question {index + 1}
-          <input value={question.text} onChange={(e) => setField("text", e.target.value)} required maxLength={500} className={FIELD} placeholder="What is..." />
+          <input value={question.text} onChange={(e) => setField("text", e.target.value)} required maxLength={MAX_QUESTION_TEXT} className={FIELD} placeholder="What is..." />
         </label>
         {canRemove && (
           <button type="button" onClick={() => onRemove(index)} className="mt-6 rounded-lg p-1.5 text-muted hover:bg-active hover:text-primary" aria-label="Remove question">
@@ -83,28 +117,41 @@ function QuestionEditor({ question, index, onChange, onRemove, canRemove }) {
               value={option}
               onChange={(e) => setOption(optIndex, e.target.value)}
               required
-              maxLength={200}
+              maxLength={MAX_OPTION_TEXT}
               placeholder={`Option ${optIndex + 1}`}
               className={`${FIELD} flex-1 py-2`}
             />
-            {question.options.length > 2 && (
+            {question.options.length > MIN_OPTIONS && (
               <button type="button" onClick={() => removeOption(optIndex)} className="text-xs font-bold text-primary hover:underline">Remove</button>
             )}
           </div>
         ))}
-        {question.options.length < 6 && (
+        {question.options.length < MAX_OPTIONS && (
           <button type="button" onClick={addOption} className="text-xs font-bold text-info hover:underline">+ Add option</button>
         )}
       </div>
-      <label className={LABEL}>
-        Points <span className="font-normal text-subtle">(default 1)</span>
-        <input type="number" min="1" value={question.points || ""} onChange={(e) => setField("points", e.target.value)} className={`${FIELD} w-24`} />
-      </label>
+      <div className="flex flex-wrap gap-4">
+        <label className={LABEL}>
+          Points <span className="font-normal text-subtle">(default 1)</span>
+          <input type="number" min="1" value={question.points || ""} onChange={(e) => setField("points", e.target.value)} className={`${FIELD} w-24`} />
+        </label>
+        {passages.length > 0 && (
+          <label className={`${LABEL} min-w-0 flex-1`}>
+            Reading passage
+            <select value={question.passageId || ""} onChange={(e) => setField("passageId", e.target.value)} className={FIELD}>
+              <option value="">No passage</option>
+              {passages.map((p, i) => <option key={p.id} value={p.id}>{passageLabel(p, i)}</option>)}
+            </select>
+          </label>
+        )}
+      </div>
     </div>
   );
 }
 
-function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
+// Exported for the staff preview harness only; the dashboard renders it
+// through TeacherExams below.
+export function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
   const [form, setForm] = useState(initial);
   const [modules, setModules] = useState([]);
   useEffect(() => {
@@ -128,6 +175,25 @@ function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
   }
   function removeQuestion(index) {
     setForm((c) => ({ ...c, questions: c.questions.filter((_, i) => i !== index) }));
+  }
+  const passages = form.passages || [];
+  function setPassage(index, next) {
+    setForm((c) => ({ ...c, passages: (c.passages || []).map((p, i) => (i === index ? next : p)) }));
+  }
+  function addPassage() {
+    setForm((c) => ({ ...c, passages: [...(c.passages || []), blankPassage()] }));
+  }
+  // Questions that used the removed passage keep their text and answers; they
+  // just stop showing a passage.
+  function removePassage(index) {
+    setForm((c) => {
+      const removed = (c.passages || [])[index];
+      return {
+        ...c,
+        passages: (c.passages || []).filter((_, i) => i !== index),
+        questions: c.questions.map((q) => (removed && q.passageId === removed.id ? { ...q, passageId: "" } : q)),
+      };
+    });
   }
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form); }} className="space-y-4">
@@ -166,10 +232,22 @@ function QuizForm({ initial, courses, saving, error, onCancel, onSubmit }) {
         </label>
       </div>
 
+      <div className="space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-subtle">
+          Reading passages <span className="font-normal normal-case tracking-normal">(optional: shown above the questions that use them)</span>
+        </p>
+        {passages.map((passage, index) => (
+          <PassageEditor key={passage.id} passage={passage} index={index} onChange={setPassage} onRemove={removePassage} />
+        ))}
+        <button type="button" onClick={addPassage} className="flex items-center gap-1.5 rounded-xl border border-dashed border-border-subtle px-4 py-2.5 text-xs font-bold text-muted hover:border-primary hover:text-primary">
+          <Plus className="h-4 w-4" /> Add reading passage
+        </button>
+      </div>
+
       <p className="text-xs font-bold uppercase tracking-wider text-subtle">Questions</p>
       <div className="space-y-3">
         {form.questions.map((question, index) => (
-          <QuestionEditor key={index} question={question} index={index} onChange={setQuestion} onRemove={removeQuestion} canRemove={form.questions.length > 1} />
+          <QuestionEditor key={index} question={question} index={index} passages={passages} onChange={setQuestion} onRemove={removeQuestion} canRemove={form.questions.length > 1} />
         ))}
       </div>
       <button type="button" onClick={addQuestion} className="flex items-center gap-1.5 rounded-xl border border-dashed border-border-subtle px-4 py-2.5 text-xs font-bold text-muted hover:border-primary hover:text-primary">
@@ -227,6 +305,7 @@ export default function TeacherExams({ teacherId, isManager = false }) {
   const [quizzes, setQuizzes] = useState(() => (isManager && getCachedManagerQuizzes()) || []);
   const [loading, setLoading] = useState(() => !(isManager && getCachedManagerQuizzes() !== null));
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewingResults, setViewingResults] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -256,6 +335,7 @@ export default function TeacherExams({ teacherId, isManager = false }) {
   }, [teacherId, isManager]);
 
   const courseMap = useMemo(() => new Map(courses.map((c) => [c.id, c.title])), [courses]);
+  const sortedQuizzes = useMemo(() => [...quizzes].sort(compareQuizTitles), [quizzes]);
 
   function openCreate() {
     setError("");
@@ -273,6 +353,7 @@ export default function TeacherExams({ teacherId, isManager = false }) {
       description: quiz.description || "",
       timeLimitMinutes: quiz.timeLimitMinutes || "",
       maxAttempts: String(quiz.maxAttempts || 1),
+      passages: quiz.passages || [],
       questions: quiz.questions.map((q) => ({ ...q, points: key.points?.[q.id] || 1, correctOptionIndex: key.answers?.[q.id] ?? 0 })),
     });
   }
@@ -336,14 +417,26 @@ export default function TeacherExams({ teacherId, isManager = false }) {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={tab === "Assignment" ? () => setCreateAssignmentSignal((n) => n + 1) : openCreate}
-          disabled={!courses.length}
-          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" /> {tab === "Assignment" ? "Create Assignment" : "Create Exam"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {tab !== "Assignment" && (
+            <button
+              type="button"
+              onClick={() => setImporting(true)}
+              disabled={!courses.length}
+              className="flex items-center gap-1.5 rounded-xl border border-border-subtle bg-card px-4 py-3 text-xs font-bold text-ink hover:bg-page disabled:opacity-50"
+            >
+              <FileUp className="h-4 w-4" /> Import exams
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={tab === "Assignment" ? () => setCreateAssignmentSignal((n) => n + 1) : openCreate}
+            disabled={!courses.length}
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-xs font-bold text-white disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" /> {tab === "Assignment" ? "Create Assignment" : "Create Exam"}
+          </button>
+        </div>
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -382,7 +475,7 @@ export default function TeacherExams({ teacherId, isManager = false }) {
               <tr>{["Exam", "Training", "Questions", "Points", "Attempts", "Time", "Status", "Actions"].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr>
             </thead>
             <tbody>
-              {quizzes.map((quiz) => (
+              {sortedQuizzes.map((quiz) => (
                 <tr key={quiz.id} className="border-t border-border-subtle">
                   <td className="px-4 py-3 font-bold text-ink">{quiz.title}</td>
                   <td className="px-4 py-3 text-xs text-muted">{courseMap.get(quiz.courseId) || "Unknown course"}</td>
@@ -406,7 +499,7 @@ export default function TeacherExams({ teacherId, isManager = false }) {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {quizzes.map((quiz) => (
+          {sortedQuizzes.map((quiz) => (
             <article key={quiz.id} className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-card p-4 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -420,6 +513,7 @@ export default function TeacherExams({ teacherId, isManager = false }) {
                 <span>{quiz.totalPoints || 0} points</span>
                 <span>{quiz.maxAttempts || 1} attempt{quiz.maxAttempts === 1 ? "" : "s"}</span>
                 {quiz.timeLimitMinutes && <span>{quiz.timeLimitMinutes} min</span>}
+                {quiz.passages?.length > 0 && <span>{quiz.passages.length} passage{quiz.passages.length === 1 ? "" : "s"}</span>}
               </div>
               <div className="mt-1 flex flex-wrap gap-2 border-t border-border-subtle pt-3 text-xs font-bold">
                 <button type="button" onClick={() => openEdit(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><Pencil className="h-3.5 w-3.5" /> Edit</button>
@@ -440,6 +534,16 @@ export default function TeacherExams({ teacherId, isManager = false }) {
       {editing && (
         <Dialog title="Edit exam" onClose={close} wide>
           <QuizForm initial={editing} courses={courses} saving={saving} error={error} onCancel={close} onSubmit={submit} />
+        </Dialog>
+      )}
+      {importing && (
+        <Dialog title="Import exams" onClose={() => setImporting(false)} wide>
+          <ImportExamsDialog
+            courses={courses}
+            onCancel={() => setImporting(false)}
+            onImport={(exam) => createQuiz(teacherId, exam)}
+            onDone={(count) => { setImporting(false); toast.success(`${count} exam${count === 1 ? "" : "s"} imported as drafts.`); }}
+          />
         </Dialog>
       )}
       {viewingResults && <ResultsPanel quiz={viewingResults} teacherId={teacherId} isManager={isManager} onClose={() => setViewingResults(null)} />}

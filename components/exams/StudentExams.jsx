@@ -1,150 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ClipboardList, Clock, XCircle } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { subscribeMyEnrollments } from "../../lib/student-data";
-import { subscribeMyAttempts, subscribeStudentQuizzes, submitQuizAttempt } from "../../lib/exam-data";
+import { subscribeMyAttempts, subscribeStudentQuizzes } from "../../lib/exam-data";
+import { compareQuizTitles } from "../../lib/exam-shared";
 import { useSessionTab } from "../../lib/page-refresh";
 import { LayoutToggle, StudentAssignments } from "./AssignmentsPanel";
+import { ResultView, TakeExam } from "./ExamScreens";
 
 const MODEL_TEST_TABS = ["Model Test", "Assignment"];
-
-function useCountdown(minutes, onExpire) {
-  const [secondsLeft, setSecondsLeft] = useState(minutes ? minutes * 60 : null);
-  useEffect(() => {
-    if (!minutes) return undefined;
-    const timer = setInterval(() => {
-      setSecondsLeft((current) => {
-        if (current <= 1) {
-          clearInterval(timer);
-          onExpire();
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minutes]);
-  return secondsLeft;
-}
-
-function formatClock(seconds) {
-  if (seconds == null) return "";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function TakeExam({ quiz, onClose, onSubmitted }) {
-  const [answers, setAnswers] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  async function submit() {
-    if (submitting) return;
-    setSubmitting(true);
-    setError("");
-    try {
-      const result = await submitQuizAttempt(quiz.id, answers);
-      onSubmitted(result);
-    } catch (e) {
-      setError(e.message || "Unable to submit this exam.");
-      setSubmitting(false);
-    }
-  }
-
-  const secondsLeft = useCountdown(quiz.timeLimitMinutes, () => submit());
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 p-4">
-      <div className="mx-auto max-w-2xl space-y-4 rounded-3xl bg-card p-6 shadow-2xl">
-        <div className="flex items-center justify-between gap-4 border-b border-border-subtle pb-4">
-          <div>
-            <h2 className="text-lg font-bold text-ink">{quiz.title}</h2>
-            <p className="text-xs text-muted">{quiz.questions.length} questions · {quiz.totalPoints} points</p>
-          </div>
-          {quiz.timeLimitMinutes && (
-            <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${secondsLeft < 60 ? "bg-active text-primary" : "bg-page text-ink"}`}>
-              <Clock className="h-3.5 w-3.5" aria-hidden="true" /> {formatClock(secondsLeft)}
-            </span>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          {quiz.questions.map((question, index) => (
-            <div key={question.id} className="rounded-2xl border border-border-subtle p-4">
-              <p className="mb-3 text-sm font-semibold text-ink">{index + 1}. {question.text}</p>
-              <div className="space-y-2">
-                {question.options.map((option, optIndex) => (
-                  <label key={optIndex} className="flex items-center gap-2 rounded-xl border border-border-subtle px-3 py-2 text-sm text-ink hover:bg-page has-[:checked]:border-primary has-[:checked]:bg-active">
-                    <input
-                      type="radio"
-                      name={question.id}
-                      checked={answers[question.id] === optIndex}
-                      onChange={() => setAnswers((current) => ({ ...current, [question.id]: optIndex }))}
-                    />
-                    {option}
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {error && <p className="rounded-xl bg-active px-3 py-2 text-sm text-primary">{error}</p>}
-        <div className="flex justify-end gap-3 border-t border-border-subtle pt-4">
-          <button type="button" onClick={onClose} disabled={submitting} className="rounded-xl px-4 py-2.5 text-sm font-bold text-muted">Cancel</button>
-          <button type="button" onClick={submit} disabled={submitting} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">{submitting ? "Submitting…" : "Submit exam"}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ResultView({ quiz, result, onClose }) {
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 p-4">
-      <div className="mx-auto max-w-2xl space-y-4 rounded-3xl bg-card p-6 shadow-2xl">
-        <div className="text-center">
-          <p className="text-xs font-bold uppercase tracking-wider text-subtle">{quiz.title}</p>
-          <p className="mt-1 text-4xl font-black text-ink">{result.score}/{result.maxScore}</p>
-          <p className="text-sm font-bold text-muted">{result.percentage}%</p>
-        </div>
-        <div className="space-y-3">
-          {quiz.questions.map((question, index) => {
-            const detail = result.perQuestion.find((p) => p.questionId === question.id);
-            return (
-              <div key={question.id} className="rounded-2xl border border-border-subtle p-4">
-                <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
-                  {detail?.correct ? <CheckCircle2 className="h-4 w-4 shrink-0 text-success" /> : <XCircle className="h-4 w-4 shrink-0 text-primary" />}
-                  {index + 1}. {question.text}
-                </p>
-                <div className="space-y-1.5">
-                  {question.options.map((option, optIndex) => {
-                    const isCorrect = optIndex === detail?.correctOptionIndex;
-                    const isSelected = optIndex === detail?.selectedOptionIndex;
-                    return (
-                      <p
-                        key={optIndex}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${isCorrect ? "bg-success-soft text-success" : isSelected ? "bg-active text-primary" : "text-muted"}`}
-                      >
-                        {option}{isCorrect ? " ✓" : isSelected ? " (your answer)" : ""}
-                      </p>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex justify-end border-t border-border-subtle pt-4">
-          <button type="button" onClick={onClose} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white">Close</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function StudentExams({ uid }) {
   const [enrollments, setEnrollments] = useState([]);
@@ -159,7 +24,7 @@ export default function StudentExams({ uid }) {
   const courseIds = useMemo(() => [...new Set(enrollments.map((e) => e.courseId))], [enrollments]);
   const courseTitle = useMemo(() => new Map(enrollments.map((e) => [e.courseId, e.courseTitle])), [enrollments]);
 
-  useEffect(() => subscribeStudentQuizzes(courseIds, setQuizzes, () => {}), [courseIds.join(",")]);
+  useEffect(() => subscribeStudentQuizzes(courseIds, (rows) => setQuizzes([...rows].sort(compareQuizTitles)), () => {}), [courseIds.join(",")]);
   useEffect(() => subscribeMyAttempts(uid, setAttempts, () => {}), [uid]);
 
   const attemptsByQuiz = useMemo(() => {
