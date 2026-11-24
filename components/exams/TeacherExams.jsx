@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Circle, ClipboardList, FileUp, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { CheckCircle2, Circle, ClipboardList, FileUp, Pencil, Plus, QrCode, Trash2, Users } from "lucide-react";
 import { subscribeTeacherCourses } from "../../lib/teacher-data";
 import { subscribeCourses } from "../../lib/room-booking-data";
 import { subscribeModules } from "../../lib/course-modules-data";
@@ -18,6 +18,8 @@ import { useConfirm } from "../ui/ConfirmDialog";
 import { SkeletonGrid } from "../ui/Skeleton";
 import { LayoutToggle, StaffAssignments } from "./AssignmentsPanel";
 import ImportExamsDialog from "./ImportExamsDialog";
+import { ExamLinkRow, ExamQrThumb, examUrl } from "./ExamShareLink";
+import JoinQrDialog from "../training/JoinQrDialog";
 import { useSessionTab } from "../../lib/page-refresh";
 
 const MODEL_TEST_TABS = ["Model Test", "Assignment"];
@@ -306,6 +308,7 @@ export default function TeacherExams({ teacherId, isManager = false }) {
   const [loading, setLoading] = useState(() => !(isManager && getCachedManagerQuizzes() !== null));
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [qrQuiz, setQrQuiz] = useState(null);
   const [editing, setEditing] = useState(null);
   const [viewingResults, setViewingResults] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -488,6 +491,9 @@ export default function TeacherExams({ teacherId, isManager = false }) {
                     <div className="flex flex-wrap gap-1 text-xs font-bold">
                       <button type="button" onClick={() => openEdit(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><Pencil className="h-3.5 w-3.5" /> Edit</button>
                       <button type="button" onClick={() => togglePublish(quiz)} className="rounded-lg px-2 py-1.5 text-info hover:bg-page">{quiz.status === "published" ? "Unpublish" : "Publish"}</button>
+                      {quiz.status === "published" && (
+                        <button type="button" onClick={() => setQrQuiz(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><QrCode className="h-3.5 w-3.5" /> QR</button>
+                      )}
                       <button type="button" onClick={() => setViewingResults(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><Users className="h-3.5 w-3.5" /> Results</button>
                       <button type="button" onClick={() => remove(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-primary hover:bg-active"><Trash2 className="h-3.5 w-3.5" /> Delete</button>
                     </div>
@@ -501,20 +507,37 @@ export default function TeacherExams({ teacherId, isManager = false }) {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {sortedQuizzes.map((quiz) => (
             <article key={quiz.id} className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-card p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <b className="block truncate text-ink">{quiz.title}</b>
-                  <span className="text-xs text-muted">{courseMap.get(quiz.courseId) || "Unknown course"}</span>
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1 space-y-2.5">
+                  <div>
+                    <div className="flex items-start gap-2">
+                      <b className="min-w-0 flex-1 truncate text-ink">{quiz.title}</b>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${quiz.status === "published" ? "bg-success-soft text-success" : "bg-page text-muted"}`}>{quiz.status}</span>
+                    </div>
+                    <span className="text-xs text-muted">{courseMap.get(quiz.courseId) || "Unknown course"}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-subtle">
+                    <span>{quiz.questions?.length || 0} questions</span>
+                    <span>{quiz.totalPoints || 0} points</span>
+                    <span>{quiz.maxAttempts || 1} attempt{quiz.maxAttempts === 1 ? "" : "s"}</span>
+                    {quiz.timeLimitMinutes && <span>{quiz.timeLimitMinutes} min</span>}
+                    {quiz.passages?.length > 0 && <span>{quiz.passages.length} passage{quiz.passages.length === 1 ? "" : "s"}</span>}
+                  </div>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${quiz.status === "published" ? "bg-success-soft text-success" : "bg-page text-muted"}`}>{quiz.status}</span>
+                {quiz.status === "published" ? (
+                  <ExamQrThumb url={examUrl(quiz.id)} title={quiz.title} onOpen={() => setQrQuiz(quiz)} />
+                ) : (
+                  <span className="grid h-[92px] w-[84px] shrink-0 place-items-center rounded-xl border border-dashed border-border-subtle px-2 text-center text-[10px] font-semibold leading-tight text-subtle">
+                    <QrCode className="mx-auto h-5 w-5" aria-hidden="true" />
+                    QR after publish
+                  </span>
+                )}
               </div>
-              <div className="flex flex-wrap gap-3 text-[11px] font-semibold text-subtle">
-                <span>{quiz.questions?.length || 0} questions</span>
-                <span>{quiz.totalPoints || 0} points</span>
-                <span>{quiz.maxAttempts || 1} attempt{quiz.maxAttempts === 1 ? "" : "s"}</span>
-                {quiz.timeLimitMinutes && <span>{quiz.timeLimitMinutes} min</span>}
-                {quiz.passages?.length > 0 && <span>{quiz.passages.length} passage{quiz.passages.length === 1 ? "" : "s"}</span>}
-              </div>
+              {quiz.status === "published" ? (
+                <ExamLinkRow url={examUrl(quiz.id)} />
+              ) : (
+                <p className="text-[11px] text-subtle">Publish to get the student link and QR code.</p>
+              )}
               <div className="mt-1 flex flex-wrap gap-2 border-t border-border-subtle pt-3 text-xs font-bold">
                 <button type="button" onClick={() => openEdit(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-muted hover:bg-page hover:text-ink"><Pencil className="h-3.5 w-3.5" /> Edit</button>
                 <button type="button" onClick={() => togglePublish(quiz)} className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-info hover:bg-page">{quiz.status === "published" ? "Unpublish" : "Publish"}</button>
@@ -547,6 +570,16 @@ export default function TeacherExams({ teacherId, isManager = false }) {
         </Dialog>
       )}
       {viewingResults && <ResultsPanel quiz={viewingResults} teacherId={teacherId} isManager={isManager} onClose={() => setViewingResults(null)} />}
+      {qrQuiz && (
+        <JoinQrDialog
+          onClose={() => setQrQuiz(null)}
+          url={examUrl(qrQuiz.id)}
+          heading={qrQuiz.title}
+          caption="Scan with your phone camera to take this exam"
+          label={`QR code for ${qrQuiz.title}`}
+          fileName={`${qrQuiz.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "exam"}-qr.png`}
+        />
+      )}
     </div>
   );
 }

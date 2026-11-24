@@ -1,31 +1,63 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ClipboardList } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ClipboardList, X } from "lucide-react";
 import { subscribeMyEnrollments } from "../../lib/student-data";
 import { subscribeMyAttempts, subscribeStudentQuizzes } from "../../lib/exam-data";
-import { compareQuizTitles } from "../../lib/exam-shared";
+import { compareQuizTitles, EXAM_LINK_PARAM } from "../../lib/exam-shared";
 import { useSessionTab } from "../../lib/page-refresh";
+import { useConfirm } from "../ui/ConfirmDialog";
 import { LayoutToggle, StudentAssignments } from "./AssignmentsPanel";
 import { ResultView, TakeExam } from "./ExamScreens";
 
 const MODEL_TEST_TABS = ["Model Test", "Assignment"];
 
+// ?exam=<quizId> comes from an exam's QR / short link (/exam/<quizId>).
+function readLinkedExamId() {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get(EXAM_LINK_PARAM);
+}
+function clearLinkedExamParam() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(EXAM_LINK_PARAM)) return;
+  url.searchParams.delete(EXAM_LINK_PARAM);
+  window.history.replaceState(null, "", url);
+}
+
 export default function StudentExams({ uid }) {
+  const confirm = useConfirm();
   const [enrollments, setEnrollments] = useState([]);
+  const [enrollmentsLoaded, setEnrollmentsLoaded] = useState(false);
   const [quizzes, setQuizzes] = useState([]);
+  const [quizzesKey, setQuizzesKey] = useState(null);
   const [attempts, setAttempts] = useState([]);
+  const [attemptsLoaded, setAttemptsLoaded] = useState(false);
   const [taking, setTaking] = useState(null);
   const [result, setResult] = useState(null);
+  const [linkedExamId, setLinkedExamId] = useState(readLinkedExamId);
+  const linkHandled = useRef(false);
   const [tab, setTab] = useSessionTab("student-model-test", "Model Test", MODEL_TEST_TABS);
   const [layout, setLayout] = useSessionTab("student-model-test-layout", "grid", ["grid", "list"]);
 
-  useEffect(() => subscribeMyEnrollments(uid, setEnrollments, () => {}), [uid]);
+  useEffect(() => subscribeMyEnrollments(
+    uid,
+    (rows) => { setEnrollments(rows); setEnrollmentsLoaded(true); },
+    () => setEnrollmentsLoaded(true),
+  ), [uid]);
   const courseIds = useMemo(() => [...new Set(enrollments.map((e) => e.courseId))], [enrollments]);
+  const courseKey = courseIds.join(",");
   const courseTitle = useMemo(() => new Map(enrollments.map((e) => [e.courseId, e.courseTitle])), [enrollments]);
 
-  useEffect(() => subscribeStudentQuizzes(courseIds, (rows) => setQuizzes([...rows].sort(compareQuizTitles)), () => {}), [courseIds.join(",")]);
-  useEffect(() => subscribeMyAttempts(uid, setAttempts, () => {}), [uid]);
+  useEffect(() => subscribeStudentQuizzes(
+    courseIds,
+    (rows) => { setQuizzes([...rows].sort(compareQuizTitles)); setQuizzesKey(courseKey); },
+    () => setQuizzesKey(courseKey),
+  ), [courseKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => subscribeMyAttempts(
+    uid,
+    (rows) => { setAttempts(rows); setAttemptsLoaded(true); },
+    () => setAttemptsLoaded(true),
+  ), [uid]);
 
   const attemptsByQuiz = useMemo(() => {
     const map = new Map();
@@ -35,6 +67,36 @@ export default function StudentExams({ uid }) {
     });
     return map;
   }, [attempts]);
+
+  // Opened from an exam's QR / short link: once the exam and the student's
+  // attempts are known, offer to start it (one prompt per visit).
+  const linkedQuiz = linkedExamId ? quizzes.find((q) => q.id === linkedExamId) || null : null;
+  const linkedAttemptsUsed = linkedQuiz ? (attemptsByQuiz.get(linkedQuiz.id) || []).length : 0;
+  const linkedAttemptsMax = linkedQuiz?.maxAttempts || 1;
+  useEffect(() => {
+    if (!linkedQuiz || !attemptsLoaded || linkHandled.current) return;
+    linkHandled.current = true;
+    clearLinkedExamParam();
+    if (linkedAttemptsUsed >= linkedAttemptsMax) return;
+    const minutes = linkedQuiz.timeLimitMinutes;
+    confirm({
+      title: `Start "${linkedQuiz.title}"?`,
+      message: `${linkedQuiz.questions?.length || 0} questions${minutes ? ` · ${minutes} minutes` : ""} · attempt ${linkedAttemptsUsed + 1} of ${linkedAttemptsMax}.${minutes ? " The timer starts when you press Start." : ""}`,
+      tone: "neutral",
+      confirmLabel: "Start exam",
+    }).then((ok) => {
+      setTab("Model Test");
+      setLinkedExamId(null);
+      if (ok) setTaking(linkedQuiz);
+    });
+  }, [attemptsLoaded, confirm, linkedAttemptsMax, linkedAttemptsUsed, linkedQuiz, setTab]);
+
+  const linkReady = enrollmentsLoaded && quizzesKey === courseKey;
+  const linkNotice = !linkedExamId
+    ? ""
+    : linkedQuiz
+      ? (attemptsLoaded && linkedAttemptsUsed >= linkedAttemptsMax ? `You have used all ${linkedAttemptsMax} attempt${linkedAttemptsMax === 1 ? "" : "s"} for "${linkedQuiz.title}".` : "")
+      : (linkReady ? "This exam isn't open for you. It may not be published yet, or you aren't enrolled in its course." : "");
 
   return (
     <div className="space-y-6">
@@ -65,6 +127,20 @@ export default function StudentExams({ uid }) {
         </nav>
         <LayoutToggle value={layout} onChange={setLayout} />
       </div>
+
+      {linkNotice && (
+        <div className="flex items-start gap-3 rounded-2xl bg-warning-soft px-4 py-3 text-sm font-medium text-ink ring-1 ring-warning/30" role="status">
+          <p className="min-w-0 flex-1">{linkNotice}</p>
+          <button
+            type="button"
+            onClick={() => { clearLinkedExamParam(); setLinkedExamId(null); }}
+            aria-label="Dismiss"
+            className="shrink-0 rounded-lg p-1 text-muted transition-colors hover:bg-card hover:text-ink"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       {tab === "Assignment" ? (
         <StudentAssignments uid={uid} enrollments={enrollments} layout={layout} />
